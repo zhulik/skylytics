@@ -1,0 +1,28 @@
+name: Build and Push to GHCR
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.24
+          cache-dependency-path: "**/*.sum"
+
+      - uses: ko-build/setup-ko@v0.6
+
+      - name: Build and push image with ko
+        env:
+          KO_DOCKER_REPO: ghcr.io/zhulik
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ko publish --tags latest ./...
