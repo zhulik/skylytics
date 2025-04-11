@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"skylytics/internal/core"
@@ -27,7 +27,7 @@ func NewHTTPServer(lc fx.Lifecycle) core.MetricsServer {
 			if err != nil {
 				return err
 			}
-			fmt.Println("Starting HTTP server at", srv.Addr)
+			log.Println("Starting HTTP server at", srv.Addr)
 			go srv.Serve(ln)
 			return nil
 		},
