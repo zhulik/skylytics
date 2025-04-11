@@ -9,7 +9,7 @@ type MetricsServer interface {
 }
 
 type JetstreamSubscriber interface {
-	Chan() <-chan string
+	Chan() <-chan JetstreamEvent
 }
 
 type Forwarder interface{}

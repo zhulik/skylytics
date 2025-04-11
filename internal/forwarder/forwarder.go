@@ -2,6 +2,7 @@ package forwarder
 
 import (
 	"context"
+	"github.com/bluesky-social/jetstream/pkg/models"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/fx"
@@ -10,10 +11,10 @@ import (
 )
 
 var (
-	totalProcessed = promauto.NewCounter(prometheus.CounterOpts{
+	eventsProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "skylytics_events_processed_total",
 		Help: "The total number of processed events",
-	})
+	}, []string{"kind", "operation", "status"})
 )
 
 func New(lc fx.Lifecycle, sub core.JetstreamSubscriber) core.Forwarder {
@@ -28,8 +29,8 @@ func New(lc fx.Lifecycle, sub core.JetstreamSubscriber) core.Forwarder {
 					case <-subCtx.Done():
 						log.Println("Forwarder stopped")
 						return
-					case <-ch:
-						totalProcessed.Inc()
+					case event := <-ch:
+						forwardEvent(event)
 					}
 				}
 			}()
@@ -43,4 +44,21 @@ func New(lc fx.Lifecycle, sub core.JetstreamSubscriber) core.Forwarder {
 	})
 
 	return nil
+}
+
+func forwardEvent(event core.JetstreamEvent) {
+	operation := ""
+	status := ""
+
+	switch event.Kind {
+	case models.EventKindCommit:
+		operation = event.Commit.Operation
+	case models.EventKindAccount:
+		if event.Account.Status != nil {
+			status = *event.Account.Status
+		}
+	case models.EventKindIdentity:
+	}
+
+	eventsProcessed.WithLabelValues(event.Kind, operation, status).Inc()
 }

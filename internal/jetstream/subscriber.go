@@ -2,6 +2,7 @@ package jetstream
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/gorilla/websocket"
 	"go.uber.org/fx"
 	"log"
@@ -13,15 +14,15 @@ const (
 )
 
 type Subscriber struct {
-	events chan string
+	events chan core.JetstreamEvent
 }
 
-func (s Subscriber) Chan() <-chan string {
+func (s Subscriber) Chan() <-chan core.JetstreamEvent {
 	return s.events
 }
 
 func NewSubscriber(lc fx.Lifecycle) core.JetstreamSubscriber {
-	events := make(chan string)
+	events := make(chan core.JetstreamEvent)
 
 	var conn *websocket.Conn
 
@@ -43,7 +44,16 @@ func NewSubscriber(lc fx.Lifecycle) core.JetstreamSubscriber {
 						}
 						return
 					}
-					events <- string(message)
+
+					var event core.JetstreamEvent
+
+					err = json.Unmarshal(message, &event)
+					if err != nil {
+						log.Printf("error unmarshalling event: %+v", err)
+						continue
+					}
+
+					events <- event
 				}
 			}()
 			return nil
