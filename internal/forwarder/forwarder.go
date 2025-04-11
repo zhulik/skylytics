@@ -18,13 +18,15 @@ var (
 )
 
 func New(lc fx.Lifecycle, sub core.JetstreamSubscriber) core.Forwarder {
+	subCtx, cancel := context.WithCancel(context.Background())
+
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			go func() {
 				ch := sub.Chan()
 				for {
 					select {
-					case <-ctx.Done():
+					case <-subCtx.Done():
 						log.Println("Forwarder stopped")
 						return
 					case event := <-ch:
@@ -36,6 +38,7 @@ func New(lc fx.Lifecycle, sub core.JetstreamSubscriber) core.Forwarder {
 		},
 		OnStop: func(ctx context.Context) error {
 			log.Println("Stopping forwarder")
+			cancel()
 			return nil
 		},
 	})
