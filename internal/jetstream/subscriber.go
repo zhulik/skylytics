@@ -29,6 +29,7 @@ func NewSubscriber(lc fx.Lifecycle) core.JetstreamSubscriber {
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			var err error
+
 			conn, _, err = websocket.DefaultDialer.Dial(url, nil)
 			if err != nil {
 				return err
@@ -36,13 +37,11 @@ func NewSubscriber(lc fx.Lifecycle) core.JetstreamSubscriber {
 
 			go func() {
 				defer log.Println("Subscriber stopped")
+
 				for {
 					_, message, err := conn.ReadMessage()
 					if err != nil {
-						if websocket.IsUnexpectedCloseError(err) {
-							log.Printf("websocket connection closed unexpectedly: %+v", err)
-						}
-						return
+						panic(err)
 					}
 
 					var event core.JetstreamEvent
@@ -58,6 +57,7 @@ func NewSubscriber(lc fx.Lifecycle) core.JetstreamSubscriber {
 			}()
 			return nil
 		},
+
 		OnStop: func(ctx context.Context) error {
 			log.Println("Stopping subscriber")
 			close(events)

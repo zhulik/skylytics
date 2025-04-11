@@ -9,12 +9,13 @@ import (
 )
 
 func main() {
-	fx.New(
+	app := fx.New(
 		fx.Provide(metrics.NewHTTPServer),
 		fx.Provide(jetstream.NewSubscriber),
 		fx.Provide(forwarder.New),
 
 		fx.Invoke(func(server core.MetricsServer) {}),
 		fx.Invoke(func(forwarder core.Forwarder) {}),
-	).Run()
+	)
+	app.Run()
 }
