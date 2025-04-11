@@ -25,4 +25,4 @@ jobs:
         env:
           KO_DOCKER_REPO: ghcr.io/zhulik
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: cd cmd/subscriber && ko build =B --tags latest
+        run: ko build -B --tags latest skylytics/cmd/subscriber
