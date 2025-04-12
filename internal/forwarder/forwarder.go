@@ -1,10 +1,18 @@
 package forwarder
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/bluesky-social/jetstream/pkg/models"
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/samber/do"
+	"github.com/samber/lo"
+	"log"
+	"os"
 	"skylytics/internal/core"
 )
 
@@ -16,8 +24,9 @@ var (
 )
 
 type Forwarder struct {
-	stop chan any
-	sub  core.JetstreamSubscriber
+	stop      chan any
+	sub       core.JetstreamSubscriber
+	jetstream jetstream.JetStream
 }
 
 func (f Forwarder) Shutdown() error {
@@ -26,9 +35,25 @@ func (f Forwarder) Shutdown() error {
 }
 
 func New(i *do.Injector) (core.Forwarder, error) {
+	url := os.Getenv("NATS_URL")
+	if url == "" {
+		url = nats.DefaultURL
+	}
+
+	nc, err := nats.Connect(url)
+	if err != nil {
+		return nil, err
+	}
+
+	js, err := jetstream.New(nc)
+	if err != nil {
+		return nil, err
+	}
+
 	f := Forwarder{
-		stop: make(chan any),
-		sub:  do.MustInvoke[core.JetstreamSubscriber](i),
+		stop:      make(chan any),
+		sub:       do.MustInvoke[core.JetstreamSubscriber](i),
+		jetstream: js,
 	}
 
 	go f.run()
@@ -50,6 +75,11 @@ func (f Forwarder) run() {
 				continue
 			}
 			countEvent(event)
+
+			_, err = f.jetstream.Publish(context.Background(), fmt.Sprintf("skylytics.%s", event.Kind), lo.Must(json.Marshal(event)))
+			if err != nil {
+				log.Printf("error publishing event: %+v", err)
+			}
 		}
 	}
 }
