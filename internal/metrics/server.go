@@ -27,7 +27,6 @@ func NewHTTPServer(_ *do.Injector) (core.MetricsServer, error) {
 	srv := &http.Server{Addr: ":8080"}
 
 	mux := http.NewServeMux()
-
 	mux.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
 
 	srv.Handler = mux

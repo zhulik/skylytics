@@ -1,9 +1,11 @@
 package core
 
+import "skylytics/pkg/async"
+
 type MetricsServer interface{}
 
 type JetstreamSubscriber interface {
-	Chan() <-chan JetstreamEvent
+	Chan() <-chan async.Result[JetstreamEvent]
 }
 
 type Forwarder interface{}

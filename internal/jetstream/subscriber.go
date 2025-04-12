@@ -6,6 +6,7 @@ import (
 	"github.com/samber/do"
 	"log"
 	"skylytics/internal/core"
+	"skylytics/pkg/async"
 )
 
 const (
@@ -13,13 +14,12 @@ const (
 )
 
 type Subscriber struct {
-	events chan core.JetstreamEvent
+	events <-chan async.Result[core.JetstreamEvent]
 	conn   *websocket.Conn
 }
 
 func (s Subscriber) Shutdown() error {
 	s.conn.Close()
-	close(s.events)
 	return nil
 }
 
@@ -27,25 +27,21 @@ func (s Subscriber) HealthCheck() error {
 	return nil
 }
 
-func (s Subscriber) Chan() <-chan core.JetstreamEvent {
+func (s Subscriber) Chan() <-chan async.Result[core.JetstreamEvent] {
 	return s.events
 }
 
 func NewSubscriber(_ *do.Injector) (core.JetstreamSubscriber, error) {
-	events := make(chan core.JetstreamEvent)
-
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	go func() {
-		defer log.Println("Subscriber stopped")
-
+	events := async.Generator(func(yield async.Yielder[core.JetstreamEvent]) error {
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
-				panic(err)
+				return err
 			}
 
 			var event core.JetstreamEvent
@@ -56,9 +52,9 @@ func NewSubscriber(_ *do.Injector) (core.JetstreamSubscriber, error) {
 				continue
 			}
 
-			events <- event
+			yield(event)
 		}
-	}()
+	})
 
 	return Subscriber{events: events, conn: conn}, nil
 }

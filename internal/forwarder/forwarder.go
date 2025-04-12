@@ -31,22 +31,30 @@ func New(i *do.Injector) (core.Forwarder, error) {
 		sub:  do.MustInvoke[core.JetstreamSubscriber](i),
 	}
 
-	go func() {
-		ch := f.sub.Chan()
-		for {
-			select {
-			case <-f.stop:
-				return
-			case event := <-ch:
-				forwardEvent(event)
-			}
-		}
-	}()
+	go f.run()
 
 	return f, nil
 }
 
-func forwardEvent(event core.JetstreamEvent) {
+func (f Forwarder) run() {
+	ch := f.sub.Chan()
+
+	for {
+		select {
+		case <-f.stop:
+			return
+
+		case result := <-ch:
+			event, err := result.Unpack()
+			if err != nil {
+				continue
+			}
+			countEvent(event)
+		}
+	}
+}
+
+func countEvent(event *core.JetstreamEvent) {
 	operation := ""
 	status := ""
 
