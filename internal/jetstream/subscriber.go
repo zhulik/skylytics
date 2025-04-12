@@ -1,10 +1,9 @@
 package jetstream
 
 import (
-	"context"
 	"encoding/json"
 	"github.com/gorilla/websocket"
-	"go.uber.org/fx"
+	"github.com/samber/do"
 	"log"
 	"skylytics/internal/core"
 )
@@ -15,55 +14,51 @@ const (
 
 type Subscriber struct {
 	events chan core.JetstreamEvent
+	conn   *websocket.Conn
+}
+
+func (s Subscriber) Shutdown() error {
+	s.conn.Close()
+	close(s.events)
+	return nil
+}
+
+func (s Subscriber) HealthCheck() error {
+	return nil
 }
 
 func (s Subscriber) Chan() <-chan core.JetstreamEvent {
 	return s.events
 }
 
-func NewSubscriber(lc fx.Lifecycle) core.JetstreamSubscriber {
+func NewSubscriber(_ *do.Injector) (core.JetstreamSubscriber, error) {
 	events := make(chan core.JetstreamEvent)
 
-	var conn *websocket.Conn
+	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		return nil, err
+	}
 
-	lc.Append(fx.Hook{
-		OnStart: func(ctx context.Context) error {
-			var err error
+	go func() {
+		defer log.Println("Subscriber stopped")
 
-			conn, _, err = websocket.DefaultDialer.Dial(url, nil)
+		for {
+			_, message, err := conn.ReadMessage()
 			if err != nil {
-				return err
+				panic(err)
 			}
 
-			go func() {
-				defer log.Println("Subscriber stopped")
+			var event core.JetstreamEvent
 
-				for {
-					_, message, err := conn.ReadMessage()
-					if err != nil {
-						panic(err)
-					}
+			err = json.Unmarshal(message, &event)
+			if err != nil {
+				log.Printf("error unmarshalling event: %+v", err)
+				continue
+			}
 
-					var event core.JetstreamEvent
+			events <- event
+		}
+	}()
 
-					err = json.Unmarshal(message, &event)
-					if err != nil {
-						log.Printf("error unmarshalling event: %+v", err)
-						continue
-					}
-
-					events <- event
-				}
-			}()
-			return nil
-		},
-
-		OnStop: func(ctx context.Context) error {
-			log.Println("Stopping subscriber")
-			close(events)
-			return conn.Close()
-		},
-	})
-
-	return Subscriber{events}
+	return Subscriber{events: events, conn: conn}, nil
 }

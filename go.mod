@@ -6,7 +6,7 @@ require (
 	github.com/bluesky-social/jetstream v0.0.0-20250411043205-f4da85b6e06b
 	github.com/gorilla/websocket v1.5.3
 	github.com/prometheus/client_golang v1.22.0
-	go.uber.org/fx v1.23.0
+	github.com/samber/do v1.6.0
 )
 
 require (
@@ -58,7 +58,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/otel/trace v1.21.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	go.uber.org/dig v1.18.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect

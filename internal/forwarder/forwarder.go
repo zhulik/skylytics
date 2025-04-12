@@ -1,12 +1,10 @@
 package forwarder
 
 import (
-	"context"
 	"github.com/bluesky-social/jetstream/pkg/models"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"go.uber.org/fx"
-	"log"
+	"github.com/samber/do"
 	"skylytics/internal/core"
 )
 
@@ -17,33 +15,35 @@ var (
 	}, []string{"kind", "operation", "status"})
 )
 
-func New(lc fx.Lifecycle, sub core.JetstreamSubscriber) core.Forwarder {
-	subCtx, cancel := context.WithCancel(context.Background())
+type Forwarder struct {
+	stop chan any
+	sub  core.JetstreamSubscriber
+}
 
-	lc.Append(fx.Hook{
-		OnStart: func(ctx context.Context) error {
-			go func() {
-				ch := sub.Chan()
-				for {
-					select {
-					case <-subCtx.Done():
-						log.Println("Forwarder stopped")
-						return
-					case event := <-ch:
-						forwardEvent(event)
-					}
-				}
-			}()
-			return nil
-		},
-		OnStop: func(ctx context.Context) error {
-			log.Println("Stopping forwarder")
-			cancel()
-			return nil
-		},
-	})
-
+func (f Forwarder) Shutdown() error {
+	f.stop <- true
 	return nil
+}
+
+func New(i *do.Injector) (core.Forwarder, error) {
+	f := Forwarder{
+		stop: make(chan any),
+		sub:  do.MustInvoke[core.JetstreamSubscriber](i),
+	}
+
+	go func() {
+		ch := f.sub.Chan()
+		for {
+			select {
+			case <-f.stop:
+				return
+			case event := <-ch:
+				forwardEvent(event)
+			}
+		}
+	}()
+
+	return f, nil
 }
 
 func forwardEvent(event core.JetstreamEvent) {
