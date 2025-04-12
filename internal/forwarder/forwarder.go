@@ -25,7 +25,7 @@ var (
 
 type Forwarder struct {
 	stop      chan any
-	sub       core.JetstreamSubscriber
+	sub       core.BlueskySubscriber
 	jetstream jetstream.JetStream
 }
 
@@ -52,7 +52,7 @@ func New(i *do.Injector) (core.Forwarder, error) {
 
 	f := Forwarder{
 		stop:      make(chan any),
-		sub:       do.MustInvoke[core.JetstreamSubscriber](i),
+		sub:       do.MustInvoke[core.BlueskySubscriber](i),
 		jetstream: js,
 	}
 
@@ -84,7 +84,7 @@ func (f Forwarder) run() {
 	}
 }
 
-func countEvent(event *core.JetstreamEvent) {
+func countEvent(event *core.BlueskyEvent) {
 	operation := ""
 	status := ""
 

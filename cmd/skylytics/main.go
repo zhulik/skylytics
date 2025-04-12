@@ -3,9 +3,10 @@ package main
 import (
 	"github.com/samber/do"
 	"log"
+	"os"
+	"skylytics/internal/bluesky"
 	"skylytics/internal/core"
 	"skylytics/internal/forwarder"
-	"skylytics/internal/jetstream"
 	"skylytics/internal/metrics"
 	"syscall"
 )
@@ -14,11 +15,24 @@ func main() {
 	injector := do.New()
 
 	do.Provide[core.MetricsServer](injector, metrics.NewHTTPServer)
-	do.Provide[core.JetstreamSubscriber](injector, jetstream.NewSubscriber)
-	do.Provide[core.Forwarder](injector, forwarder.New)
 
-	do.MustInvoke[core.MetricsServer](injector)
-	do.MustInvoke[core.Forwarder](injector)
+	command := "subscriber"
+
+	if len(os.Args) > 1 {
+		command = os.Args[1]
+	}
+
+	switch command {
+	case "subscriber":
+		do.Provide[core.BlueskySubscriber](injector, bluesky.NewSubscriber)
+		do.Provide[core.Forwarder](injector, forwarder.New)
+
+		do.MustInvoke[core.MetricsServer](injector)
+		do.MustInvoke[core.Forwarder](injector)
+	case "commit-analyzer":
+	default:
+		log.Fatalf("unknown command: %s", command)
+	}
 
 	if err := injector.ShutdownOnSignals(syscall.SIGINT, syscall.SIGTERM); err != nil {
 		log.Fatal(err)

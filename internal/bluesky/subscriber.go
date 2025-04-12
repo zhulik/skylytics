@@ -1,4 +1,4 @@
-package jetstream
+package bluesky
 
 import (
 	"encoding/json"
@@ -14,7 +14,7 @@ const (
 )
 
 type Subscriber struct {
-	events <-chan async.Result[core.JetstreamEvent]
+	events <-chan async.Result[core.BlueskyEvent]
 	conn   *websocket.Conn
 }
 
@@ -27,24 +27,24 @@ func (s Subscriber) HealthCheck() error {
 	return nil
 }
 
-func (s Subscriber) Chan() <-chan async.Result[core.JetstreamEvent] {
+func (s Subscriber) Chan() <-chan async.Result[core.BlueskyEvent] {
 	return s.events
 }
 
-func NewSubscriber(_ *do.Injector) (core.JetstreamSubscriber, error) {
+func NewSubscriber(_ *do.Injector) (core.BlueskySubscriber, error) {
 	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	events := async.Generator(func(yield async.Yielder[core.JetstreamEvent]) error {
+	events := async.Generator(func(yield async.Yielder[core.BlueskyEvent]) error {
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
 				return err
 			}
 
-			var event core.JetstreamEvent
+			var event core.BlueskyEvent
 
 			err = json.Unmarshal(message, &event)
 			if err != nil {

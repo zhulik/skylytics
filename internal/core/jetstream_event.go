@@ -4,4 +4,4 @@ import (
 	"github.com/bluesky-social/jetstream/pkg/models"
 )
 
-type JetstreamEvent = models.Event
+type BlueskyEvent = models.Event

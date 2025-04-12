@@ -4,8 +4,8 @@ import "skylytics/pkg/async"
 
 type MetricsServer interface{}
 
-type JetstreamSubscriber interface {
-	Chan() <-chan async.Result[JetstreamEvent]
+type BlueskySubscriber interface {
+	Chan() <-chan async.Result[BlueskyEvent]
 }
 
 type Forwarder interface{}
