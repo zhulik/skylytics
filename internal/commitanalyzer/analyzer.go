@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"skylytics/internal/core"
+	"time"
 )
 
 var (
@@ -65,6 +66,8 @@ func (a Analyzer) HealthCheck() error {
 }
 
 func (a Analyzer) Analyze(msg jetstream.Msg) {
+	time.Sleep(200 * time.Millisecond)
+	
 	msg.Ack()
 
 	event := core.BlueskyEvent{}
