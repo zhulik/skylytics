@@ -66,8 +66,8 @@ func (a Analyzer) HealthCheck() error {
 }
 
 func (a Analyzer) Analyze(msg jetstream.Msg) {
-	time.Sleep(200 * time.Millisecond)
-	
+	time.Sleep(50 * time.Millisecond)
+
 	msg.Ack()
 
 	event := core.BlueskyEvent{}
@@ -76,8 +76,6 @@ func (a Analyzer) Analyze(msg jetstream.Msg) {
 		log.Println("error unmarshalling event:", err)
 		return
 	}
-
-	//log.Printf("processing commit: %s", string(event.Commit.Record))
 
 	var commitType = ""
 
