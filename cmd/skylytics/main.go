@@ -28,7 +28,6 @@ func main() {
 		do.Provide[core.BlueskySubscriber](injector, bluesky.NewSubscriber)
 		do.Provide[core.Forwarder](injector, forwarder.New)
 
-		do.MustInvoke[core.MetricsServer](injector)
 		do.MustInvoke[core.Forwarder](injector)
 	case "commit-analyzer":
 		do.Provide[core.CommitAnalyzer](injector, commitanalyzer.New)
@@ -37,6 +36,8 @@ func main() {
 	default:
 		log.Fatalf("unknown command: %s", command)
 	}
+
+	do.MustInvoke[core.MetricsServer](injector)
 
 	if err := injector.ShutdownOnSignals(syscall.SIGINT, syscall.SIGTERM); err != nil {
 		log.Fatal(err)
