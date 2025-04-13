@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"skylytics/internal/bluesky"
+	"skylytics/internal/commitanalyzer"
 	"skylytics/internal/core"
 	"skylytics/internal/forwarder"
 	"skylytics/internal/metrics"
@@ -30,6 +31,9 @@ func main() {
 		do.MustInvoke[core.MetricsServer](injector)
 		do.MustInvoke[core.Forwarder](injector)
 	case "commit-analyzer":
+		do.Provide[core.CommitAnalyzer](injector, commitanalyzer.New)
+
+		do.MustInvoke[core.CommitAnalyzer](injector)
 	default:
 		log.Fatalf("unknown command: %s", command)
 	}

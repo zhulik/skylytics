@@ -9,3 +9,5 @@ type BlueskySubscriber interface {
 }
 
 type Forwarder interface{}
+
+type CommitAnalyzer interface{}
