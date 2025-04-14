@@ -10,6 +10,7 @@ import (
 	"skylytics/internal/core"
 	"skylytics/internal/forwarder"
 	"skylytics/internal/metrics"
+	"skylytics/internal/persistence/events"
 
 	"github.com/samber/do"
 )
@@ -19,6 +20,10 @@ func main() {
 
 	do.Provide[core.MetricsServer](injector, metrics.NewHTTPServer)
 	do.MustInvoke[core.MetricsServer](injector)
+
+	do.Provide[core.EventRepository](injector, events.NewRepository)
+
+	do.MustInvoke[core.EventRepository](injector)
 
 	command := "subscriber"
 

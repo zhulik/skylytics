@@ -4,6 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+
+	"skylytics/internal/core"
+
 	"github.com/bluesky-social/jetstream/pkg/models"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
@@ -11,9 +16,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/samber/do"
 	"github.com/samber/lo"
-	"log"
-	"os"
-	"skylytics/internal/core"
 )
 
 var (
@@ -55,6 +57,11 @@ func New(i *do.Injector) (core.Forwarder, error) {
 		sub:       do.MustInvoke[core.BlueskySubscriber](i),
 		jetstream: js,
 	}
+
+	lo.Must(js.CreateOrUpdateStream(context.Background(), jetstream.StreamConfig{
+		Name:     "skylytics",
+		Subjects: []string{"skylytics.>"},
+	}))
 
 	go f.run()
 

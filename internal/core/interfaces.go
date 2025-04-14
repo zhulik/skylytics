@@ -1,6 +1,10 @@
 package core
 
-import "skylytics/pkg/async"
+import (
+	"context"
+
+	"skylytics/pkg/async"
+)
 
 type MetricsServer interface{}
 
@@ -11,3 +15,7 @@ type BlueskySubscriber interface {
 type Forwarder interface{}
 
 type CommitAnalyzer interface{}
+
+type EventRepository interface {
+	SaveRaw(ctx context.Context, raw []byte) error
+}
