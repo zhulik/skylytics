@@ -57,7 +57,6 @@ func (r Repository) SaveRaw(ctx context.Context, raw []byte) error {
 	if err := bson.UnmarshalExtJSON(raw, false, &jsonData); err != nil {
 		return err
 	}
-
 	_, err := r.coll.InsertOne(context.TODO(), jsonData)
 	if err != nil {
 		if !mongo.IsDuplicateKeyError(err) {

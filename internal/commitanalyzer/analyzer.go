@@ -3,15 +3,16 @@ package commitanalyzer
 import (
 	"context"
 	"encoding/json"
+	"log"
+	"os"
+
+	"skylytics/internal/core"
+
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/samber/do"
-	"log"
-	"os"
-	"skylytics/internal/core"
-	"time"
 )
 
 var (
@@ -66,8 +67,6 @@ func (a Analyzer) HealthCheck() error {
 }
 
 func (a Analyzer) Analyze(msg jetstream.Msg) {
-	time.Sleep(50 * time.Millisecond)
-
 	msg.Ack()
 
 	event := core.BlueskyEvent{}

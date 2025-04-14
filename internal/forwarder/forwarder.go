@@ -83,7 +83,7 @@ func (f Forwarder) run() {
 			}
 			countEvent(event)
 
-			_, err = f.jetstream.Publish(context.Background(), fmt.Sprintf("skylytics.%s", event.Kind), lo.Must(json.Marshal(event)))
+			_, err = f.jetstream.Publish(context.Background(), fmt.Sprintf("skylytics.events.%s", event.Kind), lo.Must(json.Marshal(event)))
 			if err != nil {
 				log.Printf("error publishing event: %+v", err)
 			}
