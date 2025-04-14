@@ -23,7 +23,7 @@ func main() {
 
 	do.Provide[core.EventRepository](injector, events.NewRepository)
 
-	do.MustInvoke[core.EventRepository](injector)
+	// do.MustInvoke[core.EventRepository](injector)
 
 	command := "subscriber"
 
