@@ -2,11 +2,13 @@ package metrics
 
 import (
 	"context"
-	"github.com/samber/do"
 	"log"
 	"net"
 	"net/http"
+
 	"skylytics/internal/core"
+
+	"github.com/samber/do"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -23,11 +25,16 @@ func (s HTTPServer) HealthCheck() error {
 	return nil
 }
 
-func NewHTTPServer(_ *do.Injector) (core.MetricsServer, error) {
+func NewHTTPServer(i *do.Injector) (core.MetricsServer, error) {
 	srv := &http.Server{Addr: ":8080"}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		if err := i.HealthCheck(); err != nil {
+			w.WriteHeader(500)
+		}
+	})
 
 	srv.Handler = mux
 

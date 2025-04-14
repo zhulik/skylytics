@@ -1,21 +1,24 @@
 package main
 
 import (
-	"github.com/samber/do"
 	"log"
 	"os"
+	"syscall"
+
 	"skylytics/internal/bluesky"
 	"skylytics/internal/commitanalyzer"
 	"skylytics/internal/core"
 	"skylytics/internal/forwarder"
 	"skylytics/internal/metrics"
-	"syscall"
+
+	"github.com/samber/do"
 )
 
 func main() {
 	injector := do.New()
 
 	do.Provide[core.MetricsServer](injector, metrics.NewHTTPServer)
+	do.MustInvoke[core.MetricsServer](injector)
 
 	command := "subscriber"
 
@@ -36,8 +39,6 @@ func main() {
 	default:
 		log.Fatalf("unknown command: %s", command)
 	}
-
-	do.MustInvoke[core.MetricsServer](injector)
 
 	if err := injector.ShutdownOnSignals(syscall.SIGINT, syscall.SIGTERM); err != nil {
 		log.Fatal(err)
