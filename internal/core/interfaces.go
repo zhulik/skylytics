@@ -22,5 +22,5 @@ type EventRepository interface {
 }
 
 type EventsArchiver interface {
-	Archive(msg ...jetstream.Msg)
+	Archive(msg ...jetstream.Msg) error
 }

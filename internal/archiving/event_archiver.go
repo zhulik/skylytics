@@ -53,14 +53,16 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 			log.Printf("Processing batch %d", n)
 			n++
 
-			msgs, _, _, ok := lo.Buffer(batch.Messages(), 100)
-			if !ok {
-				log.Printf("error batching events")
-				continue
+			for {
+				msgs, _, _, ok := lo.Buffer(batch.Messages(), 100)
+				if !ok {
+					break
+				}
+				err := archiver.Archive(msgs...)
+				if err != nil {
+					log.Printf("error archiving events: %+v", err)
+				}
 			}
-
-			archiver.Archive(msgs...)
-
 		}
 	}()
 
@@ -75,17 +77,18 @@ func (a EventsArchiver) HealthCheck() error {
 	return nil
 }
 
-func (a EventsArchiver) Archive(msgs ...jetstream.Msg) {
+func (a EventsArchiver) Archive(msgs ...jetstream.Msg) error {
 	events := lo.Map(msgs, func(item jetstream.Msg, _ int) []byte {
 		return item.Data()
 	})
 
 	if err := a.eventRepository.SaveRaw(context.TODO(), events...); err != nil {
-		log.Printf("error saving events: %+v", err)
-		return
+		return err
 	}
 
 	lo.ForEach(msgs, func(item jetstream.Msg, _ int) {
 		item.Ack()
 	})
+
+	return nil
 }
