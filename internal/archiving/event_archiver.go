@@ -11,6 +11,10 @@ import (
 	"skylytics/internal/core"
 )
 
+const (
+	batchSize = 1000
+)
+
 type EventsArchiver struct {
 	eventRepository core.EventRepository
 }
@@ -43,24 +47,19 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 	go func() {
 		// TODO: shutdown!
 		for {
-			batch, err := cons.Fetch(1000)
+			batch, err := cons.Fetch(batchSize)
 			if err != nil {
 				log.Printf("error fetching events: %+v", err)
 				continue
 			}
 
-			for {
-				msgs, _, _, ok := lo.Buffer(batch.Messages(), 100)
-				if !ok {
-					break
-				}
+			msgs, _, _, _ := lo.Buffer(batch.Messages(), batchSize)
 
-				err = archiver.Archive(msgs...)
-				if err != nil {
-					log.Printf("error archiving events: %+v", err)
-				} else {
-					log.Printf("Batch of %d elements archived", len(msgs))
-				}
+			err = archiver.Archive(msgs...)
+			if err != nil {
+				log.Printf("error archiving events: %+v", err)
+			} else {
+				log.Printf("Batch of %d elements archived", len(msgs))
 			}
 		}
 	}()
