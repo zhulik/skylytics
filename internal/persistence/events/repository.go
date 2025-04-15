@@ -36,6 +36,8 @@ func NewRepository(_ *do.Injector) (core.EventRepository, error) {
 	coll := client.Database("admin").Collection("events")
 	_, err = coll.Indexes().CreateMany(context.TODO(), []mongo.IndexModel{{
 		Keys: bson.D{{"kind", 1}},
+	}, {
+		Keys: bson.D{{"did", 1}},
 	},
 	})
 
@@ -60,12 +62,4 @@ func (r Repository) SaveRaw(ctx context.Context, raws ...[]byte) error {
 
 	_, err := r.coll.InsertMany(ctx, datas)
 	return err
-}
-
-func (r Repository) Shutdown() error {
-	return r.client.Disconnect(context.TODO())
-}
-
-func (r Repository) HealthCheck() error {
-	return r.client.Ping(context.TODO(), nil)
 }
