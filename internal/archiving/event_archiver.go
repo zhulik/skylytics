@@ -50,14 +50,18 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 				log.Printf("error fetching events: %+v", err)
 				continue
 			}
+			if err := batch.Error(); err != nil {
+				log.Printf("Error processing batch %d: %+v", n, err)
+				continue
+			}
 			log.Printf("Processing batch %d", n)
 
-			msgs, _, _, _ := lo.Buffer(batch.Messages(), 100)
+			msgs, length, _, _ := lo.Buffer(batch.Messages(), 100)
 			err = archiver.Archive(msgs...)
 			if err != nil {
 				log.Printf("error archiving events: %+v", err)
 			}
-			log.Printf("Batch %d archived", n)
+			log.Printf("Batch %d of %d elements archived", n, length)
 			n++
 		}
 	}()
