@@ -12,11 +12,10 @@ import (
 )
 
 const (
-	batchSize = 1000
+	batchSize = 10
 )
 
 type EventsArchiver struct {
-	ctx             jetstream.ConsumeContext
 	eventRepository core.EventRepository
 }
 
@@ -45,20 +44,30 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 		eventRepository: do.MustInvoke[core.EventRepository](injector),
 	}
 
-	consCtx, err := cons.Consume(func(msg jetstream.Msg) {
-		err = archiver.Archive(msg)
-		if err != nil {
-			log.Printf("error archiving event: %+v", err)
-		}
-	})
+	go func() {
+		// TODO: shutdown!
+		for {
+			batch, err := cons.Fetch(batchSize)
+			if err != nil {
+				log.Printf("error fetching events: %+v", err)
+				continue
+			}
 
-	archiver.ctx = consCtx
+			msgs, _, _, _ := lo.Buffer(batch.Messages(), batchSize)
+
+			err = archiver.Archive(msgs...)
+			if err != nil {
+				log.Printf("error archiving events: %+v", err)
+			} else {
+				log.Printf("Batch of %d elements archived", len(msgs))
+			}
+		}
+	}()
 
 	return &archiver, nil
 }
 
 func (a EventsArchiver) Shutdown() error {
-	a.ctx.Stop()
 	return nil
 }
 
