@@ -3,16 +3,16 @@ package main
 import (
 	"log"
 	"os"
+	"skylytics/internal/archiving"
+	"skylytics/internal/persistence/events"
 	"syscall"
 
+	"github.com/samber/do"
 	"skylytics/internal/bluesky"
 	"skylytics/internal/commitanalyzer"
 	"skylytics/internal/core"
 	"skylytics/internal/forwarder"
 	"skylytics/internal/metrics"
-	"skylytics/internal/persistence/events"
-
-	"github.com/samber/do"
 )
 
 func main() {
@@ -20,10 +20,6 @@ func main() {
 
 	do.Provide[core.MetricsServer](injector, metrics.NewHTTPServer)
 	do.MustInvoke[core.MetricsServer](injector)
-
-	do.Provide[core.EventRepository](injector, events.NewRepository)
-
-	// do.MustInvoke[core.EventRepository](injector)
 
 	command := "subscriber"
 
@@ -41,6 +37,11 @@ func main() {
 		do.Provide[core.CommitAnalyzer](injector, commitanalyzer.New)
 
 		do.MustInvoke[core.CommitAnalyzer](injector)
+	case "event-archiver":
+
+		do.Provide[core.EventRepository](injector, events.NewRepository)
+		do.Provide[core.EventsArchiver](injector, archiving.NewEventsArchiver)
+		do.MustInvoke[core.EventsArchiver](injector)
 	default:
 		log.Fatalf("unknown command: %s", command)
 	}

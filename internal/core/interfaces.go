@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"github.com/nats-io/nats.go/jetstream"
 
 	"skylytics/pkg/async"
 )
@@ -18,4 +19,8 @@ type CommitAnalyzer interface{}
 
 type EventRepository interface {
 	SaveRaw(ctx context.Context, raw []byte) error
+}
+
+type EventsArchiver interface {
+	Archive(msg jetstream.Msg)
 }

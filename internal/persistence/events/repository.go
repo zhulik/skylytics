@@ -32,7 +32,7 @@ func NewRepository(_ *do.Injector) (core.EventRepository, error) {
 		return nil, err
 	}
 
-	coll := client.Database("skylytics").Collection("events")
+	coll := client.Database("admin").Collection("events")
 	_, err = coll.Indexes().CreateMany(context.TODO(), []mongo.IndexModel{
 		{
 			Keys:    bson.D{{"did", 1}},
