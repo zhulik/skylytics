@@ -12,8 +12,6 @@ import (
 )
 
 type EventsArchiver struct {
-	ctx jetstream.ConsumeContext
-
 	eventRepository core.EventRepository
 }
 
@@ -70,7 +68,6 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 }
 
 func (a EventsArchiver) Shutdown() error {
-	a.ctx.Stop()
 	return nil
 }
 
