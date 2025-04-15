@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"github.com/samber/lo"
-	"log"
 	"os"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -59,12 +58,8 @@ func (r Repository) SaveRaw(ctx context.Context, raws ...[]byte) error {
 		return jsonData
 	})
 
-	res, err := r.coll.InsertMany(ctx, datas)
-	if err != nil {
-		return err
-	}
-	log.Printf("Saved %d events: ", len(res.InsertedIDs))
-	return nil
+	_, err := r.coll.InsertMany(ctx, datas)
+	return err
 }
 
 func (r Repository) Shutdown() error {
