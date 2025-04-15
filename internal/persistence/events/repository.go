@@ -55,6 +55,7 @@ func NewRepository(_ *do.Injector) (core.EventRepository, error) {
 }
 
 func (r Repository) SaveRaw(ctx context.Context, raws ...[]byte) error {
+	log.Printf("To save %d events: ", len(raws))
 	datas := lo.Map(raws, func(raw []byte, _ int) bson.M {
 		var jsonData bson.M
 		if err := bson.UnmarshalExtJSON(raw, false, &jsonData); err != nil {
@@ -63,11 +64,11 @@ func (r Repository) SaveRaw(ctx context.Context, raws ...[]byte) error {
 		return jsonData
 	})
 
+	log.Printf("To save %d datas: ", len(datas))
+
 	res, err := r.coll.InsertMany(ctx, datas)
 	if err != nil {
-		if !mongo.IsDuplicateKeyError(err) {
-			return err
-		}
+		return err
 	}
 	log.Printf("Saved %d events: ", len(res.InsertedIDs))
 	return nil

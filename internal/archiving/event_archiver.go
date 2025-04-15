@@ -66,8 +66,9 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 			err = archiver.Archive(msgs...)
 			if err != nil {
 				log.Printf("error archiving events: %+v", err)
+			} else {
+				log.Printf("Batch %d of %d elements archived", n, len(msgs))
 			}
-			log.Printf("Batch %d of %d elements archived", n, len(msgs))
 			n++
 		}
 	}()
