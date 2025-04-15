@@ -45,24 +45,20 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 
 		// TODO: shutdown!
 		for {
-			batch, err := cons.Fetch(1000)
+			batch, err := cons.Fetch(100)
 			if err != nil {
 				log.Printf("error fetching events: %+v", err)
 				continue
 			}
 			log.Printf("Processing batch %d", n)
-			n++
 
-			for {
-				msgs, _, _, ok := lo.Buffer(batch.Messages(), 100)
-				if !ok {
-					break
-				}
-				err := archiver.Archive(msgs...)
-				if err != nil {
-					log.Printf("error archiving events: %+v", err)
-				}
+			msgs, _, _, _ := lo.Buffer(batch.Messages(), 100)
+			err = archiver.Archive(msgs...)
+			if err != nil {
+				log.Printf("error archiving events: %+v", err)
 			}
+			log.Printf("Batch %d archived", n)
+			n++
 		}
 	}()
 
