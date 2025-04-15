@@ -3,6 +3,7 @@ package events
 import (
 	"context"
 	"errors"
+	"github.com/samber/lo"
 	"os"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -52,12 +53,16 @@ func NewRepository(_ *do.Injector) (core.EventRepository, error) {
 	}, nil
 }
 
-func (r Repository) SaveRaw(ctx context.Context, raw []byte) error {
-	var jsonData bson.M
-	if err := bson.UnmarshalExtJSON(raw, false, &jsonData); err != nil {
-		return err
-	}
-	_, err := r.coll.InsertOne(context.TODO(), jsonData)
+func (r Repository) SaveRaw(ctx context.Context, raws ...[]byte) error {
+	datas := lo.Map(raws, func(raw []byte, _ int) bson.M {
+		var jsonData bson.M
+		if err := bson.UnmarshalExtJSON(raw, false, &jsonData); err != nil {
+			panic(err)
+		}
+		return jsonData
+	})
+
+	_, err := r.coll.InsertMany(ctx, datas)
 	if err != nil {
 		if !mongo.IsDuplicateKeyError(err) {
 			return err

@@ -18,9 +18,9 @@ type Forwarder interface{}
 type CommitAnalyzer interface{}
 
 type EventRepository interface {
-	SaveRaw(ctx context.Context, raw []byte) error
+	SaveRaw(ctx context.Context, raw ...[]byte) error
 }
 
 type EventsArchiver interface {
-	Archive(msg jetstream.Msg)
+	Archive(msg ...jetstream.Msg)
 }

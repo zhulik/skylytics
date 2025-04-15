@@ -5,6 +5,7 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/do"
+	"github.com/samber/lo"
 	"log"
 	"os"
 	"skylytics/internal/core"
@@ -41,12 +42,30 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 		eventRepository: do.MustInvoke[core.EventRepository](injector),
 	}
 
-	consCtx, err := cons.Consume(archiver.Archive)
-	if err != nil {
-		return nil, err
-	}
+	go func() {
+		n := 0
 
-	archiver.ctx = consCtx
+		// TODO: shutdown!
+		for {
+			batch, err := cons.Fetch(1000)
+			if err != nil {
+				log.Printf("error fetching events: %+v", err)
+				continue
+			}
+			log.Printf("Processing batch %d", n)
+			n++
+
+			msgs, _, _, ok := lo.Buffer(batch.Messages(), 100)
+			if !ok {
+				log.Printf("error batching events")
+				continue
+			}
+
+			archiver.Archive(msgs...)
+
+		}
+	}()
+
 	return &archiver, nil
 }
 
@@ -59,10 +78,17 @@ func (a EventsArchiver) HealthCheck() error {
 	return nil
 }
 
-func (a EventsArchiver) Archive(msg jetstream.Msg) {
-	msg.Ack()
+func (a EventsArchiver) Archive(msgs ...jetstream.Msg) {
+	events := lo.Map(msgs, func(item jetstream.Msg, _ int) []byte {
+		return item.Data()
+	})
 
-	if err := a.eventRepository.SaveRaw(context.TODO(), msg.Data()); err != nil {
-		log.Printf("error saving event: %+v", err)
+	if err := a.eventRepository.SaveRaw(context.TODO(), events...); err != nil {
+		log.Printf("error saving events: %+v", err)
+		return
 	}
+
+	lo.ForEach(msgs, func(item jetstream.Msg, _ int) {
+		item.Ack()
+	})
 }
