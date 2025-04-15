@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/samber/lo"
+	"log"
 	"os"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -62,12 +63,13 @@ func (r Repository) SaveRaw(ctx context.Context, raws ...[]byte) error {
 		return jsonData
 	})
 
-	_, err := r.coll.InsertMany(ctx, datas)
+	res, err := r.coll.InsertMany(ctx, datas)
 	if err != nil {
 		if !mongo.IsDuplicateKeyError(err) {
 			return err
 		}
 	}
+	log.Printf("Saved %d events: ", len(res.InsertedIDs))
 	return nil
 }
 
