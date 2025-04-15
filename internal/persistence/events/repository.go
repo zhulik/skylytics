@@ -35,13 +35,9 @@ func NewRepository(_ *do.Injector) (core.EventRepository, error) {
 	}
 
 	coll := client.Database("admin").Collection("events")
-	_, err = coll.Indexes().CreateMany(context.TODO(), []mongo.IndexModel{
-		{
-			Keys:    bson.D{{"did", 1}},
-			Options: options.Index().SetUnique(true),
-		}, {
-			Keys: bson.D{{"kind", 1}},
-		},
+	_, err = coll.Indexes().CreateMany(context.TODO(), []mongo.IndexModel{{
+		Keys: bson.D{{"kind", 1}},
+	},
 	})
 
 	if err != nil {
