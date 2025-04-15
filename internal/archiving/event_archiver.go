@@ -62,8 +62,6 @@ func (a EventsArchiver) HealthCheck() error {
 func (a EventsArchiver) Archive(msg jetstream.Msg) {
 	msg.Ack()
 
-	log.Println("Archiving event")
-
 	if err := a.eventRepository.SaveRaw(context.TODO(), msg.Data()); err != nil {
 		log.Printf("error saving event: %+v", err)
 	}
