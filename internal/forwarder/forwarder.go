@@ -91,7 +91,7 @@ func (f Forwarder) run() {
 	}
 }
 
-func countEvent(event *core.BlueskyEvent) {
+func countEvent(event core.BlueskyEvent) {
 	operation := ""
 	status := ""
 
