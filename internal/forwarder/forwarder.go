@@ -58,11 +58,6 @@ func New(i *do.Injector) (core.Forwarder, error) {
 		jetstream: js,
 	}
 
-	// lo.Must(js.CreateOrUpdateStream(context.Background(), jetstream.StreamConfig{
-	// 	Name:     "skylytics",
-	// 	Subjects: []string{"skylytics.>"},
-	// }))
-
 	go f.run()
 
 	return f, nil
