@@ -9,6 +9,8 @@ import (
 	"log"
 	"os"
 	"skylytics/internal/core"
+	"skylytics/pkg/async"
+	"time"
 )
 
 const (
@@ -47,18 +49,18 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 	go func() {
 		// TODO: shutdown!
 		for {
-			batch, err := cons.Fetch(batchSize)
+			batch, err := cons.Fetch(batchSize * 10)
 			if err != nil {
 				log.Printf("error fetching events: %+v", err)
 				continue
 			}
 
-			msgs, _, _, _ := lo.Buffer(batch.Messages(), batchSize)
-
-			err = archiver.Archive(msgs...)
-			if err != nil {
-				log.Printf("error archiving events: %+v", err)
-			} else {
+			for msgs := range async.Batcher(context.TODO(), batch.Messages(), batchSize, 1*time.Second) {
+				err = archiver.Archive(msgs...)
+				if err != nil {
+					log.Printf("error archiving events: %+v", err)
+					continue
+				}
 				log.Printf("Batch of %d elements archived", len(msgs))
 			}
 		}
