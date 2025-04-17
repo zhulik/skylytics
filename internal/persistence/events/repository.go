@@ -54,13 +54,14 @@ func NewRepository(_ *do.Injector) (core.EventRepository, error) {
 }
 
 func (r Repository) InsertRaw(ctx context.Context, raws ...[]byte) ([]any, error) {
-	datas := async.Map(raws, func(raw []byte) bson.M {
+	datas, err := async.AsyncMap(nil, raws, func(_ context.Context, raw []byte) (bson.M, error) {
 		var jsonData bson.M
-		if err := bson.UnmarshalExtJSON(raw, false, &jsonData); err != nil {
-			panic(err)
-		}
-		return jsonData
+		return jsonData, bson.UnmarshalExtJSON(raw, false, &jsonData)
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	res, err := r.coll.InsertMany(ctx, datas)
 	if err != nil {

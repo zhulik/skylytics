@@ -15,7 +15,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/samber/do"
-	"github.com/samber/lo"
 )
 
 var (
@@ -78,10 +77,15 @@ func (f Forwarder) run() {
 			} // TODO: log errors
 			countEvent(event)
 
+			payload, err := json.Marshal(event)
+			if err != nil {
+				continue
+			} // TODO: log errors
+
 			_, err = f.jetstream.Publish(
 				context.TODO(),
 				fmt.Sprintf("skylytics.events.%s", event.Kind),
-				lo.Must(json.Marshal(event)), // TODO: don't panic, log errors
+				payload,
 			)
 			if err != nil {
 				log.Printf("error publishing event: %+v", err)
