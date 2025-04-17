@@ -5,7 +5,6 @@ import (
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/do"
-	"github.com/samber/lo"
 	"log"
 	"os"
 	"skylytics/internal/core"
@@ -37,7 +36,7 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 		return nil, err
 	}
 
-	cons, err := js.Consumer(context.Background(), "skylytics", "events-archiver")
+	cons, err := js.Consumer(context.TODO(), "skylytics", "events-archiver")
 	if err != nil {
 		return nil, err
 	}
@@ -78,17 +77,15 @@ func (a EventsArchiver) HealthCheck() error {
 }
 
 func (a EventsArchiver) Archive(msgs ...jetstream.Msg) error {
-	events := lo.Map(msgs, func(item jetstream.Msg, _ int) []byte {
+	events := async.Map(msgs, func(item jetstream.Msg) []byte {
 		return item.Data()
 	})
 
-	if err := a.eventRepository.SaveRaw(context.TODO(), events...); err != nil {
+	if _, err := a.eventRepository.InsertRaw(context.TODO(), events...); err != nil {
 		return err
 	}
 
-	lo.ForEach(msgs, func(item jetstream.Msg, _ int) {
-		item.Ack()
+	return async.AsyncEach(nil, msgs, func(_ context.Context, item jetstream.Msg) error {
+		return item.Ack()
 	})
-
-	return nil
 }

@@ -75,10 +75,14 @@ func (f Forwarder) run() {
 			event, err := result.Unpack()
 			if err != nil {
 				continue
-			}
+			} // TODO: log errors
 			countEvent(event)
 
-			_, err = f.jetstream.Publish(context.Background(), fmt.Sprintf("skylytics.events.%s", event.Kind), lo.Must(json.Marshal(event)))
+			_, err = f.jetstream.Publish(
+				context.TODO(),
+				fmt.Sprintf("skylytics.events.%s", event.Kind),
+				lo.Must(json.Marshal(event)), // TODO: don't panic, log errors
+			)
 			if err != nil {
 				log.Printf("error publishing event: %+v", err)
 			}

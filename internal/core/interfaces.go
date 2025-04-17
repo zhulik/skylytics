@@ -18,7 +18,7 @@ type Forwarder interface{}
 type CommitAnalyzer interface{}
 
 type EventRepository interface {
-	SaveRaw(ctx context.Context, raw ...[]byte) error
+	InsertRaw(ctx context.Context, raw ...[]byte) ([]any, error)
 }
 
 type EventsArchiver interface {

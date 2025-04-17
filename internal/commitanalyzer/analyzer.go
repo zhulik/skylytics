@@ -41,7 +41,8 @@ func New(i *do.Injector) (core.CommitAnalyzer, error) {
 	if err != nil {
 		return nil, err
 	}
-	cons, err := js.Consumer(context.Background(), "skylytics", "commit-analyzer")
+
+	cons, err := js.Consumer(context.TODO(), "skylytics", "commit-analyzer")
 	if err != nil {
 		return nil, err
 	}
