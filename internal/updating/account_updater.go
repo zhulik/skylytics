@@ -2,20 +2,25 @@ package updating
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/do"
+	"github.com/samber/lo"
 	"log"
 	"os"
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
+	"skylytics/pkg/stormy"
 	"time"
 )
 
 type AccountUpdater struct {
+	accountRepo core.AccountRepository
+	stormy      *stormy.Client
 }
 
-func NewAccountUpdater(_ *do.Injector) (core.AccountUpdater, error) {
+func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 	url := os.Getenv("NATS_URL")
 	if url == "" {
 		url = nats.DefaultURL
@@ -36,7 +41,10 @@ func NewAccountUpdater(_ *do.Injector) (core.AccountUpdater, error) {
 		return nil, err
 	}
 
-	updater := AccountUpdater{}
+	updater := AccountUpdater{
+		accountRepo: do.MustInvoke[core.AccountRepository](injector),
+		stormy:      stormy.NewClient(),
+	}
 
 	go func() {
 		// TODO: shutdown!
@@ -50,7 +58,7 @@ func NewAccountUpdater(_ *do.Injector) (core.AccountUpdater, error) {
 			for msgs := range async.Batcher(context.TODO(), batch.Messages(), 25, 1*time.Second) {
 				err = updater.Update(msgs...)
 				if err != nil {
-					log.Printf("error updateing accounts: %+v", err)
+					log.Printf("error updating accounts: %+v", err)
 					continue
 				}
 			}
@@ -61,12 +69,29 @@ func NewAccountUpdater(_ *do.Injector) (core.AccountUpdater, error) {
 }
 
 func (a AccountUpdater) Update(msgs ...jetstream.Msg) error {
-	async.Each(msgs, func(msg jetstream.Msg) {
-		msg.Ack()
-	})
-	// TODO: fetch account from bluesky, update it in mongo
-	return nil
+	dids, err := async.AsyncMap(nil, msgs, func(_ context.Context, msg jetstream.Msg) (string, error) {
+		var event core.BlueskyEvent
 
+		if err := json.Unmarshal(msg.Data(), &event); err != nil {
+			return "", err
+		}
+		return event.Did, nil
+	})
+	if err != nil {
+		return err
+	}
+
+	dids = lo.Uniq(dids)
+
+	_, err = a.stormy.GetProfiles(context.TODO(), dids...)
+	if err != nil {
+		return err
+	}
+
+	// TODO: save to db:
+	// if did exists and event is account or identity - update
+	// if did does not exists - create
+	return nil
 }
 
 func (a AccountUpdater) HealthCheck() error {
