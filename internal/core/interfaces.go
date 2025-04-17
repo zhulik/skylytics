@@ -21,6 +21,14 @@ type EventRepository interface {
 	InsertRaw(ctx context.Context, raw ...[]byte) ([]any, error)
 }
 
+type AccountRepository interface {
+	InsertRaw(ctx context.Context, raw ...[]byte) ([]any, error)
+}
+
+type AccountUpdater interface {
+	Update(msg ...jetstream.Msg) error
+}
+
 type EventsArchiver interface {
 	Archive(msg ...jetstream.Msg) error
 }
