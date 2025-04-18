@@ -2,8 +2,8 @@ package accounts
 
 import (
 	"context"
-	"errors"
 	"os"
+	"skylytics/internal/persistence"
 	"skylytics/pkg/async"
 
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -14,10 +14,6 @@ import (
 	"github.com/samber/do"
 )
 
-var (
-	ErrNoMongodbURI = errors.New("no MONGODB_URI env provided")
-)
-
 type Repository struct {
 	client *mongo.Client
 	coll   *mongo.Collection
@@ -26,7 +22,7 @@ type Repository struct {
 func NewRepository(_ *do.Injector) (core.AccountRepository, error) {
 	uri := os.Getenv("MONGODB_URI")
 	if uri == "" {
-		return nil, ErrNoMongodbURI
+		return nil, persistence.ErrNoMongodbURI
 	}
 
 	client, err := mongo.Connect(options.Client().ApplyURI(uri))
