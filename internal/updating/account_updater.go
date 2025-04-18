@@ -71,7 +71,7 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 
 	updater.handle = handle
 
-	return updater, nil
+	return &updater, nil
 }
 
 func metricMiddleware(_ *resty.Client, response *resty.Response) error {
@@ -130,7 +130,7 @@ func (a AccountUpdater) Update(ctx context.Context, msgs ...jetstream.Msg) error
 }
 
 func (a AccountUpdater) HealthCheck() error {
-	return nil
+	return a.handle.Error()
 }
 
 func (a AccountUpdater) Shutdown() error {

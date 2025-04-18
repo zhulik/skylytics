@@ -32,6 +32,10 @@ type Forwarder struct {
 	handle *async.JobHandle[any]
 }
 
+func (f Forwarder) HealthCheck() error {
+	return f.handle.Error()
+}
+
 func (f Forwarder) Shutdown() error {
 	f.handle.Stop()
 	_, err := f.handle.Wait()

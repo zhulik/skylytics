@@ -61,7 +61,7 @@ func (a Analyzer) Shutdown() error {
 }
 
 func (a Analyzer) HealthCheck() error {
-	return nil
+	return a.handle.Error()
 }
 
 func (a Analyzer) Analyze(msg jetstream.Msg) error {

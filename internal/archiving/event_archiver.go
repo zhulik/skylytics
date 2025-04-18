@@ -56,7 +56,7 @@ func (a EventsArchiver) Shutdown() error {
 }
 
 func (a EventsArchiver) HealthCheck() error {
-	return nil
+	return a.handle.Error()
 }
 
 func (a EventsArchiver) Archive(ctx context.Context, msgs ...jetstream.Msg) error {
