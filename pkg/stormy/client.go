@@ -3,6 +3,7 @@ package stormy
 import (
 	"context"
 	"resty.dev/v3"
+	"time"
 )
 
 const (
@@ -28,7 +29,11 @@ func NewClient(config *ClientConfig) *Client {
 	}
 
 	return &Client{
-		client: client.SetBaseURL(baseURL),
+		client: client.
+			SetBaseURL(baseURL).
+			SetRetryCount(3).
+			SetRetryWaitTime(1 * time.Second).
+			SetRetryMaxWaitTime(5 * time.Second),
 	}
 }
 
