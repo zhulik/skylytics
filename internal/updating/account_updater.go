@@ -10,6 +10,7 @@ import (
 	"github.com/samber/do"
 	"github.com/samber/lo"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"log"
 	"net/url"
 	"resty.dev/v3"
 	"skylytics/internal/core"
@@ -102,6 +103,13 @@ func (a AccountUpdater) Update(ctx context.Context, msgs ...jetstream.Msg) error
 	}
 
 	dids = lo.Uniq(dids)
+
+	existing, err := a.accountRepo.ExistsByDID(ctx, dids...)
+	if err == nil {
+		log.Printf("Uniq dids in batch: %d, found %d existing accounts", len(dids), len(existing))
+	} else {
+		log.Printf("Error checking for existing accounts: %s", err)
+	}
 
 	profiles, err := a.stormy.GetProfiles(ctx, dids...)
 	if err != nil {

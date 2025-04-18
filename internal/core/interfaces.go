@@ -23,6 +23,7 @@ type EventRepository interface {
 
 type AccountRepository interface {
 	InsertRaw(ctx context.Context, raw ...[]byte) ([]any, error)
+	ExistsByDID(ctx context.Context, dids ...string) ([]string, error)
 }
 
 type AccountUpdater interface {

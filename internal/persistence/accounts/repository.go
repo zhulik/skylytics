@@ -50,6 +50,30 @@ func NewRepository(_ *do.Injector) (core.AccountRepository, error) {
 	}, nil
 }
 
+// ExistsByDID returns a list of DIDs that exist in the database.
+func (r Repository) ExistsByDID(ctx context.Context, dids ...string) ([]string, error) {
+	list, err := r.coll.Find(
+		ctx,
+		bson.D{{"did", bson.D{{"$in", dids}}}},
+		options.Find().SetProjection(bson.D{{"did", 1}}),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer list.Close(ctx)
+
+	ary := []bson.M{}
+
+	err = list.All(ctx, &ary)
+	if err != nil {
+		return nil, err
+	}
+
+	return async.Map(ary, func(item bson.M) string {
+		return item["did"].(string)
+	}), nil
+}
+
 func (r Repository) InsertRaw(ctx context.Context, raws ...[]byte) ([]any, error) {
 	datas, err := async.AsyncMap(nil, raws, func(_ context.Context, raw []byte) (bson.M, error) {
 		var jsonData bson.M
