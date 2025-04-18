@@ -91,7 +91,9 @@ func (a AccountUpdater) Update(msgs ...jetstream.Msg) error {
 	// TODO: save to db:
 	// if did exists and event is account or identity - update
 	// if did does not exists - create
-	return nil
+	return async.AsyncEach(nil, msgs, func(_ context.Context, msg jetstream.Msg) error {
+		return msg.Ack()
+	})
 }
 
 func (a AccountUpdater) HealthCheck() error {
