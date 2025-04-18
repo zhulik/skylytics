@@ -19,12 +19,13 @@ func Job[T any](job func(ctx context.Context) (T, error)) *JobHandle[T] {
 	}
 
 	go func() {
+		defer cancel()
+		
 		res, err := job(ctx)
 
 		handle.err.Store(&err)
 		handle.done <- NewResult(res, err)
 
-		cancel()
 	}()
 
 	return &handle

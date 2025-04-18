@@ -31,16 +31,6 @@ type Forwarder struct {
 	handle *async.JobHandle[any]
 }
 
-func (f Forwarder) HealthCheck() error {
-	return f.handle.Error()
-}
-
-func (f Forwarder) Shutdown() error {
-	f.handle.Stop()
-	_, err := f.handle.Wait()
-	return err
-}
-
 func New(i *do.Injector) (core.Forwarder, error) {
 	url := os.Getenv("NATS_URL")
 	if url == "" {
@@ -63,7 +53,23 @@ func New(i *do.Injector) (core.Forwarder, error) {
 	}
 
 	handle := async.Job(func(ctx context.Context) (any, error) {
-		return nil, f.run(ctx)
+		ch := f.sub.Chan()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return nil, nil
+			case result := <-ch:
+				event, err := result.Unpack()
+				if err != nil {
+					return nil, err
+				}
+				err = f.Forward(ctx, event)
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
 	})
 
 	f.handle = handle
@@ -71,34 +77,30 @@ func New(i *do.Injector) (core.Forwarder, error) {
 	return f, nil
 }
 
-func (f Forwarder) run(ctx context.Context) error {
-	ch := f.sub.Chan()
+func (f Forwarder) HealthCheck() error {
+	return f.handle.Error()
+}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
+func (f Forwarder) Shutdown() error {
+	f.handle.Stop()
+	_, err := f.handle.Wait()
+	return err
+}
 
-		case result := <-ch:
-			event, err := result.Unpack()
-			if err != nil {
-				return err
-			}
-			countEvent(event)
+func (f Forwarder) Forward(ctx context.Context, event core.BlueskyEvent) error {
+	countEvent(event)
 
-			payload, err := json.Marshal(event)
-			if err != nil {
-				return err
-			}
-
-			_, err = f.jetstream.Publish(
-				ctx,
-				fmt.Sprintf("skylytics.events.%s", event.Kind),
-				payload,
-			)
-			return err
-		}
+	payload, err := json.Marshal(event)
+	if err != nil {
+		return err
 	}
+
+	_, err = f.jetstream.Publish(
+		ctx,
+		fmt.Sprintf("skylytics.events.%s", event.Kind),
+		payload,
+	)
+	return err
 }
 
 func countEvent(event core.BlueskyEvent) {
