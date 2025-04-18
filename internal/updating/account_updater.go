@@ -20,7 +20,6 @@ import (
 )
 
 var (
-	// New API latency metric
 	apiLatency = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "stormy_request_latency",
@@ -44,21 +43,7 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 		stormy: stormy.NewClient(&stormy.ClientConfig{
 			TransportSettings: stormy.DefaultConfig.TransportSettings,
 
-			ResponseMiddlewares: []resty.ResponseMiddleware{func(client *resty.Client, response *resty.Response) error {
-				reqURL, err := url.Parse(response.Request.URL)
-				if err != nil {
-					return err
-				}
-
-				statusCode := response.StatusCode()
-				apiLatency.WithLabelValues(
-					response.Request.Method,
-					reqURL.Path,
-					fmt.Sprintf("%d", statusCode),
-				).Observe(response.Duration().Seconds())
-
-				return nil
-			}},
+			ResponseMiddlewares: []resty.ResponseMiddleware{metricMiddleware},
 		}),
 	}
 
@@ -87,6 +72,22 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 	updater.handle = handle
 
 	return updater, nil
+}
+
+func metricMiddleware(_ *resty.Client, response *resty.Response) error {
+	reqURL, err := url.Parse(response.Request.URL)
+	if err != nil {
+		return err
+	}
+
+	statusCode := response.StatusCode()
+	apiLatency.WithLabelValues(
+		response.Request.Method,
+		reqURL.Path,
+		fmt.Sprintf("%d", statusCode),
+	).Observe(response.Duration().Seconds())
+
+	return nil
 }
 
 func (a AccountUpdater) Update(ctx context.Context, msgs ...jetstream.Msg) error {
