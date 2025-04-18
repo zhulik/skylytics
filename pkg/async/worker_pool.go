@@ -29,5 +29,9 @@ func WorkerPool[T any](ctx context.Context, concurrency int, ch <-chan T, fn Eac
 		}(m)
 	}
 
+	err := aErr.Load()
+	if err != nil {
+		return *err
+	}
 	return nil
 }
