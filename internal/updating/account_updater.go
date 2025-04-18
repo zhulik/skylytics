@@ -83,14 +83,23 @@ func (a AccountUpdater) Update(msgs ...jetstream.Msg) error {
 
 	dids = lo.Uniq(dids)
 
-	_, err = a.stormy.GetProfiles(context.TODO(), dids...)
+	profiles, err := a.stormy.GetProfiles(context.TODO(), dids...)
 	if err != nil {
 		return err
 	}
 
-	// TODO: save to db:
-	// if did exists and event is account or identity - update
-	// if did does not exists - create
+	serializedProfiles, err := async.AsyncMap(nil, profiles, func(_ context.Context, profile *stormy.Profile) ([]byte, error) {
+		return json.Marshal(profile)
+	})
+	if err != nil {
+		return err
+	}
+
+	_, err = a.accountRepo.InsertRaw(context.TODO(), serializedProfiles...)
+	if err != nil {
+		return err
+	}
+
 	return async.AsyncEach(nil, msgs, func(_ context.Context, msg jetstream.Msg) error {
 		return msg.Ack()
 	})

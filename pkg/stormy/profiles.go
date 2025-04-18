@@ -23,6 +23,10 @@ type Profile struct {
 
 	IndexedAt time.Time `json:"indexedAt"`
 	CreatedAt time.Time `json:"createdAt"`
+
+	FollowersCount int `json:"followersCount"`
+	FollowsCount   int `json:"followsCount"`
+	PostsCount     int `json:"postsCount"`
 }
 
 // https://docs.bsky.app/docs/api/app-bsky-actor-get-profiles
