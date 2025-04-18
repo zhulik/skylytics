@@ -63,7 +63,7 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 	}
 
 	handle := async.Job(func(ctx context.Context) (any, error) {
-		ch, err := inats.Consume(ctx, "skylytics", "account_updater", 1000)
+		ch, err := inats.Consume(ctx, "skylytics", "account-updater", 1000)
 		if err != nil {
 			return nil, err
 		}
