@@ -98,11 +98,9 @@ func (a AccountUpdater) Update(msgs ...jetstream.Msg) error {
 
 	_, err = a.accountRepo.InsertRaw(context.TODO(), serializedProfiles...)
 	if err != nil {
-		if mongo.IsDuplicateKeyError(err) {
-			return nil
+		if !mongo.IsDuplicateKeyError(err) {
+			return err
 		}
-
-		return err
 	}
 
 	return async.AsyncEach(nil, msgs, func(_ context.Context, msg jetstream.Msg) error {
