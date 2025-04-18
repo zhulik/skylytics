@@ -18,6 +18,7 @@ const (
 
 type EventsArchiver struct {
 	eventRepository core.EventRepository
+	handle          *async.JobHandle[any]
 }
 
 func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
@@ -45,29 +46,39 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 		eventRepository: do.MustInvoke[core.EventRepository](injector),
 	}
 
-	go func() {
-		// TODO: shutdown!
+	handle := async.Job(func(ctx context.Context) (any, error) {
 		for {
-			batch, err := cons.Fetch(batchSize * 10)
-			if err != nil {
-				log.Printf("error fetching events: %+v", err)
-				continue
-			}
-
-			for msgs := range async.Batcher(context.TODO(), batch.Messages(), batchSize, 1*time.Second) {
-				err = archiver.Archive(context.TODO(), msgs...)
+			select {
+			case <-ctx.Done():
+				return nil, nil
+			default:
+				batch, err := cons.Fetch(batchSize * 10)
 				if err != nil {
-					log.Printf("error archiving events: %+v", err)
+					log.Printf("error fetching events: %+v", err)
+					continue
+				}
+
+				for msgs := range async.Batcher(ctx, batch.Messages(), batchSize, 1*time.Second) {
+					err = archiver.Archive(ctx, msgs...)
+					if err != nil {
+						log.Printf("error archiving events: %+v", err)
+					}
 				}
 			}
+
 		}
-	}()
+	})
+
+	archiver.handle = handle
 
 	return &archiver, nil
 }
 
 func (a EventsArchiver) Shutdown() error {
-	return nil
+	a.handle.Stop()
+	_, err := a.handle.Wait()
+	return err
+
 }
 
 func (a EventsArchiver) HealthCheck() error {

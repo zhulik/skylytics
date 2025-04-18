@@ -37,6 +37,8 @@ var (
 type AccountUpdater struct {
 	accountRepo core.AccountRepository
 	stormy      *stormy.Client
+
+	handle *async.JobHandle[any]
 }
 
 func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
@@ -83,32 +85,38 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 		}),
 	}
 
-	go func() {
-		// TODO: shutdown!
+	handle := async.Job(func(ctx context.Context) (any, error) {
 		for {
+			select {
+			case <-ctx.Done():
+				return nil, nil
 
-			batch, err := cons.Fetch(100)
-			if err != nil {
-				log.Printf("error fetching events: %+v", err)
-				continue
+			default:
+				batch, err := cons.Fetch(100)
+				if err != nil {
+					log.Printf("error fetching events: %+v", err)
+					continue
+				}
+
+				wg := &sync.WaitGroup{}
+
+				for msgs := range async.Batcher(ctx, batch.Messages(), 25, 1*time.Second) {
+					wg.Add(1)
+					go func(msgs []jetstream.Msg) {
+						defer wg.Done()
+						err = updater.Update(ctx, msgs...)
+						if err != nil {
+							log.Printf("error updating accounts: %+v", err)
+						}
+					}(msgs)
+				}
+
+				wg.Wait()
 			}
-
-			wg := &sync.WaitGroup{}
-
-			for msgs := range async.Batcher(context.TODO(), batch.Messages(), 25, 1*time.Second) {
-				wg.Add(1)
-				go func(msgs []jetstream.Msg) {
-					defer wg.Done()
-					err = updater.Update(context.TODO(), msgs...)
-					if err != nil {
-						log.Printf("error updating accounts: %+v", err)
-					}
-				}(msgs)
-			}
-
-			wg.Wait()
 		}
-	}()
+	})
+
+	updater.handle = handle
 
 	return updater, nil
 }
@@ -157,5 +165,7 @@ func (a AccountUpdater) HealthCheck() error {
 }
 
 func (a AccountUpdater) Shutdown() error {
-	return nil
+	a.handle.Stop()
+	_, err := a.handle.Wait()
+	return err
 }

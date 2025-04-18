@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"skylytics/pkg/async"
 
 	"skylytics/internal/core"
 
@@ -25,14 +26,16 @@ var (
 )
 
 type Forwarder struct {
-	stop      chan any
 	sub       core.BlueskySubscriber
 	jetstream jetstream.JetStream
+
+	handle *async.JobHandle[any]
 }
 
 func (f Forwarder) Shutdown() error {
-	f.stop <- true
-	return nil
+	f.handle.Stop()
+	_, err := f.handle.Wait()
+	return err
 }
 
 func New(i *do.Injector) (core.Forwarder, error) {
@@ -52,23 +55,26 @@ func New(i *do.Injector) (core.Forwarder, error) {
 	}
 
 	f := Forwarder{
-		stop:      make(chan any),
 		sub:       do.MustInvoke[core.BlueskySubscriber](i),
 		jetstream: js,
 	}
 
-	go f.run()
+	handle := async.Job(func(ctx context.Context) (any, error) {
+		return nil, f.run(ctx)
+	})
+
+	f.handle = handle
 
 	return f, nil
 }
 
-func (f Forwarder) run() {
+func (f Forwarder) run(ctx context.Context) error {
 	ch := f.sub.Chan()
 
 	for {
 		select {
-		case <-f.stop:
-			return
+		case <-ctx.Done():
+			return nil
 
 		case result := <-ch:
 			event, err := result.Unpack()
@@ -83,7 +89,7 @@ func (f Forwarder) run() {
 			} // TODO: log errors
 
 			_, err = f.jetstream.Publish(
-				context.TODO(),
+				ctx,
 				fmt.Sprintf("skylytics.events.%s", event.Kind),
 				payload,
 			)
