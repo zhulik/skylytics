@@ -106,7 +106,7 @@ func (a AccountUpdater) Update(ctx context.Context, msgs ...jetstream.Msg) error
 
 	existing, err := a.accountRepo.ExistsByDID(ctx, dids...)
 	if err == nil {
-		log.Printf("Uniq dids in batch: %d, to create: %d", len(dids)-len(existing))
+		log.Printf("Uniq dids in batch: %d, to create: %d", len(dids), len(dids)-len(existing))
 	} else {
 		log.Printf("Error checking for existing accounts: %s", err)
 	}
