@@ -49,6 +49,10 @@ func main() {
 		do.Provide[core.AccountUpdater](injector, updating.NewAccountUpdater)
 		do.MustInvoke[core.AccountUpdater](injector)
 
+	case "metrics-server":
+		do.Provide[core.MetricsCollector](injector, metrics.NewCollector)
+		do.MustInvoke[core.MetricsCollector](injector)
+
 	default:
 		log.Fatalf("unknown command: %s", command)
 	}

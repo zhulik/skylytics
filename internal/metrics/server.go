@@ -19,14 +19,6 @@ type HTTPServer struct {
 	srv *http.Server
 }
 
-func (s HTTPServer) Shutdown() error {
-	return s.srv.Shutdown(context.Background())
-}
-
-func (s HTTPServer) HealthCheck() error {
-	return nil
-}
-
 func NewHTTPServer(i *do.Injector) (core.MetricsServer, error) {
 	srv := &http.Server{Addr: ":8080"}
 
@@ -53,4 +45,12 @@ func NewHTTPServer(i *do.Injector) (core.MetricsServer, error) {
 	go srv.Serve(ln)
 
 	return HTTPServer{srv}, nil
+}
+
+func (s HTTPServer) Shutdown() error {
+	return s.srv.Shutdown(context.Background())
+}
+
+func (s HTTPServer) HealthCheck() error {
+	return nil
 }

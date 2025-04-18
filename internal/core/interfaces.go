@@ -32,3 +32,5 @@ type AccountUpdater interface {
 type EventsArchiver interface {
 	Archive(ctx context.Context, msg ...jetstream.Msg) error
 }
+
+type MetricsCollector interface{}
