@@ -53,20 +53,18 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 			return nil, err
 		}
 
-		for results := range async.Batcher(ctx, ch, 25, 1*time.Second) {
-			msgs, err := async.UnpackAll(results)
+		batched := async.Batcher(ctx, ch, 25, 1*time.Second)
 
-			if err != nil {
-				return nil, err
-			}
+		return nil, async.WorkerPool(ctx, 25, batched,
+			func(ctx context.Context, results []async.Result[jetstream.Msg]) error {
+				msgs, err := async.UnpackAll(results)
+				if err != nil {
+					return err
+				}
 
-			err = updater.Update(ctx, msgs...)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		return nil, nil
+				return updater.Update(ctx, msgs...)
+			},
+		)
 	})
 
 	updater.handle = handle
