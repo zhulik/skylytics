@@ -3,7 +3,6 @@ package stormy
 import (
 	"context"
 	"resty.dev/v3"
-	"time"
 )
 
 const (
@@ -14,18 +13,22 @@ type Client struct {
 	client *resty.Client
 }
 
-func NewClient() *Client {
-	client := resty.NewWithTransportSettings(&resty.TransportSettings{
-		DialerTimeout:         1 * time.Second,
-		DialerKeepAlive:       1 * time.Second,
-		IdleConnTimeout:       1 * time.Second,
-		TLSHandshakeTimeout:   1 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		ResponseHeaderTimeout: 1 * time.Second,
-	})
+func NewClient(config *ClientConfig) *Client {
+	if config == nil {
+		config = DefaultConfig
+	}
+	client := resty.NewWithTransportSettings(config.TransportSettings)
+
+	for _, middleware := range config.RequestMiddlewares {
+		client.AddRequestMiddleware(middleware)
+	}
+
+	for _, middleware := range config.ResponseMiddlewares {
+		client.AddResponseMiddleware(middleware)
+	}
 
 	return &Client{
-		client: client,
+		client: client.SetBaseURL(baseURL),
 	}
 }
 

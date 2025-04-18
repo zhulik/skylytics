@@ -9,7 +9,9 @@ import (
 	"github.com/samber/lo"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"log"
+	"net/url"
 	"os"
+	"resty.dev/v3"
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
@@ -23,12 +25,12 @@ type AccountUpdater struct {
 }
 
 func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
-	url := os.Getenv("NATS_URL")
-	if url == "" {
-		url = nats.DefaultURL
+	natsURL := os.Getenv("NATS_URL")
+	if natsURL == "" {
+		natsURL = nats.DefaultURL
 	}
 
-	nc, err := nats.Connect(url)
+	nc, err := nats.Connect(natsURL)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +47,19 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 
 	updater := AccountUpdater{
 		accountRepo: do.MustInvoke[core.AccountRepository](injector),
-		stormy:      stormy.NewClient(),
+		stormy: stormy.NewClient(&stormy.ClientConfig{
+			TransportSettings: stormy.DefaultConfig.TransportSettings,
+
+			ResponseMiddlewares: []resty.ResponseMiddleware{func(client *resty.Client, response *resty.Response) error {
+				reqURL, err := url.Parse(response.Request.URL)
+				if err != nil {
+					return err
+				}
+
+				log.Printf("%s %s: %s [%s]", response.Request.Method, reqURL.Path, response.Status(), response.Duration())
+				return nil
+			}},
+		}),
 	}
 
 	go func() {

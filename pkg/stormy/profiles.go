@@ -41,7 +41,7 @@ func (c *Client) GetProfiles(ctx context.Context, actors ...string) ([]*Profile,
 			"actors": actors,
 		}).
 		SetResult(&Profiles{}).
-		Get(baseURL + getProfiles)
+		Get(getProfiles)
 
 	if err != nil {
 		return nil, err
