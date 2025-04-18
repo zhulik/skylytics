@@ -7,6 +7,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/do"
 	"github.com/samber/lo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"log"
 	"os"
 	"skylytics/internal/core"
@@ -97,6 +98,10 @@ func (a AccountUpdater) Update(msgs ...jetstream.Msg) error {
 
 	_, err = a.accountRepo.InsertRaw(context.TODO(), serializedProfiles...)
 	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			return nil
+		}
+
 		return err
 	}
 
