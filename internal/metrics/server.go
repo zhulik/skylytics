@@ -32,6 +32,7 @@ func NewHTTPServer(i *do.Injector) (core.MetricsServer, error) {
 	mux.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		if err := i.HealthCheck(); err != nil {
+			log.Printf("Health check failed: %+v", err)
 			w.WriteHeader(500)
 		}
 	})
