@@ -3,8 +3,11 @@ package updating
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/samber/do"
 	"github.com/samber/lo"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -17,6 +20,18 @@ import (
 	"skylytics/pkg/stormy"
 	"sync"
 	"time"
+)
+
+var (
+	// New API latency metric
+	apiLatency = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "stormy_request_latency",
+			Help:    "Histogram of Stormy API request latency in seconds",
+			Buckets: []float64{0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10},
+		},
+		[]string{"method", "path", "status_code"},
+	)
 )
 
 type AccountUpdater struct {
@@ -56,7 +71,13 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 					return err
 				}
 
-				log.Printf("%s %s: %s [%s]", response.Request.Method, reqURL.Path, response.Status(), response.Duration())
+				statusCode := response.StatusCode()
+				apiLatency.WithLabelValues(
+					response.Request.Method,
+					reqURL.Path,
+					fmt.Sprintf("%d", statusCode),
+				).Observe(response.Duration().Seconds())
+
 				return nil
 			}},
 		}),
