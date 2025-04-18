@@ -20,20 +20,18 @@ type EventsArchiver struct {
 }
 
 func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
-
 	archiver := EventsArchiver{
 		eventRepository: do.MustInvoke[core.EventRepository](injector),
 	}
 
 	handle := async.Job(func(ctx context.Context) (any, error) {
-		ch, err := inats.Consume(ctx, "skylytics", "account_updater", batchSize*10)
+		ch, err := inats.Consume(ctx, "skylytics", "event_archiver", batchSize*10)
 		if err != nil {
 			return nil, err
 		}
 
 		for results := range async.Batcher(ctx, ch, batchSize, 1*time.Second) {
 			msgs, err := async.UnpackAll(results)
-
 			if err != nil {
 				return nil, err
 			}
@@ -43,7 +41,6 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 				return nil, err
 			}
 		}
-
 		return nil, nil
 	})
 
@@ -56,7 +53,6 @@ func (a EventsArchiver) Shutdown() error {
 	a.handle.Stop()
 	_, err := a.handle.Wait()
 	return err
-
 }
 
 func (a EventsArchiver) HealthCheck() error {
