@@ -13,6 +13,7 @@ import (
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
+	"sync"
 	"time"
 )
 
@@ -50,6 +51,8 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 	go func() {
 		// TODO: shutdown!
 		for {
+			wg := &sync.WaitGroup{}
+
 			batch, err := cons.Fetch(1000)
 			if err != nil {
 				log.Printf("error fetching events: %+v", err)
@@ -57,20 +60,25 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 			}
 
 			for msgs := range async.Batcher(context.TODO(), batch.Messages(), 25, 1*time.Second) {
-				err = updater.Update(msgs...)
-				if err != nil {
-					log.Printf("error updating accounts: %+v", err)
-					continue
-				}
+				wg.Add(1)
+				go func(msgs []jetstream.Msg) {
+					defer wg.Done()
+					err = updater.Update(context.TODO(), msgs...)
+					if err != nil {
+						log.Printf("error updating accounts: %+v", err)
+					}
+				}(msgs)
 			}
+
+			wg.Wait()
 		}
 	}()
 
 	return updater, nil
 }
 
-func (a AccountUpdater) Update(msgs ...jetstream.Msg) error {
-	dids, err := async.AsyncMap(nil, msgs, func(_ context.Context, msg jetstream.Msg) (string, error) {
+func (a AccountUpdater) Update(ctx context.Context, msgs ...jetstream.Msg) error {
+	dids, err := async.AsyncMap(ctx, msgs, func(_ context.Context, msg jetstream.Msg) (string, error) {
 		var event core.BlueskyEvent
 
 		if err := json.Unmarshal(msg.Data(), &event); err != nil {
@@ -84,7 +92,7 @@ func (a AccountUpdater) Update(msgs ...jetstream.Msg) error {
 
 	dids = lo.Uniq(dids)
 
-	profiles, err := a.stormy.GetProfiles(context.TODO(), dids...)
+	profiles, err := a.stormy.GetProfiles(ctx, dids...)
 	if err != nil {
 		return err
 	}

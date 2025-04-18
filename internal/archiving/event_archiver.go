@@ -55,7 +55,7 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 			}
 
 			for msgs := range async.Batcher(context.TODO(), batch.Messages(), batchSize, 1*time.Second) {
-				err = archiver.Archive(msgs...)
+				err = archiver.Archive(context.TODO(), msgs...)
 				if err != nil {
 					log.Printf("error archiving events: %+v", err)
 				}
@@ -74,7 +74,7 @@ func (a EventsArchiver) HealthCheck() error {
 	return nil
 }
 
-func (a EventsArchiver) Archive(msgs ...jetstream.Msg) error {
+func (a EventsArchiver) Archive(ctx context.Context, msgs ...jetstream.Msg) error {
 	events := async.Map(msgs, func(item jetstream.Msg) []byte {
 		return item.Data()
 	})
@@ -83,7 +83,7 @@ func (a EventsArchiver) Archive(msgs ...jetstream.Msg) error {
 		return err
 	}
 
-	return async.AsyncEach(nil, msgs, func(_ context.Context, item jetstream.Msg) error {
+	return async.AsyncEach(ctx, msgs, func(_ context.Context, item jetstream.Msg) error {
 		return item.Ack()
 	})
 }

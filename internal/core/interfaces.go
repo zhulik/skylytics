@@ -26,9 +26,9 @@ type AccountRepository interface {
 }
 
 type AccountUpdater interface {
-	Update(msg ...jetstream.Msg) error
+	Update(ctx context.Context, msg ...jetstream.Msg) error
 }
 
 type EventsArchiver interface {
-	Archive(msg ...jetstream.Msg) error
+	Archive(ctx context.Context, msg ...jetstream.Msg) error
 }
