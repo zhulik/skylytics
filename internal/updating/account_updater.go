@@ -88,8 +88,6 @@ func (a AccountUpdater) Update(msgs ...jetstream.Msg) error {
 		return err
 	}
 
-	log.Printf("Fetched profiles: %d", len(dids))
-
 	// TODO: save to db:
 	// if did exists and event is account or identity - update
 	// if did does not exists - create
