@@ -1,10 +1,10 @@
 package bluesky
 
 import (
+	"context"
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/samber/do"
-	"log"
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 )
@@ -37,7 +37,7 @@ func NewSubscriber(_ *do.Injector) (core.BlueskySubscriber, error) {
 		return nil, err
 	}
 
-	events := async.Generator(func(yield async.Yielder[core.BlueskyEvent]) error {
+	events := async.Generator(context.TODO(), func(_ context.Context, yield async.Yielder[core.BlueskyEvent]) error {
 		for {
 			_, message, err := conn.ReadMessage()
 			if err != nil {
@@ -45,14 +45,9 @@ func NewSubscriber(_ *do.Injector) (core.BlueskySubscriber, error) {
 			}
 
 			var event core.BlueskyEvent
-
 			err = json.Unmarshal(message, &event)
-			if err != nil {
-				log.Printf("error unmarshalling event: %+v", err)
-				continue
-			}
-
-			yield(event)
+			
+			yield(event, err)
 		}
 	})
 

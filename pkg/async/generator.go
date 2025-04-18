@@ -1,18 +1,22 @@
 package async
 
-import "github.com/samber/lo"
+import (
+	"context"
+	"github.com/samber/lo"
+)
 
-type Yielder[T any] func(T)
+type Yielder[T any] func(T, error)
+type Gen[T any] func(context.Context, Yielder[T]) error
 
-func Generator[T any](gen func(Yielder[T]) error) <-chan Result[T] {
+func Generator[T any](ctx context.Context, gen Gen[T]) <-chan Result[T] {
 	ch := make(chan Result[T], 1)
 
-	y := func(t T) {
-		ch <- NewResult(t)
+	y := func(t T, err error) {
+		ch <- NewResult(t, err)
 	}
 
 	go func() {
-		err := gen(y)
+		err := gen(ctx, y)
 		if err != nil {
 			ch <- NewResult[T](lo.Empty[T](), err)
 		}
