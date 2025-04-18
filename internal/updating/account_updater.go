@@ -51,13 +51,14 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 	go func() {
 		// TODO: shutdown!
 		for {
-			wg := &sync.WaitGroup{}
 
-			batch, err := cons.Fetch(1000)
+			batch, err := cons.Fetch(100)
 			if err != nil {
 				log.Printf("error fetching events: %+v", err)
 				continue
 			}
+
+			wg := &sync.WaitGroup{}
 
 			for msgs := range async.Batcher(context.TODO(), batch.Messages(), 25, 1*time.Second) {
 				wg.Add(1)
