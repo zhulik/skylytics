@@ -2,6 +2,8 @@ package metrics
 
 import (
 	"context"
+	"errors"
+	"github.com/samber/lo"
 	"log"
 	"net"
 	"net/http"
@@ -31,7 +33,11 @@ func NewHTTPServer(i *do.Injector) (core.MetricsServer, error) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		if err := i.HealthCheck(); err != nil {
+		checks := i.HealthCheck()
+		defer r.Body.Close()
+
+		err := errors.Join(lo.Values(checks)...)
+		if err != nil {
 			log.Printf("Health check failed: %+v", err)
 			w.WriteHeader(500)
 		}

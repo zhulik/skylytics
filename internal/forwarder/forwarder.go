@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"skylytics/pkg/async"
 
@@ -83,23 +82,21 @@ func (f Forwarder) run(ctx context.Context) error {
 		case result := <-ch:
 			event, err := result.Unpack()
 			if err != nil {
-				continue
-			} // TODO: log errors
+				return err
+			}
 			countEvent(event)
 
 			payload, err := json.Marshal(event)
 			if err != nil {
-				continue
-			} // TODO: log errors
+				return err
+			}
 
 			_, err = f.jetstream.Publish(
 				ctx,
 				fmt.Sprintf("skylytics.events.%s", event.Kind),
 				payload,
 			)
-			if err != nil {
-				log.Printf("error publishing event: %+v", err)
-			}
+			return err
 		}
 	}
 }
