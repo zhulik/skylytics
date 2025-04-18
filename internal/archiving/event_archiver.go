@@ -2,12 +2,10 @@ package archiving
 
 import (
 	"context"
-	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/do"
-	"log"
-	"os"
 	"skylytics/internal/core"
+	inats "skylytics/internal/nats"
 	"skylytics/pkg/async"
 	"time"
 )
@@ -22,51 +20,31 @@ type EventsArchiver struct {
 }
 
 func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
-	url := os.Getenv("NATS_URL")
-	if url == "" {
-		url = nats.DefaultURL
-	}
-
-	nc, err := nats.Connect(url)
-	if err != nil {
-		return nil, err
-	}
-
-	js, err := jetstream.New(nc)
-	if err != nil {
-		return nil, err
-	}
-
-	cons, err := js.Consumer(context.TODO(), "skylytics", "events-archiver")
-	if err != nil {
-		return nil, err
-	}
 
 	archiver := EventsArchiver{
 		eventRepository: do.MustInvoke[core.EventRepository](injector),
 	}
 
 	handle := async.Job(func(ctx context.Context) (any, error) {
-		for {
-			select {
-			case <-ctx.Done():
-				return nil, nil
-			default:
-				batch, err := cons.Fetch(batchSize * 10)
-				if err != nil {
-					log.Printf("error fetching events: %+v", err)
-					continue
-				}
+		ch, err := inats.Consume(ctx, "skylytics", "account_updater", batchSize*10)
+		if err != nil {
+			return nil, err
+		}
 
-				for msgs := range async.Batcher(ctx, batch.Messages(), batchSize, 1*time.Second) {
-					err = archiver.Archive(ctx, msgs...)
-					if err != nil {
-						log.Printf("error archiving events: %+v", err)
-					}
-				}
+		for results := range async.Batcher(ctx, ch, batchSize, 1*time.Second) {
+			msgs, err := async.UnpackAll(results)
+
+			if err != nil {
+				return nil, err
 			}
 
+			err = archiver.Archive(ctx, msgs...)
+			if err != nil {
+				return nil, err
+			}
 		}
+
+		return nil, nil
 	})
 
 	archiver.handle = handle

@@ -4,21 +4,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/samber/do"
 	"github.com/samber/lo"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"log"
 	"net/url"
-	"os"
 	"resty.dev/v3"
 	"skylytics/internal/core"
+	inats "skylytics/internal/nats"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
-	"sync"
 	"time"
 )
 
@@ -42,26 +39,6 @@ type AccountUpdater struct {
 }
 
 func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
-	natsURL := os.Getenv("NATS_URL")
-	if natsURL == "" {
-		natsURL = nats.DefaultURL
-	}
-
-	nc, err := nats.Connect(natsURL)
-	if err != nil {
-		return nil, err
-	}
-
-	js, err := jetstream.New(nc)
-	if err != nil {
-		return nil, err
-	}
-
-	cons, err := js.Consumer(context.TODO(), "skylytics", "account-updater")
-	if err != nil {
-		return nil, err
-	}
-
 	updater := AccountUpdater{
 		accountRepo: do.MustInvoke[core.AccountRepository](injector),
 		stormy: stormy.NewClient(&stormy.ClientConfig{
@@ -86,34 +63,25 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 	}
 
 	handle := async.Job(func(ctx context.Context) (any, error) {
-		for {
-			select {
-			case <-ctx.Done():
-				return nil, nil
+		ch, err := inats.Consume(ctx, "skylytics", "account_updater", 1000)
+		if err != nil {
+			return nil, err
+		}
 
-			default:
-				batch, err := cons.Fetch(100)
-				if err != nil {
-					log.Printf("error fetching events: %+v", err)
-					continue
-				}
+		for results := range async.Batcher(ctx, ch, 25, 1*time.Second) {
+			msgs, err := async.UnpackAll(results)
 
-				wg := &sync.WaitGroup{}
+			if err != nil {
+				return nil, err
+			}
 
-				for msgs := range async.Batcher(ctx, batch.Messages(), 25, 1*time.Second) {
-					wg.Add(1)
-					go func(msgs []jetstream.Msg) {
-						defer wg.Done()
-						err = updater.Update(ctx, msgs...)
-						if err != nil {
-							log.Printf("error updating accounts: %+v", err)
-						}
-					}(msgs)
-				}
-
-				wg.Wait()
+			err = updater.Update(ctx, msgs...)
+			if err != nil {
+				return nil, err
 			}
 		}
+
+		return nil, nil
 	})
 
 	updater.handle = handle
