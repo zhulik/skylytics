@@ -52,12 +52,23 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 		if err != nil {
 			return nil, err
 		}
+		//
+		//batched := async.Batched(ctx, ch, 100, 1*time.Second)
+		////
+		//filtered := async.Mapped[[]jetstream.Msg, []jetstream.Msg](ctx, batched, func(ctx context.Context, msgs []jetstream.Msg) ([]jetstream.Msg, error) {
+		//	exists, err := updater.accountRepo.ExistsByDID(ctx)
+		//	return nil, nil
+		//})
+		//
+		//ch = async.Flattened(ctx, filtered)
+		//
+		// TODO: batch in 100, check filter out existing, unbatch, rebatch in 25
 
-		batched := async.Batcher(ctx, ch, 25, 1*time.Second)
+		batched := async.Batched(ctx, ch, 25, 1*time.Second)
 
 		return nil, async.WorkerPool(ctx, 25, batched,
-			func(ctx context.Context, results []async.Result[jetstream.Msg]) error {
-				msgs, err := async.UnpackAll(results)
+			func(ctx context.Context, results async.Result[[]jetstream.Msg]) error {
+				msgs, err := results.Unpack()
 				if err != nil {
 					return err
 				}

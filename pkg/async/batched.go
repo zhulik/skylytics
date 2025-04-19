@@ -2,11 +2,12 @@ package async
 
 import (
 	"context"
+	"github.com/samber/lo"
 	"time"
 )
 
-func Batcher[T any](ctx context.Context, ch <-chan T, batchSize int, timeout time.Duration) <-chan []T {
-	batchChan := make(chan []T, 1)
+func Batched[T any](ctx context.Context, ch <-chan Result[T], batchSize int, timeout time.Duration) <-chan Result[[]T] {
+	batchChan := make(chan Result[[]T], 1)
 
 	go func() {
 		ticker := time.NewTicker(timeout)
@@ -23,7 +24,7 @@ func Batcher[T any](ctx context.Context, ch <-chan T, batchSize int, timeout tim
 				return
 			}
 
-			batchChan <- buffer
+			batchChan <- NewResult(buffer)
 			buffer = make([]T, 0, batchSize)
 		}
 
@@ -36,9 +37,14 @@ func Batcher[T any](ctx context.Context, ch <-chan T, batchSize int, timeout tim
 			case <-ticker.C:
 				sendReset()
 
-			case item, ok := <-ch:
+			case res, ok := <-ch:
 				if !ok {
 					sendReset()
+					return
+				}
+				item, err := res.Unpack()
+				if err != nil {
+					batchChan <- NewResult(lo.Empty[[]T](), err)
 					return
 				}
 				buffer = append(buffer, item)

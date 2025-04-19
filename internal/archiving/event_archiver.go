@@ -30,8 +30,8 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 			return nil, err
 		}
 
-		for results := range async.Batcher(ctx, ch, batchSize, 1*time.Second) {
-			msgs, err := async.UnpackAll(results)
+		for results := range async.Batched(ctx, ch, batchSize, 1*time.Second) {
+			msgs, err := results.Unpack()
 			if err != nil {
 				return nil, err
 			}
