@@ -4,19 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
+	"time"
+
+	"skylytics/internal/core"
+	inats "skylytics/internal/nats"
+	"skylytics/pkg/async"
+	"skylytics/pkg/stormy"
+
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/samber/do"
 	"github.com/samber/lo"
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"net/url"
 	"resty.dev/v3"
-	"skylytics/internal/core"
-	inats "skylytics/internal/nats"
-	"skylytics/pkg/async"
-	"skylytics/pkg/stormy"
-	"time"
 )
 
 var (
@@ -53,14 +55,14 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 			return nil, err
 		}
 		//
-		//batched := async.Batched(ctx, ch, 100, 1*time.Second)
-		////
-		//filtered := async.Mapped[[]jetstream.Msg, []jetstream.Msg](ctx, batched, func(ctx context.Context, msgs []jetstream.Msg) ([]jetstream.Msg, error) {
+		// batched := async.Batched(ctx, ch, 100, 1*time.Second)
+		// //
+		// filtered := async.Mapped[[]jetstream.Msg, []jetstream.Msg](ctx, batched, func(ctx context.Context, msgs []jetstream.Msg) ([]jetstream.Msg, error) {
 		//	exists, err := updater.accountRepo.ExistsByDID(ctx)
 		//	return nil, nil
-		//})
+		// })
 		//
-		//ch = async.Flattened(ctx, filtered)
+		// ch = async.Flattened(ctx, filtered)
 		//
 		// TODO: batch in 100, check filter out existing, unbatch, rebatch in 25
 
@@ -134,10 +136,12 @@ func (a AccountUpdater) Update(ctx context.Context, msgs ...jetstream.Msg) error
 		return err
 	}
 
-	_, err = a.accountRepo.InsertRaw(context.TODO(), serializedProfiles...)
-	if err != nil {
-		if !mongo.IsDuplicateKeyError(err) {
-			return err
+	if len(serializedProfiles) > 0 {
+		_, err = a.accountRepo.InsertRaw(context.TODO(), serializedProfiles...)
+		if err != nil {
+			if !mongo.IsDuplicateKeyError(err) {
+				return err
+			}
 		}
 	}
 
