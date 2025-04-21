@@ -46,6 +46,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				_, err = updater.accountRepo.InsertRaw(ctx, serializedProfiles...)
 				if err != nil {
 					if !mongo.IsDuplicateKeyError(err) {
+						// A concurrently running updater may have inserted the same account already
 						return nil, err
 					}
 				}
