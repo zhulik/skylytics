@@ -31,12 +31,8 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 			return nil, err
 		}
 
-		input := pips.MapInputChan(ctx, ch, func(ctx context.Context, a async.Result[jetstream.Msg]) (pips.D[jetstream.Msg], error) {
-			msg, err := a.Unpack()
-			if err != nil {
-				return nil, err
-			}
-			return pips.NewD(msg), nil
+		input := pips.MapInputChan(ctx, ch, func(ctx context.Context, a async.Result[jetstream.Msg]) (jetstream.Msg, error) {
+			return a.Unpack()
 		})
 
 		out := pips.New[jetstream.Msg, any]().
