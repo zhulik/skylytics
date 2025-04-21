@@ -2,18 +2,19 @@ package main
 
 import (
 	"context"
-	"github.com/k0kubun/pp"
 	"log"
 	"net/url"
-	"resty.dev/v3"
 	"skylytics/pkg/stormy"
+
+	"github.com/k0kubun/pp"
+	"resty.dev/v3"
 )
 
 func main() {
 	client := stormy.NewClient(&stormy.ClientConfig{
 		TransportSettings: stormy.DefaultConfig.TransportSettings,
 
-		ResponseMiddlewares: []resty.ResponseMiddleware{func(client *resty.Client, response *resty.Response) error {
+		ResponseMiddlewares: []resty.ResponseMiddleware{func(_ *resty.Client, response *resty.Response) error {
 			reqURL, err := url.Parse(response.Request.URL)
 			if err != nil {
 				return err

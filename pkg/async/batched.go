@@ -2,9 +2,11 @@ package async
 
 import (
 	"context"
-	"github.com/samber/lo"
-	"github.com/zhulik/pips"
 	"time"
+
+	"github.com/samber/lo"
+
+	"github.com/zhulik/pips"
 )
 
 func Batched[T any](ctx context.Context, ch <-chan pips.D[T], batchSize int, timeout time.Duration) <-chan pips.D[[]T] {

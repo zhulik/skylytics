@@ -1,4 +1,3 @@
 golang 1.24.2
-ko 0.17.1
-lazydocker 0.24.1
+golangci-lint 2.1.2
 task 3.42.1

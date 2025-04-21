@@ -3,11 +3,13 @@ package bluesky
 import (
 	"context"
 	"encoding/json"
-	"github.com/gorilla/websocket"
-	"github.com/samber/do"
-	"github.com/zhulik/pips"
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
+
+	"github.com/gorilla/websocket"
+	"github.com/samber/do"
+
+	"github.com/zhulik/pips"
 )
 
 const (
@@ -20,8 +22,7 @@ type Subscriber struct {
 }
 
 func (s Subscriber) Shutdown() error {
-	s.conn.Close()
-	return nil
+	return s.conn.Close()
 }
 
 func (s Subscriber) HealthCheck() error {

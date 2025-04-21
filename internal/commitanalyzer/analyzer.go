@@ -3,9 +3,10 @@ package commitanalyzer
 import (
 	"context"
 	"encoding/json"
+	"skylytics/pkg/async"
+
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
-	"skylytics/pkg/async"
 
 	"skylytics/internal/core"
 	inats "skylytics/internal/nats"
@@ -27,7 +28,7 @@ type Analyzer struct {
 	handle *async.JobHandle[any]
 }
 
-func New(i *do.Injector) (core.CommitAnalyzer, error) {
+func New(_ *do.Injector) (core.CommitAnalyzer, error) {
 	analyzer := Analyzer{}
 
 	analyzer.handle = async.Job(func(ctx context.Context) (any, error) {
@@ -56,7 +57,7 @@ func (a Analyzer) HealthCheck() error {
 }
 
 func (a Analyzer) Analyze(_ context.Context, msg jetstream.Msg) (any, error) {
-	msg.Ack()
+	msg.Ack() //nolint:errcheck
 
 	event := core.BlueskyEvent{}
 	err := json.Unmarshal(msg.Data(), &event)

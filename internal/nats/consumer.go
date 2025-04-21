@@ -2,11 +2,13 @@ package nats
 
 import (
 	"context"
-	"github.com/nats-io/nats.go"
-	"github.com/nats-io/nats.go/jetstream"
-	"github.com/zhulik/pips"
 	"os"
 	"skylytics/pkg/async"
+
+	"github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
+
+	"github.com/zhulik/pips"
 )
 
 func Consume(ctx context.Context, stream, name string, batchSize int) (<-chan pips.D[jetstream.Msg], error) {
@@ -14,7 +16,7 @@ func Consume(ctx context.Context, stream, name string, batchSize int) (<-chan pi
 	if url == "" {
 		url = nats.DefaultURL
 	}
- 
+
 	nc, err := nats.Connect(url)
 	if err != nil {
 		return nil, err

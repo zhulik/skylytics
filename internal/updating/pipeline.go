@@ -3,18 +3,20 @@ package updating
 import (
 	"context"
 	"encoding/json"
-	"github.com/nats-io/nats.go/jetstream"
-	"github.com/samber/lo"
-	"github.com/zhulik/pips"
-	"github.com/zhulik/pips/apply"
-	"go.mongodb.org/mongo-driver/v2/mongo"
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
+
+	"github.com/nats-io/nats.go/jetstream"
+	"github.com/samber/lo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+
+	"github.com/zhulik/pips"
+	"github.com/zhulik/pips/apply"
 )
 
 var (
-	parseDIDs = apply.Map(func(ctx context.Context, msg jetstream.Msg) (msgWrap[string], error) {
+	parseDIDs = apply.Map(func(_ context.Context, msg jetstream.Msg) (msgWrap[string], error) {
 		var event core.BlueskyEvent
 		err := json.Unmarshal(msg.Data(), &event)
 		return msgWrap[string]{msg, event.Did}, err
@@ -51,7 +53,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					}
 				}
 				lo.ForEach(wraps, func(item msgWrap[string], _ int) {
-					item.msg.Ack()
+					item.msg.Ack() //nolint:errcheck
 				})
 
 				return nil, nil
@@ -83,7 +85,7 @@ func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
 
 		return lo.Reject(wraps, func(item msgWrap[string], _ int) bool {
 			if lo.Contains(existing, item.data) {
-				item.msg.Ack()
+				item.msg.Ack() //nolint:errcheck
 				return true
 			}
 			return false

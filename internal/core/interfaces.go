@@ -2,7 +2,9 @@ package core
 
 import (
 	"context"
+
 	"github.com/nats-io/nats.go/jetstream"
+
 	"github.com/zhulik/pips"
 )
 

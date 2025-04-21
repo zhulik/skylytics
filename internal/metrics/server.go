@@ -3,10 +3,12 @@ package metrics
 import (
 	"context"
 	"errors"
-	"github.com/samber/lo"
 	"log"
 	"net"
 	"net/http"
+	"time"
+
+	"github.com/samber/lo"
 
 	"skylytics/internal/core"
 
@@ -20,7 +22,13 @@ type HTTPServer struct {
 }
 
 func NewHTTPServer(i *do.Injector) (core.MetricsServer, error) {
-	srv := &http.Server{Addr: ":8080"}
+	srv := &http.Server{
+		Addr:              ":8080",
+		ReadHeaderTimeout: time.Second,
+		WriteTimeout:      time.Second,
+		ReadTimeout:       time.Second,
+		IdleTimeout:       time.Second,
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/metrics", promhttp.Handler().ServeHTTP)
@@ -42,7 +50,7 @@ func NewHTTPServer(i *do.Injector) (core.MetricsServer, error) {
 		return nil, err
 	}
 	log.Println("Starting HTTP server at", srv.Addr)
-	go srv.Serve(ln)
+	go srv.Serve(ln) //nolint:errcheck
 
 	return HTTPServer{srv}, nil
 }

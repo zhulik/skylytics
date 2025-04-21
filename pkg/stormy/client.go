@@ -2,8 +2,9 @@ package stormy
 
 import (
 	"context"
-	"resty.dev/v3"
 	"time"
+
+	"resty.dev/v3"
 )
 
 const (

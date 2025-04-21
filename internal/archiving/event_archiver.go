@@ -2,13 +2,15 @@ package archiving
 
 import (
 	"context"
-	"github.com/nats-io/nats.go/jetstream"
-	"github.com/samber/do"
-	"github.com/zhulik/pips"
-	"github.com/zhulik/pips/apply"
 	"skylytics/internal/core"
 	inats "skylytics/internal/nats"
 	"skylytics/pkg/async"
+
+	"github.com/nats-io/nats.go/jetstream"
+	"github.com/samber/do"
+
+	"github.com/zhulik/pips"
+	"github.com/zhulik/pips/apply"
 )
 
 const (

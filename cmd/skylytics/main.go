@@ -9,12 +9,13 @@ import (
 	"skylytics/internal/updating"
 	"syscall"
 
-	"github.com/samber/do"
 	"skylytics/internal/bluesky"
 	"skylytics/internal/commitanalyzer"
 	"skylytics/internal/core"
 	"skylytics/internal/forwarder"
 	"skylytics/internal/metrics"
+
+	"github.com/samber/do"
 )
 
 func main() {

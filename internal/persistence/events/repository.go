@@ -6,10 +6,11 @@ import (
 	"skylytics/internal/persistence"
 	"skylytics/pkg/async"
 
+	"skylytics/internal/core"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"skylytics/internal/core"
 
 	"github.com/samber/do"
 )
@@ -33,9 +34,9 @@ func NewRepository(_ *do.Injector) (core.EventRepository, error) {
 	coll := client.Database("admin").Collection("events")
 	_, err = coll.Indexes().CreateMany(context.TODO(), []mongo.IndexModel{
 		{
-			Keys: bson.D{{"kind", 1}},
+			Keys: bson.D{{Key: "kind", Value: 1}},
 		}, {
-			Keys: bson.D{{"did", 1}},
+			Keys: bson.D{{Key: "did", Value: 1}},
 		},
 	})
 
@@ -50,7 +51,7 @@ func NewRepository(_ *do.Injector) (core.EventRepository, error) {
 }
 
 func (r Repository) InsertRaw(ctx context.Context, raws ...[]byte) ([]any, error) {
-	datas, err := async.AsyncMap(nil, raws, func(_ context.Context, raw []byte) (bson.M, error) {
+	datas, err := async.AsyncMap(ctx, raws, func(_ context.Context, raw []byte) (bson.M, error) {
 		var jsonData bson.M
 		return jsonData, bson.UnmarshalExtJSON(raw, false, &jsonData)
 	})

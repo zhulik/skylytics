@@ -2,8 +2,9 @@ package async
 
 import (
 	"context"
-	"github.com/zhulik/pips"
 	"sync/atomic"
+
+	"github.com/zhulik/pips"
 )
 
 type JobHandle[T any] struct {
@@ -26,7 +27,6 @@ func Job[T any](job func(ctx context.Context) (T, error)) *JobHandle[T] {
 
 		handle.err.Store(&err)
 		handle.done <- pips.NewD(res, err)
-
 	}()
 
 	return &handle

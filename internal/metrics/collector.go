@@ -2,17 +2,18 @@ package metrics
 
 import (
 	"context"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/samber/do"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"log"
 	"os"
 	"skylytics/internal/core"
 	"skylytics/internal/persistence"
 	"skylytics/pkg/async"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/samber/do"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 var (
@@ -26,7 +27,7 @@ type Collector struct {
 	handle *async.JobHandle[any]
 }
 
-func NewCollector(i *do.Injector) (core.MetricsCollector, error) {
+func NewCollector(_ *do.Injector) (core.MetricsCollector, error) {
 	collector := Collector{}
 
 	collector.handle = async.Job(func(ctx context.Context) (any, error) {
@@ -42,7 +43,7 @@ func NewCollector(i *do.Injector) (core.MetricsCollector, error) {
 			return nil, err
 		}
 
-		defer client.Disconnect(ctx)
+		defer client.Disconnect(ctx) //nolint:errcheck
 
 		accounts := client.Database("admin").Collection("accounts")
 		events := client.Database("admin").Collection("events")

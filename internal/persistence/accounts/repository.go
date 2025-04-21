@@ -6,10 +6,11 @@ import (
 	"skylytics/internal/persistence"
 	"skylytics/pkg/async"
 
+	"skylytics/internal/core"
+
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
-	"skylytics/internal/core"
 
 	"github.com/samber/do"
 )
@@ -32,7 +33,7 @@ func NewRepository(_ *do.Injector) (core.AccountRepository, error) {
 
 	coll := client.Database("admin").Collection("accounts")
 	_, err = coll.Indexes().CreateMany(context.TODO(), []mongo.IndexModel{{
-		Keys:    bson.D{{"did", 1}},
+		Keys:    bson.D{{Key: "did", Value: 1}},
 		Options: options.Index().SetUnique(true),
 	}})
 
@@ -50,8 +51,8 @@ func NewRepository(_ *do.Injector) (core.AccountRepository, error) {
 func (r Repository) ExistsByDID(ctx context.Context, dids ...string) ([]string, error) {
 	list, err := r.coll.Find(
 		ctx,
-		bson.D{{"did", bson.D{{"$in", dids}}}},
-		options.Find().SetProjection(bson.D{{"did", 1}}),
+		bson.D{{Key: "did", Value: bson.D{{Key: "$in", Value: dids}}}},
+		options.Find().SetProjection(bson.D{{Key: "did", Value: 1}}),
 	)
 	if err != nil {
 		return nil, err
@@ -71,7 +72,7 @@ func (r Repository) ExistsByDID(ctx context.Context, dids ...string) ([]string, 
 }
 
 func (r Repository) InsertRaw(ctx context.Context, raws ...[]byte) ([]any, error) {
-	datas, err := async.AsyncMap(nil, raws, func(_ context.Context, raw []byte) (bson.M, error) {
+	datas, err := async.AsyncMap(ctx, raws, func(_ context.Context, raw []byte) (bson.M, error) {
 		var jsonData bson.M
 		return jsonData, bson.UnmarshalExtJSON(raw, false, &jsonData)
 	})

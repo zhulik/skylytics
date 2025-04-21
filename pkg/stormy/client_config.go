@@ -1,8 +1,9 @@
 package stormy
 
 import (
-	"resty.dev/v3"
 	"time"
+
+	"resty.dev/v3"
 )
 
 type ClientConfig struct {

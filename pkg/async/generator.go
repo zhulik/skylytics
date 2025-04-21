@@ -2,7 +2,9 @@ package async
 
 import (
 	"context"
+
 	"github.com/samber/lo"
+
 	"github.com/zhulik/pips"
 )
 
