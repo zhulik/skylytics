@@ -1,6 +1,6 @@
 module skylytics
 
-go 1.24
+go 1.24.2
 
 require (
 	github.com/bluesky-social/jetstream v0.0.0-20250411043205-f4da85b6e06b
@@ -10,6 +10,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/do v1.6.0
 	github.com/samber/lo v1.38.1
+	github.com/zhulik/pips v0.5.1
 	go.mongodb.org/mongo-driver/v2 v2.2.0
 	resty.dev/v3 v3.0.0-beta.2
 )

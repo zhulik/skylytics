@@ -4,10 +4,11 @@ import (
 	"context"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/do"
+	"github.com/zhulik/pips"
+	"github.com/zhulik/pips/apply"
 	"skylytics/internal/core"
 	inats "skylytics/internal/nats"
 	"skylytics/pkg/async"
-	"time"
 )
 
 const (
@@ -30,17 +31,20 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 			return nil, err
 		}
 
-		for results := range async.Batched(ctx, ch, batchSize, 1*time.Second) {
-			msgs, err := results.Unpack()
+		input := pips.MapInputChan(ctx, ch, func(ctx context.Context, a async.Result[jetstream.Msg]) (pips.D[jetstream.Msg], error) {
+			msg, err := a.Unpack()
 			if err != nil {
 				return nil, err
 			}
+			return pips.NewD(msg), nil
+		})
 
-			err = archiver.Archive(ctx, msgs...)
-			if err != nil {
-				return nil, err
-			}
-		}
+		pips.New[jetstream.Msg, any]().
+			Then(apply.Batch(batchSize)).
+			Then(apply.Map(func(ctx context.Context, msgs []jetstream.Msg) (any, error) {
+				return nil, archiver.Archive(ctx, msgs...)
+			})).Run(ctx, input)
+
 		return nil, nil
 	})
 
