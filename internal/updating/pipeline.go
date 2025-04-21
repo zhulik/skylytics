@@ -7,7 +7,6 @@ import (
 	"github.com/samber/lo"
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
-	"go.mongodb.org/mongo-driver/v2/mongo"
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
@@ -45,9 +44,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 
 				_, err = updater.accountRepo.InsertRaw(ctx, serializedProfiles...)
 				if err != nil {
-					if !mongo.IsDuplicateKeyError(err) {
-						return nil, err
-					}
+					return nil, err
 				}
 				lo.ForEach(wraps, func(item msgWrap[string], _ int) {
 					item.msg.Ack()
