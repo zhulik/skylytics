@@ -7,6 +7,9 @@ import (
 	"os"
 	"skylytics/pkg/async"
 
+	"github.com/zhulik/pips"
+	"github.com/zhulik/pips/apply"
+
 	"skylytics/internal/core"
 
 	"github.com/bluesky-social/jetstream/pkg/models"
@@ -52,27 +55,28 @@ func New(i *do.Injector) (core.Forwarder, error) {
 		jetstream: js,
 	}
 
-	handle := async.Job(func(ctx context.Context) (any, error) {
-		ch := f.sub.Chan()
+	f.handle = async.Job(func(ctx context.Context) (any, error) {
+		ch := f.sub.Chan(ctx)
 
-		for {
-			select {
-			case <-ctx.Done():
-				return nil, nil
-			case result := <-ch:
-				event, err := result.Unpack()
-				if err != nil {
-					return nil, err
-				}
-				err = f.Forward(ctx, event)
-				if err != nil {
-					return nil, err
-				}
-			}
-		}
+		return nil, pips.New[core.BlueskyEvent, any]().
+			Then(apply.Each(countEvent)).
+			Then(
+				apply.Map(func(ctx context.Context, event core.BlueskyEvent) (any, error) {
+					payload, err := json.Marshal(event)
+					if err != nil {
+						return nil, err
+					}
+
+					return f.jetstream.Publish(
+						ctx,
+						fmt.Sprintf("skylytics.events.%s", event.Kind),
+						payload,
+					)
+				}),
+			).
+			Run(ctx, ch).
+			Wait(ctx)
 	})
-
-	f.handle = handle
 
 	return f, nil
 }
@@ -87,23 +91,7 @@ func (f Forwarder) Shutdown() error {
 	return err
 }
 
-func (f Forwarder) Forward(ctx context.Context, event core.BlueskyEvent) error {
-	countEvent(event)
-
-	payload, err := json.Marshal(event)
-	if err != nil {
-		return err
-	}
-
-	_, err = f.jetstream.Publish(
-		ctx,
-		fmt.Sprintf("skylytics.events.%s", event.Kind),
-		payload,
-	)
-	return err
-}
-
-func countEvent(event core.BlueskyEvent) {
+func countEvent(_ context.Context, event core.BlueskyEvent) error {
 	operation := ""
 	status := ""
 
@@ -118,4 +106,6 @@ func countEvent(event core.BlueskyEvent) {
 	}
 
 	eventsProcessed.WithLabelValues(event.Kind, operation, status).Inc()
+
+	return nil
 }

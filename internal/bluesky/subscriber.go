@@ -17,8 +17,7 @@ const (
 )
 
 type Subscriber struct {
-	events <-chan pips.D[core.BlueskyEvent]
-	conn   *websocket.Conn
+	conn *websocket.Conn
 }
 
 func (s Subscriber) Shutdown() error {
@@ -29,19 +28,10 @@ func (s Subscriber) HealthCheck() error {
 	return nil
 }
 
-func (s Subscriber) Chan() <-chan pips.D[core.BlueskyEvent] {
-	return s.events
-}
-
-func NewSubscriber(_ *do.Injector) (core.BlueskySubscriber, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	events := async.Generator(context.TODO(), func(_ context.Context, yield async.Yielder[core.BlueskyEvent]) error {
+func (s Subscriber) Chan(ctx context.Context) <-chan pips.D[core.BlueskyEvent] {
+	return async.Generator(ctx, func(_ context.Context, yield async.Yielder[core.BlueskyEvent]) error {
 		for {
-			_, message, err := conn.ReadMessage()
+			_, message, err := s.conn.ReadMessage()
 			if err != nil {
 				return err
 			}
@@ -52,6 +42,13 @@ func NewSubscriber(_ *do.Injector) (core.BlueskySubscriber, error) {
 			yield(event, err)
 		}
 	})
+}
 
-	return Subscriber{events: events, conn: conn}, nil
+func NewSubscriber(_ *do.Injector) (core.BlueskySubscriber, error) {
+	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return Subscriber{conn: conn}, nil
 }

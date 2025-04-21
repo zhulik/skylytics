@@ -11,7 +11,7 @@ import (
 type MetricsServer interface{}
 
 type BlueskySubscriber interface {
-	Chan() <-chan pips.D[BlueskyEvent]
+	Chan(ctx context.Context) <-chan pips.D[BlueskyEvent]
 }
 
 type Forwarder interface{}
