@@ -10,6 +10,13 @@ import (
 
 type MetricsServer interface{}
 
+type JetstreamClient interface {
+	jetstream.JetStream
+
+	Consume(ctx context.Context, stream, name string) (<-chan pips.D[jetstream.Msg], error)
+	ConsumeToPipeline(ctx context.Context, stream, name string, pipeline *pips.Pipeline[jetstream.Msg, any]) error
+}
+
 type BlueskySubscriber interface {
 	Chan(ctx context.Context) <-chan pips.D[BlueskyEvent]
 }

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"skylytics/internal/core"
-	inats "skylytics/internal/nats"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
 
@@ -45,14 +44,11 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 	}
 
 	updater.handle = async.Job(func(ctx context.Context) (any, error) {
-		ch, err := inats.Consume(ctx, injector, "skylytics", "account-updater", 1000)
-		if err != nil {
-			return nil, err
-		}
+		js := do.MustInvoke[core.JetstreamClient](injector)
 
-		return nil, pipeline(&updater).
-			Run(ctx, ch).
-			Wait(ctx)
+		return nil, js.ConsumeToPipeline(ctx,
+			"skylytics", "account-updater",
+			pipeline(&updater))
 	})
 
 	return &updater, nil

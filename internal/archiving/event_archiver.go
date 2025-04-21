@@ -3,7 +3,6 @@ package archiving
 import (
 	"context"
 	"skylytics/internal/core"
-	inats "skylytics/internal/nats"
 	"skylytics/pkg/async"
 
 	"github.com/nats-io/nats.go/jetstream"
@@ -28,20 +27,15 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 	}
 
 	archiver.handle = async.Job(func(ctx context.Context) (any, error) {
-		ch, err := inats.Consume(ctx, injector, "skylytics", "events-archiver", batchSize*10)
-		if err != nil {
-			return nil, err
-		}
+		js := do.MustInvoke[core.JetstreamClient](injector)
 
-		return nil, pips.New[jetstream.Msg, any]().
+		return nil, js.ConsumeToPipeline(ctx, "skylytics", "events-archiver", pips.New[jetstream.Msg, any]().
 			Then(apply.Batch[jetstream.Msg](batchSize)).
 			Then(
 				apply.Map(func(ctx context.Context, msgs []jetstream.Msg) ([]jetstream.Msg, error) {
 					return msgs, archiver.Archive(ctx, msgs...)
 				}),
-			).
-			Run(ctx, ch).
-			Wait(ctx)
+			))
 	})
 
 	return &archiver, nil

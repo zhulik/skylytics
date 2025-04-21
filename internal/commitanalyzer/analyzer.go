@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"skylytics/pkg/async"
 
-	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
 
 	"skylytics/internal/core"
-	inats "skylytics/internal/nats"
+
+	"github.com/zhulik/pips"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
@@ -32,15 +32,10 @@ func New(i *do.Injector) (core.CommitAnalyzer, error) {
 	analyzer := Analyzer{}
 
 	analyzer.handle = async.Job(func(ctx context.Context) (any, error) {
-		ch, err := inats.Consume(ctx, i, "skylytics", "commit-analyzer", 1000)
-		if err != nil {
-			return nil, err
-		}
-
-		return nil, pips.New[jetstream.Msg, any]().
-			Then(apply.Map(analyzer.Analyze)).
-			Run(ctx, ch).
-			Wait(ctx)
+		js := do.MustInvoke[core.JetstreamClient](i)
+		return nil, js.ConsumeToPipeline(ctx,
+			"skylytics", "commit-analyzer",
+			pips.New[jetstream.Msg, any](apply.Map(analyzer.Analyze)))
 	})
 
 	return &analyzer, nil
