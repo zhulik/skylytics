@@ -28,11 +28,11 @@ type Analyzer struct {
 	handle *async.JobHandle[any]
 }
 
-func New(_ *do.Injector) (core.CommitAnalyzer, error) {
+func New(i *do.Injector) (core.CommitAnalyzer, error) {
 	analyzer := Analyzer{}
 
 	analyzer.handle = async.Job(func(ctx context.Context) (any, error) {
-		ch, err := inats.Consume(ctx, "skylytics", "commit-analyzer", 1000)
+		ch, err := inats.Consume(ctx, i, "skylytics", "commit-analyzer", 1000)
 		if err != nil {
 			return nil, err
 		}

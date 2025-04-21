@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"skylytics/pkg/async"
 
 	"github.com/zhulik/pips"
@@ -13,7 +12,6 @@ import (
 	"skylytics/internal/core"
 
 	"github.com/bluesky-social/jetstream/pkg/models"
-	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -35,20 +33,7 @@ type Forwarder struct {
 }
 
 func New(i *do.Injector) (core.Forwarder, error) {
-	url := os.Getenv("NATS_URL")
-	if url == "" {
-		url = nats.DefaultURL
-	}
-
-	nc, err := nats.Connect(url)
-	if err != nil {
-		return nil, err
-	}
-
-	js, err := jetstream.New(nc)
-	if err != nil {
-		return nil, err
-	}
+	js := do.MustInvoke[jetstream.JetStream](i)
 
 	f := Forwarder{
 		sub:       do.MustInvoke[core.BlueskySubscriber](i),

@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"skylytics/internal/archiving"
+	inats "skylytics/internal/nats"
 	"skylytics/internal/persistence/accounts"
 	"skylytics/internal/persistence/events"
 	"skylytics/internal/updating"
@@ -21,6 +22,7 @@ import (
 func main() {
 	injector := do.New()
 
+	do.Provide(injector, inats.NewClient)
 	do.Provide[core.MetricsServer](injector, metrics.NewHTTPServer)
 	do.MustInvoke[core.MetricsServer](injector)
 

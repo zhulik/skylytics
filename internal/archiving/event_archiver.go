@@ -28,7 +28,7 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 	}
 
 	archiver.handle = async.Job(func(ctx context.Context) (any, error) {
-		ch, err := inats.Consume(ctx, "skylytics", "events-archiver", batchSize*10)
+		ch, err := inats.Consume(ctx, injector, "skylytics", "events-archiver", batchSize*10)
 		if err != nil {
 			return nil, err
 		}
