@@ -25,28 +25,22 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 		eventRepository: do.MustInvoke[core.EventRepository](injector),
 	}
 
-	handle := async.Job(func(ctx context.Context) (any, error) {
+	archiver.handle = async.Job(func(ctx context.Context) (any, error) {
 		ch, err := inats.Consume(ctx, "skylytics", "events-archiver", batchSize*10)
 		if err != nil {
 			return nil, err
 		}
 
-		out := pips.New[jetstream.Msg, any]().
-			Then(apply.Batch(batchSize)).
-			Then(apply.Map(func(ctx context.Context, msgs []jetstream.Msg) (any, error) {
-				return true, archiver.Archive(ctx, msgs...)
-			})).Run(ctx, ch)
-
-		for r := range out {
-			if err := r.Error(); err != nil {
-				return nil, err
-			}
-		}
-
-		return nil, nil
+		return nil, pips.New[jetstream.Msg, any]().
+			Then(apply.Batch[jetstream.Msg](batchSize)).
+			Then(
+				apply.Map(func(ctx context.Context, msgs []jetstream.Msg) ([]jetstream.Msg, error) {
+					return msgs, archiver.Archive(ctx, msgs...)
+				}),
+			).
+			Run(ctx, ch).
+			Wait(ctx)
 	})
-
-	archiver.handle = handle
 
 	return &archiver, nil
 }
@@ -66,7 +60,7 @@ func (a EventsArchiver) Archive(ctx context.Context, msgs ...jetstream.Msg) erro
 		return item.Data()
 	})
 
-	if _, err := a.eventRepository.InsertRaw(context.TODO(), events...); err != nil {
+	if _, err := a.eventRepository.InsertRaw(ctx, events...); err != nil {
 		return err
 	}
 

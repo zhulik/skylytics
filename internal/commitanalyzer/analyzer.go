@@ -36,20 +36,13 @@ func New(i *do.Injector) (core.CommitAnalyzer, error) {
 			return nil, err
 		}
 
-		out := pips.New[jetstream.Msg, any]().
+		return nil, pips.New[jetstream.Msg, any]().
 			Then(apply.Map(analyzer.Analyze)).
-			Run(ctx, ch)
-
-		for r := range out {
-			if err := r.Error(); err != nil {
-				return nil, err
-			}
-		}
-
-		return nil, nil
+			Run(ctx, ch).
+			Wait(ctx)
 	})
 
-	return analyzer, nil
+	return &analyzer, nil
 }
 
 func (a Analyzer) Shutdown() error {
@@ -68,7 +61,7 @@ func (a Analyzer) Analyze(_ context.Context, msg jetstream.Msg) (any, error) {
 	event := core.BlueskyEvent{}
 	err := json.Unmarshal(msg.Data(), &event)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	var commitType = ""
@@ -77,11 +70,11 @@ func (a Analyzer) Analyze(_ context.Context, msg jetstream.Msg) (any, error) {
 		var commit core.Commit
 		err = json.Unmarshal(event.Commit.Record, &commit)
 		if err != nil {
-			return false, err
+			return nil, err
 		}
 		commitType = commit.Type
 	}
 
 	commitProcessed.WithLabelValues(commitType).Inc()
-	return true, nil
+	return nil, nil
 }
