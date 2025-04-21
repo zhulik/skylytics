@@ -39,11 +39,17 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 			return pips.NewD(msg), nil
 		})
 
-		pips.New[jetstream.Msg, any]().
+		out := pips.New[jetstream.Msg, any]().
 			Then(apply.Batch(batchSize)).
 			Then(apply.Map(func(ctx context.Context, msgs []jetstream.Msg) (any, error) {
 				return nil, archiver.Archive(ctx, msgs...)
 			})).Run(ctx, input)
+
+		for r := range out {
+			if err := r.Error(); err != nil {
+				return nil, err
+			}
+		}
 
 		return nil, nil
 	})
