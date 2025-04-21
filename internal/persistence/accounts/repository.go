@@ -34,11 +34,7 @@ func NewRepository(_ *do.Injector) (core.AccountRepository, error) {
 	_, err = coll.Indexes().CreateMany(context.TODO(), []mongo.IndexModel{{
 		Keys:    bson.D{{"did", 1}},
 		Options: options.Index().SetUnique(true),
-	}, {
-		Keys:    bson.D{{"handle", 1}},
-		Options: options.Index().SetUnique(true),
-	},
-	})
+	}})
 
 	if err != nil {
 		return nil, err
