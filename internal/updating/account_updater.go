@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/samber/do"
 	"github.com/samber/lo"
+	"github.com/zhulik/pips"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"resty.dev/v3"
 )
@@ -69,7 +70,7 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 		batched := async.Batched(ctx, ch, 25, 1*time.Second)
 
 		return nil, async.WorkerPool(ctx, 25, batched,
-			func(ctx context.Context, results async.Result[[]jetstream.Msg]) error {
+			func(ctx context.Context, results pips.D[[]jetstream.Msg]) error {
 				msgs, err := results.Unpack()
 				if err != nil {
 					return err

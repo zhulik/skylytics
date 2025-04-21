@@ -3,14 +3,13 @@ package core
 import (
 	"context"
 	"github.com/nats-io/nats.go/jetstream"
-
-	"skylytics/pkg/async"
+	"github.com/zhulik/pips"
 )
 
 type MetricsServer interface{}
 
 type BlueskySubscriber interface {
-	Chan() <-chan async.Result[BlueskyEvent]
+	Chan() <-chan pips.D[BlueskyEvent]
 }
 
 type Forwarder interface{}

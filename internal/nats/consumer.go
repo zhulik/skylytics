@@ -4,16 +4,17 @@ import (
 	"context"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/zhulik/pips"
 	"os"
 	"skylytics/pkg/async"
 )
 
-func Consume(ctx context.Context, stream, name string, batchSize int) (<-chan async.Result[jetstream.Msg], error) {
+func Consume(ctx context.Context, stream, name string, batchSize int) (<-chan pips.D[jetstream.Msg], error) {
 	url := os.Getenv("NATS_URL")
 	if url == "" {
 		url = nats.DefaultURL
 	}
-
+ 
 	nc, err := nats.Connect(url)
 	if err != nil {
 		return nil, err

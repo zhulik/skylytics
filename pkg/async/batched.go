@@ -3,11 +3,12 @@ package async
 import (
 	"context"
 	"github.com/samber/lo"
+	"github.com/zhulik/pips"
 	"time"
 )
 
-func Batched[T any](ctx context.Context, ch <-chan Result[T], batchSize int, timeout time.Duration) <-chan Result[[]T] {
-	batchChan := make(chan Result[[]T], 1)
+func Batched[T any](ctx context.Context, ch <-chan pips.D[T], batchSize int, timeout time.Duration) <-chan pips.D[[]T] {
+	batchChan := make(chan pips.D[[]T], 1)
 
 	go func() {
 		ticker := time.NewTicker(timeout)
@@ -24,7 +25,7 @@ func Batched[T any](ctx context.Context, ch <-chan Result[T], batchSize int, tim
 				return
 			}
 
-			batchChan <- NewResult(buffer)
+			batchChan <- pips.NewD(buffer)
 			buffer = make([]T, 0, batchSize)
 		}
 
@@ -44,7 +45,7 @@ func Batched[T any](ctx context.Context, ch <-chan Result[T], batchSize int, tim
 				}
 				item, err := res.Unpack()
 				if err != nil {
-					batchChan <- NewResult(lo.Empty[[]T](), err)
+					batchChan <- pips.NewD(lo.Empty[[]T](), err)
 					return
 				}
 				buffer = append(buffer, item)

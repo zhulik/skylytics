@@ -2,12 +2,13 @@ package async
 
 import (
 	"context"
+	"github.com/zhulik/pips"
 	"sync/atomic"
 )
 
 type JobHandle[T any] struct {
 	cancel func()
-	done   chan Result[T]
+	done   chan pips.D[T]
 	err    atomic.Pointer[error]
 }
 
@@ -15,16 +16,16 @@ func Job[T any](job func(ctx context.Context) (T, error)) *JobHandle[T] {
 	ctx, cancel := context.WithCancel(context.Background())
 	handle := JobHandle[T]{
 		cancel: cancel,
-		done:   make(chan Result[T], 1),
+		done:   make(chan pips.D[T], 1),
 	}
 
 	go func() {
 		defer cancel()
-		
+
 		res, err := job(ctx)
 
 		handle.err.Store(&err)
-		handle.done <- NewResult(res, err)
+		handle.done <- pips.NewD(res, err)
 
 	}()
 

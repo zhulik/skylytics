@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/samber/do"
+	"github.com/zhulik/pips"
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 )
@@ -14,7 +15,7 @@ const (
 )
 
 type Subscriber struct {
-	events <-chan async.Result[core.BlueskyEvent]
+	events <-chan pips.D[core.BlueskyEvent]
 	conn   *websocket.Conn
 }
 
@@ -27,7 +28,7 @@ func (s Subscriber) HealthCheck() error {
 	return nil
 }
 
-func (s Subscriber) Chan() <-chan async.Result[core.BlueskyEvent] {
+func (s Subscriber) Chan() <-chan pips.D[core.BlueskyEvent] {
 	return s.events
 }
 
@@ -46,7 +47,7 @@ func NewSubscriber(_ *do.Injector) (core.BlueskySubscriber, error) {
 
 			var event core.BlueskyEvent
 			err = json.Unmarshal(message, &event)
-			
+
 			yield(event, err)
 		}
 	})
