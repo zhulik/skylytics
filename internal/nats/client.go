@@ -8,6 +8,10 @@ import (
 	"github.com/samber/do"
 )
 
+type Client struct {
+	jetstream.JetStream
+}
+
 func NewClient(_ *do.Injector) (jetstream.JetStream, error) {
 	url := os.Getenv("NATS_URL")
 	if url == "" {
@@ -19,5 +23,19 @@ func NewClient(_ *do.Injector) (jetstream.JetStream, error) {
 		return nil, err
 	}
 
-	return jetstream.New(nc)
+	c, err := jetstream.New(nc)
+	if err != nil {
+		return nil, err
+	}
+
+	return Client{c}, nil
+}
+
+func (c Client) HealthCheck() error {
+	return nil
+}
+
+func (c Client) Shutdown() error {
+	c.Conn().Close()
+	return nil
 }

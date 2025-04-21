@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"context"
-	"log"
 	"os"
 	"skylytics/internal/core"
 	"skylytics/internal/persistence"
@@ -45,16 +44,18 @@ func NewCollector(_ *do.Injector) (core.MetricsCollector, error) {
 
 		defer client.Disconnect(ctx) //nolint:errcheck
 
-		accounts := client.Database("admin").Collection("accounts")
-		events := client.Database("admin").Collection("events")
+		db := client.Database("admin")
+
+		accounts := db.Collection("accounts")
+		events := db.Collection("events")
 
 		for {
 			select {
 			case <-ctx.Done():
 				ticker.Stop()
+
 				return nil, nil
 			case <-ticker.C:
-				log.Println("Updating metrics")
 				count, err := accounts.EstimatedDocumentCount(ctx, nil)
 				if err != nil {
 					return nil, err

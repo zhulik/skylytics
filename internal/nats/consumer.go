@@ -7,6 +7,7 @@ import (
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/do"
+
 	"github.com/zhulik/pips"
 )
 
