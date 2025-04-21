@@ -22,7 +22,7 @@ import (
 func main() {
 	injector := do.New()
 
-	do.Provide(injector, inats.NewClient)
+	do.Provide[core.JetstreamClient](injector, inats.NewClient)
 	do.Provide[core.MetricsServer](injector, metrics.NewHTTPServer)
 	do.MustInvoke[core.MetricsServer](injector)
 

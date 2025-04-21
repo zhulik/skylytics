@@ -3,6 +3,7 @@ package nats
 import (
 	"context"
 	"os"
+	"skylytics/internal/core"
 	"skylytics/pkg/async"
 
 	"github.com/zhulik/pips"
@@ -16,7 +17,7 @@ type Client struct {
 	jetstream.JetStream
 }
 
-func NewClient(_ *do.Injector) (jetstream.JetStream, error) {
+func NewClient(_ *do.Injector) (core.JetstreamClient, error) {
 	url := os.Getenv("NATS_URL")
 	if url == "" {
 		url = nats.DefaultURL
