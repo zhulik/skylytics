@@ -32,7 +32,7 @@ func Consume(ctx context.Context, stream, name string, batchSize int) (<-chan pi
 		return nil, err
 	}
 
-	msgs := async.Generator(ctx, func(ctx context.Context, y async.Yielder[jetstream.Msg]) error {
+	return async.Generator(ctx, func(ctx context.Context, y async.Yielder[jetstream.Msg]) error {
 		for {
 			select {
 			case <-ctx.Done():
@@ -49,7 +49,5 @@ func Consume(ctx context.Context, stream, name string, batchSize int) (<-chan pi
 				}
 			}
 		}
-	})
-
-	return msgs, nil
+	}), nil
 }
