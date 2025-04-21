@@ -3,6 +3,8 @@ package commitanalyzer
 import (
 	"context"
 	"encoding/json"
+	"github.com/zhulik/pips"
+	"github.com/zhulik/pips/apply"
 	"skylytics/pkg/async"
 
 	"skylytics/internal/core"
@@ -28,28 +30,24 @@ type Analyzer struct {
 func New(i *do.Injector) (core.CommitAnalyzer, error) {
 	analyzer := Analyzer{}
 
-	handle := async.Job(func(ctx context.Context) (any, error) {
+	analyzer.handle = async.Job(func(ctx context.Context) (any, error) {
 		ch, err := inats.Consume(ctx, "skylytics", "commit-analyzer", 1000)
 		if err != nil {
 			return nil, err
 		}
 
-		for msg := range ch {
-			msg, err := msg.Unpack()
-			if err != nil {
-				return nil, err
-			}
+		out := pips.New[jetstream.Msg, any]().
+			Then(apply.Map(analyzer.Analyze)).
+			Run(ctx, ch)
 
-			err = analyzer.Analyze(msg)
-			if err != nil {
+		for r := range out {
+			if err := r.Error(); err != nil {
 				return nil, err
 			}
 		}
 
 		return nil, nil
 	})
-
-	analyzer.handle = handle
 
 	return analyzer, nil
 }
@@ -64,13 +62,13 @@ func (a Analyzer) HealthCheck() error {
 	return a.handle.Error()
 }
 
-func (a Analyzer) Analyze(msg jetstream.Msg) error {
+func (a Analyzer) Analyze(_ context.Context, msg jetstream.Msg) (any, error) {
 	msg.Ack()
 
 	event := core.BlueskyEvent{}
 	err := json.Unmarshal(msg.Data(), &event)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	var commitType = ""
@@ -79,11 +77,11 @@ func (a Analyzer) Analyze(msg jetstream.Msg) error {
 		var commit core.Commit
 		err = json.Unmarshal(event.Commit.Record, &commit)
 		if err != nil {
-			return err
+			return false, err
 		}
 		commitType = commit.Type
 	}
 
 	commitProcessed.WithLabelValues(commitType).Inc()
-	return nil
+	return true, nil
 }
