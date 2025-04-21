@@ -25,14 +25,6 @@ type msgWrap[T any] struct {
 	data T
 }
 
-type msgWrapSlice[T any] []msgWrap[T]
-
-func (s msgWrapSlice[T]) Data() []T {
-	return lo.Map(s, func(item msgWrap[T], _ int) T {
-		return item.data
-	})
-}
-
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
 		Then(parseDIDs).
@@ -40,8 +32,10 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		Then(filterOutExistingAccounts(updater.accountRepo)).
 		Then(apply.Rebatch[msgWrap[string]](25)).
 		Then(
-			apply.Map(func(ctx context.Context, wraps msgWrapSlice[string]) (any, error) {
-				dids := wraps.Data()
+			apply.Map(func(ctx context.Context, wraps []msgWrap[string]) (any, error) {
+				dids := lo.Map(wraps, func(item msgWrap[string], _ int) string {
+					return item.data
+				})
 
 				serializedProfiles, err := fetchAndSerializeProfiles(ctx, updater.stormy, dids)
 				if err != nil {
@@ -73,8 +67,10 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 }
 
 func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
-	return apply.Map(func(ctx context.Context, wraps msgWrapSlice[string]) (msgWrapSlice[string], error) {
-		dids := lo.Uniq(wraps.Data())
+	return apply.Map(func(ctx context.Context, wraps []msgWrap[string]) ([]msgWrap[string], error) {
+		dids := lo.Map(wraps, func(item msgWrap[string], _ int) string {
+			return item.data
+		})
 
 		existing, err := repo.ExistsByDID(ctx, dids...)
 		if err != nil {
