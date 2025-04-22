@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	parseDIDs = apply.Zip[jetstream.Msg, string](func(_ context.Context, msg jetstream.Msg) (string, error) {
+	parseDIDs = apply.Zip(func(_ context.Context, msg jetstream.Msg) (string, error) {
 		var event core.BlueskyEvent
 		err := json.Unmarshal(msg.Data(), &event)
 		return event.Did, err
