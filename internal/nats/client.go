@@ -80,10 +80,16 @@ func (c Client) Consume(ctx context.Context, stream, name string) (<-chan pips.D
 }
 
 func (c Client) HealthCheck() error {
+	if c.handle == nil {
+		return nil
+	}
 	return c.handle.Error()
 }
 
 func (c Client) Shutdown() error {
+	if c.handle == nil {
+		return nil
+	}
 	_, err := c.handle.StopWait()
 	return err
 }

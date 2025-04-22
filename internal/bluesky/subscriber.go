@@ -23,11 +23,17 @@ type Subscriber struct {
 }
 
 func (s Subscriber) Shutdown() error {
+	if s.handle == nil {
+		return nil
+	}
 	_, err := s.handle.StopWait()
 	return err
 }
 
 func (s Subscriber) HealthCheck() error {
+	if s.handle == nil {
+		return nil
+	}
 	return s.handle.Error()
 }
 
