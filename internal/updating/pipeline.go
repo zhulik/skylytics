@@ -55,7 +55,9 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					return nil, err
 				}
 				lo.ForEach(wraps, func(item msgWrap[string], _ int) {
-					item.msg.Ack() //nolint:errcheck
+					if item.msg != nil {
+						item.msg.Ack() //nolint:errcheck
+					}
 				})
 
 				return nil, nil
