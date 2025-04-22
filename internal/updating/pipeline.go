@@ -48,7 +48,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					return nil, err
 				}
 
-				_, err = updater.accountRepo.InsertRaw(ctx, serializedProfiles...)
+				err = updater.accountRepo.Insert(ctx, serializedProfiles...)
 				if err != nil {
 					// TODO: handle duplicated records here
 					return nil, err

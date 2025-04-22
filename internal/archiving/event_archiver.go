@@ -2,6 +2,7 @@ package archiving
 
 import (
 	"context"
+	"encoding/json"
 
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
@@ -52,11 +53,17 @@ func (a EventsArchiver) HealthCheck() error {
 }
 
 func (a EventsArchiver) Archive(ctx context.Context, msgs ...jetstream.Msg) error {
-	events := async.Map(msgs, func(item jetstream.Msg) []byte {
-		return item.Data()
-	})
+	events, err := async.AsyncMap(ctx, msgs, func(_ context.Context, item jetstream.Msg) (core.EventModel, error) {
+		var event core.BlueskyEvent
 
-	if _, err := a.eventRepository.InsertRaw(ctx, events...); err != nil {
+		err := json.Unmarshal(item.Data(), &event)
+		return core.EventModel{Event: event}, err
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := a.eventRepository.Insert(ctx, events...); err != nil {
 		return err
 	}
 

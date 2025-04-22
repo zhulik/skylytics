@@ -34,7 +34,7 @@ func NewDB(_ *do.Injector) (core.DB, error) {
 
 func (db DB) Migrate() error {
 	return db.Transaction(func(tx *gorm.DB) error {
-		err := tx.AutoMigrate(&core.Event{})
+		err := tx.AutoMigrate(&core.EventModel{})
 		if err != nil {
 			return err
 		}
@@ -44,7 +44,7 @@ func (db DB) Migrate() error {
 }
 
 func (db DB) LastEventTimestamp() (int64, error) {
-	var event core.Event
+	var event core.EventModel
 	err := db.Order("timestamp DESC").First(&event).Error
 	if err != nil {
 		return 0, err

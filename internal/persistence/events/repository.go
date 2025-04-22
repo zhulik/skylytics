@@ -9,14 +9,17 @@ import (
 )
 
 type Repository struct {
+	db core.DB
 }
 
-func NewRepository(_ *do.Injector) (core.EventRepository, error) {
-	return Repository{}, nil
+func NewRepository(i *do.Injector) (core.EventRepository, error) {
+	return Repository{
+		db: do.MustInvoke[core.DB](i),
+	}, nil
 }
 
-func (r Repository) InsertRaw(_ context.Context, _ ...[]byte) ([]any, error) {
-	return nil, nil
+func (r Repository) Insert(_ context.Context, events ...core.EventModel) error {
+	return r.db.Model(&core.EventModel{}).Create(&events).Error
 }
 
 func (r Repository) HealthCheck() error {

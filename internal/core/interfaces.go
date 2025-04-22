@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/nats-io/nats.go/jetstream"
+	"gorm.io/gorm"
 
 	"github.com/zhulik/pips"
 )
@@ -26,11 +27,11 @@ type Forwarder interface{}
 type CommitAnalyzer interface{}
 
 type EventRepository interface {
-	InsertRaw(ctx context.Context, raw ...[]byte) ([]any, error)
+	Insert(ctx context.Context, raw ...EventModel) error
 }
 
 type AccountRepository interface {
-	InsertRaw(ctx context.Context, raw ...[]byte) ([]any, error)
+	Insert(ctx context.Context, raw ...[]byte) error
 	ExistsByDID(ctx context.Context, dids ...string) ([]string, error)
 }
 
@@ -45,7 +46,8 @@ type EventsArchiver interface {
 type MetricsCollector interface{}
 
 type DB interface {
-	LastEventTimestamp() (int64, error)
+	Model(any) *gorm.DB
 
+	LastEventTimestamp() (int64, error)
 	Migrate() error
 }

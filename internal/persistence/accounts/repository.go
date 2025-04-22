@@ -19,8 +19,8 @@ func (r Repository) ExistsByDID(_ context.Context, _ ...string) ([]string, error
 	return nil, nil
 }
 
-func (r Repository) InsertRaw(_ context.Context, _ ...[]byte) ([]any, error) {
-	return nil, nil
+func (r Repository) Insert(_ context.Context, _ ...[]byte) error {
+	return nil
 }
 
 func (r Repository) HealthCheck() error {

@@ -23,7 +23,7 @@ import (
 
 func main() {
 	injector := do.New()
-	defer injector.Shutdown()
+	defer injector.Shutdown() //nolint:errcheck
 
 	do.Provide[core.DB](injector, persistence.NewDB)
 	do.Provide[core.JetstreamClient](injector, inats.NewClient)
