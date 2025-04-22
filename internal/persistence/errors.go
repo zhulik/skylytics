@@ -3,5 +3,5 @@ package persistence
 import "errors"
 
 var (
-	ErrNoPostgresURI = errors.New("no PostgresURI env provided")
+	ErrNoPostgresDSN = errors.New("no POSTGRESQL_DSN env provided")
 )

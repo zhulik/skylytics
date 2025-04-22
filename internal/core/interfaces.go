@@ -43,3 +43,9 @@ type EventsArchiver interface {
 }
 
 type MetricsCollector interface{}
+
+type DB interface {
+	LastEventTimestamp() (int64, error)
+
+	Migrate() error
+}

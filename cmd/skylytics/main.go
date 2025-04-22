@@ -3,12 +3,14 @@ package main
 import (
 	"log"
 	"os"
+	"syscall"
+
 	"skylytics/internal/archiving"
 	inats "skylytics/internal/nats"
+	"skylytics/internal/persistence"
 	"skylytics/internal/persistence/accounts"
 	"skylytics/internal/persistence/events"
 	"skylytics/internal/updating"
-	"syscall"
 
 	"skylytics/internal/bluesky"
 	"skylytics/internal/commitanalyzer"
@@ -21,7 +23,9 @@ import (
 
 func main() {
 	injector := do.New()
-
+	defer injector.Shutdown()
+	
+	do.Provide[core.DB](injector, persistence.NewDB)
 	do.Provide[core.JetstreamClient](injector, inats.NewClient)
 	do.Provide[core.MetricsServer](injector, metrics.NewHTTPServer)
 	do.MustInvoke[core.MetricsServer](injector)
@@ -55,6 +59,15 @@ func main() {
 	case "metrics-server":
 		do.Provide[core.MetricsCollector](injector, metrics.NewCollector)
 		do.MustInvoke[core.MetricsCollector](injector)
+
+	case "migrate":
+		db := do.MustInvoke[core.DB](injector)
+		err := db.Migrate()
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Database migrated")
+		return
 
 	default:
 		log.Fatalf("unknown command: %s", command)
