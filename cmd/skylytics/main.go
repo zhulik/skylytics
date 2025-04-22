@@ -24,18 +24,13 @@ import (
 func main() {
 	injector := do.New()
 	defer injector.Shutdown()
-	
+
 	do.Provide[core.DB](injector, persistence.NewDB)
 	do.Provide[core.JetstreamClient](injector, inats.NewClient)
 	do.Provide[core.MetricsServer](injector, metrics.NewHTTPServer)
 	do.MustInvoke[core.MetricsServer](injector)
 
-	command := "subscriber"
-
-	if len(os.Args) > 1 {
-		command = os.Args[1]
-	}
-
+	command := os.Args[1]
 	switch command {
 	case "subscriber":
 		do.Provide[core.BlueskySubscriber](injector, bluesky.NewSubscriber)
