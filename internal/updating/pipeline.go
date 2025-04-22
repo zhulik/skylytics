@@ -82,6 +82,8 @@ func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
 		}
 
 		return lo.Reject(wraps, func(item msgWrap[string], _ int) bool {
+			item.msg.Ack() //nolint:errcheck
+
 			if lo.Contains(existing, item.data) {
 				item.msg.Ack() //nolint:errcheck
 				return true
