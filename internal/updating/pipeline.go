@@ -33,7 +33,8 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		Then(apply.Each(func(_ context.Context, msg jetstream.Msg) error {
 			return msg.Ack()
 		})).
-		Then(apply.Batch[msgWrap[string]](100)).Then(parseDIDs).
+		Then(parseDIDs).
+		Then(apply.Batch[msgWrap[string]](100)).
 		Then(apply.Batch[msgWrap[string]](100)).
 		Then(filterOutExistingAccounts(updater.accountRepo)).
 		Then(apply.Rebatch[msgWrap[string]](25)).
