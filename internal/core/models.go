@@ -10,3 +10,7 @@ type EventModel struct {
 
 	Event BlueskyEvent `gorm:"type:jsonb;index:idx_event_did,expression:((event->>'did'));index:idx_event_kind,expression:((event->>'kind'));index:idx_event_time_us,expression:((event->>'time_us'))"`
 }
+
+func (EventModel) TableName() string {
+	return "events"
+}
