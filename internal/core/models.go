@@ -14,3 +14,14 @@ type EventModel struct {
 func (EventModel) TableName() string {
 	return "events"
 }
+
+// AccountModel represents a raw bluesky account event.
+type AccountModel struct {
+	gorm.Model
+
+	Account []byte `gorm:"type:jsonb"`
+}
+
+func (AccountModel) TableName() string {
+	return "accounts"
+}

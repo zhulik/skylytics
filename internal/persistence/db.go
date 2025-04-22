@@ -49,6 +49,11 @@ func (db DB) Migrate() error {
 			return err
 		}
 
+		err = tx.AutoMigrate(&core.AccountModel{})
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 }
