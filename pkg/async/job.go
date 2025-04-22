@@ -36,6 +36,12 @@ func (j *JobHandle[T]) Stop() {
 	j.cancel()
 }
 
+func (j *JobHandle[T]) StopWait() (T, error) {
+	j.Stop()
+
+	return j.Wait()
+}
+
 func (j *JobHandle[T]) Wait() (T, error) {
 	return (<-j.done).Unpack()
 }

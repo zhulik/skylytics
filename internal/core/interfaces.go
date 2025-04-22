@@ -18,7 +18,7 @@ type JetstreamClient interface {
 }
 
 type BlueskySubscriber interface {
-	Chan(ctx context.Context) <-chan pips.D[BlueskyEvent]
+	Subscribe() <-chan pips.D[BlueskyEvent]
 }
 
 type Forwarder interface{}

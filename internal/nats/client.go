@@ -16,6 +16,7 @@ import (
 
 type Client struct {
 	jetstream.JetStream
+	handle *async.JobHandle[any]
 }
 
 func NewClient(_ *do.Injector) (core.JetstreamClient, error) {
@@ -34,7 +35,7 @@ func NewClient(_ *do.Injector) (core.JetstreamClient, error) {
 		return nil, err
 	}
 
-	return Client{c}, nil
+	return Client{JetStream: c}, nil
 }
 
 func (c Client) ConsumeToPipeline(ctx context.Context, stream, name string, pipeline *pips.Pipeline[jetstream.Msg, any]) error {
@@ -54,7 +55,9 @@ func (c Client) Consume(ctx context.Context, stream, name string) (<-chan pips.D
 		return nil, err
 	}
 
-	return async.Generator(ctx, func(ctx context.Context, y async.Yielder[jetstream.Msg]) error {
+	var ch <-chan pips.D[jetstream.Msg]
+
+	c.handle, ch = async.Generator(func(ctx context.Context, y async.Yielder[jetstream.Msg]) error {
 		for {
 			select {
 			case <-ctx.Done():
@@ -71,14 +74,16 @@ func (c Client) Consume(ctx context.Context, stream, name string) (<-chan pips.D
 				}
 			}
 		}
-	}), nil
+	})
+
+	return ch, nil
 }
 
 func (c Client) HealthCheck() error {
-	return nil
+	return c.handle.Error()
 }
 
 func (c Client) Shutdown() error {
-	c.Conn().Close()
-	return nil
+	_, err := c.handle.StopWait()
+	return err
 }

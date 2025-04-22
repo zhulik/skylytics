@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
 	"skylytics/pkg/async"
 
 	"github.com/zhulik/pips"
@@ -41,7 +42,7 @@ func New(i *do.Injector) (core.Forwarder, error) {
 	}
 
 	f.handle = async.Job(func(ctx context.Context) (any, error) {
-		ch := f.sub.Chan(ctx)
+		ch := f.sub.Subscribe()
 
 		return nil, pips.New[core.BlueskyEvent, any]().
 			Then(apply.Each(countEvent)).

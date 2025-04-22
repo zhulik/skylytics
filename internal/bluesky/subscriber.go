@@ -18,40 +18,35 @@ const (
 )
 
 type Subscriber struct {
-	conn *websocket.Conn
+	conn   *websocket.Conn
+	handle *async.JobHandle[any]
 }
 
 func (s Subscriber) Shutdown() error {
-	return s.conn.Close()
+	_, err := s.handle.StopWait()
+	return err
 }
 
 func (s Subscriber) HealthCheck() error {
-	return nil
+	return s.handle.Error()
 }
 
-func (s Subscriber) Chan(ctx context.Context) <-chan pips.D[core.BlueskyEvent] {
-	ch := make(chan pips.D[core.BlueskyEvent])
+func (s Subscriber) Subscribe() <-chan pips.D[core.BlueskyEvent] {
+	var ch <-chan pips.D[core.BlueskyEvent]
 
-	handle := async.Job(func(ctx context.Context) (any, error) {
-		defer close(ch)
+	s.handle, ch = async.Generator(func(_ context.Context, yield async.Yielder[core.BlueskyEvent]) error {
+		defer s.conn.Close()
 
 		for {
-			select {
-			case <-ctx.Done():
-				return nil, nil``
-			default:
-				_, message, err := s.conn.ReadMessage()
-				if err != nil {
-					return nil, err
-				}
-
-				var event core.BlueskyEvent
-				err = json.Unmarshal(message, &event)
-				if err != nil {
-					return nil, err
-				}
-				ch <- pips.NewD(event)
+			_, message, err := s.conn.ReadMessage()
+			if err != nil {
+				return err
 			}
+
+			var event core.BlueskyEvent
+			err = json.Unmarshal(message, &event)
+
+			yield(event, err)
 		}
 	})
 
