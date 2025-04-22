@@ -3,7 +3,6 @@ package updating
 import (
 	"context"
 	"encoding/json"
-	"log"
 
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
@@ -37,7 +36,6 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		Then(apply.Rebatch[msgWrap[string]](25)).
 		Then(
 			apply.Map(func(ctx context.Context, wraps []msgWrap[string]) (any, error) {
-				log.Printf("wraps: %d", len(wraps))
 				dids := lo.Map(wraps, func(item msgWrap[string], _ int) string {
 					return item.data
 				})
@@ -55,8 +53,6 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				lo.ForEach(wraps, func(item msgWrap[string], _ int) {
 					item.msg.Ack() //nolint:errcheck
 				})
-
-				log.Println("ACKS!")
 
 				return nil, nil
 			}),
@@ -84,8 +80,6 @@ func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
 		if err != nil {
 			return nil, err
 		}
-
-		log.Printf("DIDS: %d, existing: %d", len(dids), len(existing))
 
 		return lo.Reject(wraps, func(item msgWrap[string], _ int) bool {
 			if lo.Contains(existing, item.data) {
