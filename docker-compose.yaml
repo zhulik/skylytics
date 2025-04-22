@@ -1,10 +1,17 @@
 services:
-  mongodb:
-    image: mongo:8
+  postgres:
+    image: postgres:17
+
     ports:
-      - "27017:27017"
+      - "5432:5432"
+
+    environment:
+      POSTGRES_USER: skylytics
+      POSTGRES_DB: skylytics
+      POSTGRES_PASSWORD: skylytics
+
     volumes:
-      - mongodb:/data/db
+      - postgresql:/var/lib/postgresql/data
 
   nats:
     image: nats
@@ -13,5 +20,5 @@ services:
       - "4222:4222"
 
 volumes:
-  mongodb:
+  postgresql:
     driver: local
