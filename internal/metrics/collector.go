@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/samber/do"
+	"gorm.io/gorm/schema"
 )
 
 var (
@@ -28,7 +29,6 @@ func NewCollector(i *do.Injector) (core.MetricsCollector, error) {
 	collector := Collector{
 		db: do.MustInvoke[core.DB](i),
 	}
-	evt := core.EventModel{}
 
 	collector.handle = async.Job(func(ctx context.Context) (any, error) {
 		ticker := time.NewTicker(15 * time.Second)
@@ -40,18 +40,31 @@ func NewCollector(i *do.Injector) (core.MetricsCollector, error) {
 
 				return nil, nil
 			case <-ticker.C:
-				var count int64
-				count, err := collector.db.EstimatedCount(evt.TableName())
-
+				err := collectTableEstimatedCount(collector, core.EventModel{})
 				if err != nil {
 					return nil, err
 				}
-				tableCount.WithLabelValues(evt.TableName()).Set(float64(count))
+
+				err = collectTableEstimatedCount(collector, core.AccountModel{})
+				if err != nil {
+					return nil, err
+				}
 			}
 		}
 	})
 
 	return &collector, nil
+}
+
+func collectTableEstimatedCount(collector Collector, tabler schema.Tabler) error {
+	var count int64
+	count, err := collector.db.EstimatedCount(tabler.TableName())
+
+	if err != nil {
+		return err
+	}
+	tableCount.WithLabelValues(tabler.TableName()).Set(float64(count))
+	return nil
 }
 
 func (c Collector) Shutdown() error {
