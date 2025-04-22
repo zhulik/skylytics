@@ -47,9 +47,7 @@ func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
 	updater.handle = async.Job(func(ctx context.Context) (any, error) {
 		js := do.MustInvoke[core.JetstreamClient](injector)
 
-		return nil, js.ConsumeToPipeline(ctx,
-			"skylytics", "account-updater",
-			pipeline(&updater))
+		return nil, js.ConsumeToPipeline(ctx, "skylytics", "account-updater", pipeline(&updater))
 	})
 
 	return &updater, nil
