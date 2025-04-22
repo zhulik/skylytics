@@ -15,6 +15,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
+          go-version-file: 'go.mod'
           cache: true
 
       - name: golangci-lint
@@ -32,6 +33,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
+          go-version-file: 'go.mod'
           cache: true
 
       - name: Run tests
@@ -50,7 +52,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          cache-dependency-path: "**/*.sum"
+          go-version-file: 'go.mod'
 
       - uses: ko-build/setup-ko@v0.6
 
