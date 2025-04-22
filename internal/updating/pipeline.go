@@ -3,13 +3,13 @@ package updating
 import (
 	"context"
 	"encoding/json"
+
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/lo"
-	"go.mongodb.org/mongo-driver/v2/mongo"
 
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
@@ -47,10 +47,8 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 
 				_, err = updater.accountRepo.InsertRaw(ctx, serializedProfiles...)
 				if err != nil {
-					if !mongo.IsDuplicateKeyError(err) {
-						// A concurrently running updater may have inserted the same account already
-						return nil, err
-					}
+					// TODO: handle duplicated records here
+					return nil, err
 				}
 				lo.ForEach(wraps, func(item msgWrap[string], _ int) {
 					item.msg.Ack() //nolint:errcheck
