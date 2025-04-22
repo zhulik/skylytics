@@ -30,7 +30,10 @@ type msgWrap[T any] struct {
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
-		Then(parseDIDs).
+		Then(apply.Each(func(_ context.Context, msg jetstream.Msg) error {
+			return msg.Ack()
+		})).
+		Then(apply.Batch[msgWrap[string]](100)).Then(parseDIDs).
 		Then(apply.Batch[msgWrap[string]](100)).
 		Then(filterOutExistingAccounts(updater.accountRepo)).
 		Then(apply.Rebatch[msgWrap[string]](25)).
@@ -82,8 +85,6 @@ func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
 		}
 
 		return lo.Reject(wraps, func(item msgWrap[string], _ int) bool {
-			item.msg.Ack() //nolint:errcheck
-
 			if lo.Contains(existing, item.data) {
 				item.msg.Ack() //nolint:errcheck
 				return true
