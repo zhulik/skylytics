@@ -179,16 +179,6 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
-github.com/zhulik/pips v0.5.0 h1:yOcWU6cI9+rHabgy3SI/U8JqBhNp4cptEQrPdvG3vnY=
-github.com/zhulik/pips v0.5.0/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
-github.com/zhulik/pips v0.5.1 h1:FMs6lMJ1j+jfgPT5N3PwhazMialJUiBoWUIWSUgZOns=
-github.com/zhulik/pips v0.5.1/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
-github.com/zhulik/pips v0.5.2 h1:FRNbtwyQyzy7M06GjN1fXM9xus027UpJnXbt6b7Z5Qs=
-github.com/zhulik/pips v0.5.2/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
-github.com/zhulik/pips v0.5.3 h1:4NnOcdzOrNz+tabwciqtDXJr38ZPG7a+XGkSGepIU4o=
-github.com/zhulik/pips v0.5.3/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
-github.com/zhulik/pips v0.5.4 h1:yYNgDvLVeG7Ik6dglHovDMZ6RizeEWSUkvPr2K9ujF4=
-github.com/zhulik/pips v0.5.4/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
 github.com/zhulik/pips v0.5.5 h1:50jf/ilWXYN5qN7KxJJ4TBlKDJ49SkJYD25cS7Ur4GY=
 github.com/zhulik/pips v0.5.5/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
 go.mongodb.org/mongo-driver/v2 v2.2.0 h1:WwhNgGrijwU56ps9RtIsgKfGLEZeypxqbEYfThrBScM=
