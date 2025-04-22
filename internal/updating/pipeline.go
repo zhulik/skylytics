@@ -16,17 +16,12 @@ import (
 )
 
 var (
-	parseDIDs = apply.Map(func(_ context.Context, msg jetstream.Msg) (msgWrap[string], error) {
+	parseDIDs = apply.Zip[jetstream.Msg, string](func(_ context.Context, msg jetstream.Msg) (string, error) {
 		var event core.BlueskyEvent
 		err := json.Unmarshal(msg.Data(), &event)
-		return msgWrap[string]{msg, event.Did}, err
+		return event.Did, err
 	})
 )
-
-type msgWrap[T any] struct {
-	msg  jetstream.Msg
-	data T
-}
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
@@ -34,13 +29,13 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 			return msg.Ack()
 		})).
 		Then(parseDIDs).
-		Then(apply.Batch[msgWrap[string]](100)).
+		Then(apply.Batch[pips.P[jetstream.Msg, string]](100)).
 		Then(filterOutExistingAccounts(updater.accountRepo)).
-		Then(apply.Rebatch[msgWrap[string]](25)).
+		Then(apply.Rebatch[pips.P[jetstream.Msg, string]](25)).
 		Then(
-			apply.Map(func(ctx context.Context, wraps []msgWrap[string]) (any, error) {
-				dids := lo.Map(wraps, func(item msgWrap[string], _ int) string {
-					return item.data
+			apply.Map(func(ctx context.Context, wraps []pips.P[jetstream.Msg, string]) (any, error) {
+				dids := lo.Map(wraps, func(item pips.P[jetstream.Msg, string], _ int) string {
+					return item.B()
 				})
 
 				serializedProfiles, err := fetchAndSerializeProfiles(ctx, updater.stormy, dids)
@@ -53,9 +48,9 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					// TODO: handle duplicated records here
 					return nil, err
 				}
-				lo.ForEach(wraps, func(item msgWrap[string], _ int) {
-					if item.msg != nil {
-						item.msg.Ack() //nolint:errcheck
+				lo.ForEach(wraps, func(item pips.P[jetstream.Msg, string], _ int) {
+					if item.A() != nil {
+						item.A().Ack() //nolint:errcheck
 					}
 				})
 
@@ -76,9 +71,9 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 }
 
 func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
-	return apply.Map(func(ctx context.Context, wraps []msgWrap[string]) ([]msgWrap[string], error) {
-		dids := lo.Map(wraps, func(item msgWrap[string], _ int) string {
-			return item.data
+	return apply.Map(func(ctx context.Context, wraps []pips.P[jetstream.Msg, string]) ([]pips.P[jetstream.Msg, string], error) {
+		dids := lo.Map(wraps, func(item pips.P[jetstream.Msg, string], _ int) string {
+			return item.B()
 		})
 
 		existing, err := repo.ExistsByDID(ctx, dids...)
@@ -86,9 +81,9 @@ func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
 			return nil, err
 		}
 
-		return lo.Reject(wraps, func(item msgWrap[string], _ int) bool {
-			if lo.Contains(existing, item.data) {
-				item.msg.Ack() //nolint:errcheck
+		return lo.Reject(wraps, func(item pips.P[jetstream.Msg, string], _ int) bool {
+			if lo.Contains(existing, item.B()) {
+				item.A().Ack() //nolint:errcheck
 				return true
 			}
 			return false
