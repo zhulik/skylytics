@@ -15,6 +15,15 @@ type DB struct {
 	*gorm.DB
 }
 
+func (db DB) EstimatedCount(tableName string) (int64, error) {
+	var count int64
+	return count, db.Raw(
+		`SELECT reltuples::bigint AS count 
+						FROM pg_class 
+						WHERE relname = ?`, tableName,
+	).Scan(&count).Error
+}
+
 func dsnFromENV() string {
 	host := os.Getenv("POSTGRES_HOST")
 	user := os.Getenv("POSTGRES_USER")

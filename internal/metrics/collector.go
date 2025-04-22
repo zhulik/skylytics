@@ -40,13 +40,7 @@ func NewCollector(i *do.Injector) (core.MetricsCollector, error) {
 				return nil, nil
 			case <-ticker.C:
 				var count int64
-				err := collector.db.Model(&core.EventModel{}).
-					Raw(
-						`SELECT reltuples::bigint AS count 
-						FROM pg_class 
-						WHERE relname = ?`, core.EventModel{}.TableName(),
-					).
-					Scan(&count).Error
+				count, err := collector.db.EstimatedCount(core.EventModel{}.TableName())
 
 				if err != nil {
 					return nil, err
