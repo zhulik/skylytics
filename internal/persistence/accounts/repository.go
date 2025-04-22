@@ -3,6 +3,8 @@ package accounts
 import (
 	"context"
 	"os"
+	"time"
+
 	"skylytics/internal/persistence"
 	"skylytics/pkg/async"
 
@@ -89,7 +91,10 @@ func (r Repository) InsertRaw(ctx context.Context, raws ...[]byte) ([]any, error
 }
 
 func (r Repository) HealthCheck() error {
-	return r.client.Ping(context.Background(), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+
+	return r.client.Ping(ctx, nil)
 }
 
 func (r Repository) Shutdown() error {

@@ -60,5 +60,6 @@ func (s HTTPServer) Shutdown() error {
 }
 
 func (s HTTPServer) HealthCheck() error {
+	// If the server is unhealthy, the health endpoint is not accessible anyway
 	return nil
 }

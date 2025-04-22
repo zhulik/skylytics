@@ -3,6 +3,7 @@ package bluesky
 import (
 	"context"
 	"encoding/json"
+
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 
@@ -29,19 +30,32 @@ func (s Subscriber) HealthCheck() error {
 }
 
 func (s Subscriber) Chan(ctx context.Context) <-chan pips.D[core.BlueskyEvent] {
-	return async.Generator(ctx, func(_ context.Context, yield async.Yielder[core.BlueskyEvent]) error {
+	ch := make(chan pips.D[core.BlueskyEvent])
+
+	handle := async.Job(func(ctx context.Context) (any, error) {
+		defer close(ch)
+
 		for {
-			_, message, err := s.conn.ReadMessage()
-			if err != nil {
-				return err
+			select {
+			case <-ctx.Done():
+				return nil, nil``
+			default:
+				_, message, err := s.conn.ReadMessage()
+				if err != nil {
+					return nil, err
+				}
+
+				var event core.BlueskyEvent
+				err = json.Unmarshal(message, &event)
+				if err != nil {
+					return nil, err
+				}
+				ch <- pips.NewD(event)
 			}
-
-			var event core.BlueskyEvent
-			err = json.Unmarshal(message, &event)
-
-			yield(event, err)
 		}
 	})
+
+	return ch
 }
 
 func NewSubscriber(_ *do.Injector) (core.BlueskySubscriber, error) {

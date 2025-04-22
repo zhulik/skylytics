@@ -3,6 +3,7 @@ package nats
 import (
 	"context"
 	"os"
+
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 
