@@ -28,6 +28,7 @@ func NewCollector(i *do.Injector) (core.MetricsCollector, error) {
 	collector := Collector{
 		db: do.MustInvoke[core.DB](i),
 	}
+	evt := core.EventModel{}
 
 	collector.handle = async.Job(func(ctx context.Context) (any, error) {
 		ticker := time.NewTicker(15 * time.Second)
@@ -40,12 +41,12 @@ func NewCollector(i *do.Injector) (core.MetricsCollector, error) {
 				return nil, nil
 			case <-ticker.C:
 				var count int64
-				count, err := collector.db.EstimatedCount(core.EventModel{}.TableName())
+				count, err := collector.db.EstimatedCount(evt.TableName())
 
 				if err != nil {
 					return nil, err
 				}
-				tableCount.WithLabelValues("events").Set(float64(count))
+				tableCount.WithLabelValues(evt.TableName()).Set(float64(count))
 			}
 		}
 	})

@@ -10,7 +10,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/do v1.6.0
 	github.com/samber/lo v1.38.1
-	github.com/zhulik/pips v0.5.5
+	github.com/zhulik/pips v0.6.0
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.9
 	resty.dev/v3 v3.0.0-beta.2
