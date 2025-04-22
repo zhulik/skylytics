@@ -33,7 +33,7 @@ type Forwarder struct {
 }
 
 func New(i *do.Injector) (core.Forwarder, error) {
-	js := do.MustInvoke[jetstream.JetStream](i)
+	js := do.MustInvoke[core.JetstreamClient](i)
 
 	f := Forwarder{
 		sub:       do.MustInvoke[core.BlueskySubscriber](i),
