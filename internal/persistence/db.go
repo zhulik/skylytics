@@ -49,7 +49,7 @@ func (db DB) LastEventTimestamp() (int64, error) {
 	if err != nil {
 		return 0, err
 	}
-	return event.Timestamp, nil
+	return event.Event.TimeUS, nil
 }
 
 func ProcessedIs(processed bool) func(db *gorm.DB) *gorm.DB {

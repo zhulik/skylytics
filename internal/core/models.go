@@ -8,8 +8,5 @@ import (
 type Event struct {
 	gorm.Model
 
-	DID       string       `gorm:"index;type:VARCHAR(32)"`
-	Timestamp int64        `gorm:"index:,expression:timestamp DESC"`
-	Kind      string       `gorm:"type:VARCHAR(16);index"`
-	Event     BlueskyEvent `gorm:"type:jsonb"`
+	Event BlueskyEvent `gorm:"type:jsonb;index:idx_event_did,expression:((event->>'did'));index:idx_event_kind,expression:((event->>'kind'));index:idx_event_time_us,expression:((event->>'time_us'))"`
 }
