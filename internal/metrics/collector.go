@@ -3,10 +3,11 @@ package metrics
 import (
 	"context"
 	"os"
+	"time"
+
 	"skylytics/internal/core"
 	"skylytics/internal/persistence"
 	"skylytics/pkg/async"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -75,8 +76,7 @@ func NewCollector(_ *do.Injector) (core.MetricsCollector, error) {
 }
 
 func (c Collector) Shutdown() error {
-	c.handle.Stop()
-	_, err := c.handle.Wait()
+	_, err := c.handle.StopWait()
 	return err
 }
 

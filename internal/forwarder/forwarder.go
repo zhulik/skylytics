@@ -72,8 +72,7 @@ func (f Forwarder) HealthCheck() error {
 }
 
 func (f Forwarder) Shutdown() error {
-	f.handle.Stop()
-	_, err := f.handle.Wait()
+	_, err := f.handle.StopWait()
 	return err
 }
 

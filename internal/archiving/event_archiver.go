@@ -2,6 +2,7 @@ package archiving
 
 import (
 	"context"
+
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 
@@ -42,8 +43,7 @@ func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
 }
 
 func (a EventsArchiver) Shutdown() error {
-	a.handle.Stop()
-	_, err := a.handle.Wait()
+	_, err := a.handle.StopWait()
 	return err
 }
 

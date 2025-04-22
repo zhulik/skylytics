@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
@@ -81,7 +82,6 @@ func (a AccountUpdater) HealthCheck() error {
 }
 
 func (a AccountUpdater) Shutdown() error {
-	a.handle.Stop()
-	_, err := a.handle.Wait()
+	_, err := a.handle.StopWait()
 	return err
 }

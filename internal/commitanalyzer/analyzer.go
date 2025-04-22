@@ -3,6 +3,7 @@ package commitanalyzer
 import (
 	"context"
 	"encoding/json"
+
 	"skylytics/pkg/async"
 
 	"github.com/zhulik/pips/apply"
@@ -42,8 +43,7 @@ func New(i *do.Injector) (core.CommitAnalyzer, error) {
 }
 
 func (a Analyzer) Shutdown() error {
-	a.handle.Stop()
-	_, err := a.handle.Wait()
+	_, err := a.handle.StopWait()
 	return err
 }
 
