@@ -1,6 +1,7 @@
 package persistence
 
 import (
+	"fmt"
 	"os"
 
 	"skylytics/internal/core"
@@ -10,21 +11,21 @@ import (
 	"gorm.io/gorm"
 )
 
-const (
-// defaultDBDSN = "host=localhost user=bsky password=bsky dbname=bsky sslmode=disable"
-)
-
 type DB struct {
 	*gorm.DB
 }
 
-func NewDB(_ *do.Injector) (core.DB, error) {
-	dsn := os.Getenv("POSTGRESQL_DSN")
-	if dsn == "" {
-		return nil, ErrNoPostgresDSN
-	}
+func dsnFromENV() string {
+	host := os.Getenv("POSTGRES_HOST")
+	user := os.Getenv("POSTGRES_USER")
+	password := os.Getenv("POSTGRES_PASSWORD")
+	dbname := os.Getenv("POSTGRES_DB")
 
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s", host, user, password, dbname)
+}
+
+func NewDB(_ *do.Injector) (core.DB, error) {
+	db, err := gorm.Open(postgres.Open(dsnFromENV()), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
