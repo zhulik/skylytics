@@ -3,6 +3,7 @@ package bluesky
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
@@ -43,11 +44,22 @@ func (s Subscriber) Subscribe() <-chan pips.D[core.BlueskyEvent] {
 	s.handle, ch = async.Generator(func(_ context.Context, yield async.Yielder[core.BlueskyEvent]) error {
 		defer s.conn.Close()
 
+		timer := time.NewTimer(5 * time.Second)
+		defer timer.Stop()
+
+		go func() {
+			for range timer.C {
+				s.conn.Close()
+			}
+		}()
+
 		for {
 			_, message, err := s.conn.ReadMessage()
 			if err != nil {
 				return err
 			}
+
+			timer.Reset(5 * time.Second)
 
 			var event core.BlueskyEvent
 			err = json.Unmarshal(message, &event)
