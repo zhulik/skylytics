@@ -22,7 +22,7 @@ var (
 	commitProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "skylytics_commit_processed_total",
 		Help: "The total number of processed commits",
-	}, []string{"commit_type"})
+	}, []string{"commit_type", "operation"})
 )
 
 type Analyzer struct {
@@ -61,16 +61,13 @@ func (a Analyzer) Analyze(_ context.Context, msg jetstream.Msg) (any, error) {
 	}
 
 	var commitType = ""
+	var commitOperation = ""
 
 	if event.Commit.Record != nil {
-		var commit core.Commit
-		err = json.Unmarshal(event.Commit.Record, &commit)
-		if err != nil {
-			return nil, err
-		}
-		commitType = commit.Type
+		commitType = event.Commit.Collection
+		commitOperation = event.Commit.Operation
 	}
 
-	commitProcessed.WithLabelValues(commitType).Inc()
+	commitProcessed.WithLabelValues(commitType, commitOperation).Inc()
 	return nil, nil
 }
