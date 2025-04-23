@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"skylytics/pkg/async"
 
@@ -48,6 +49,8 @@ func New(i *do.Injector) (core.Forwarder, error) {
 			Then(apply.Each(countEvent)).
 			Then(
 				apply.Map(func(ctx context.Context, event core.BlueskyEvent) (any, error) {
+					log.Printf("event received: %s", event.Did)
+
 					payload, err := json.Marshal(event)
 					if err != nil {
 						return nil, err
