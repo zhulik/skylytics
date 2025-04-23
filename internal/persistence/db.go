@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"gorm.io/gorm/logger"
+
 	"skylytics/internal/core"
 
 	"github.com/samber/do"
@@ -34,7 +36,9 @@ func dsnFromENV() string {
 }
 
 func NewDB(_ *do.Injector) (core.DB, error) {
-	db, err := gorm.Open(postgres.Open(dsnFromENV()), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsnFromENV()), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		return nil, err
 	}
