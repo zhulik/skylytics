@@ -32,7 +32,7 @@ func (r Repository) ExistsByDID(_ context.Context, dids ...string) ([]string, er
 }
 
 func (r Repository) Insert(_ context.Context, accounts ...core.AccountModel) error {
-	return r.db.Model(&core.EventModel{}).Create(&accounts).Error
+	return r.db.Model(&core.AccountModel{}).Create(&accounts).Error
 }
 
 func (r Repository) HealthCheck() error {
