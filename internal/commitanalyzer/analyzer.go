@@ -60,9 +60,6 @@ func (a Analyzer) Analyze(_ context.Context, msg jetstream.Msg) (any, error) {
 		return nil, err
 	}
 
-	var commitType = event.Commit.Collection
-	var commitOperation = event.Commit.Operation
-
-	commitProcessed.WithLabelValues(commitType, commitOperation).Inc()
+	commitProcessed.WithLabelValues(event.Commit.Collection, event.Commit.Operation).Inc()
 	return nil, nil
 }
