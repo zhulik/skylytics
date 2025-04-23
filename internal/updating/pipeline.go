@@ -10,9 +10,9 @@ import (
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/lo"
-	"gorm.io/gorm"
 
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
@@ -47,7 +47,9 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 
 				err = updater.accountRepo.Insert(ctx, serializedProfiles...)
 				if err != nil {
-					if !errors.Is(err, gorm.ErrDuplicatedKey) {
+					// For pgx driver
+					var pgError *pgconn.PgError
+					if !errors.As(err, &pgError) || pgError.Code != "23505" {
 						return nil, err
 					}
 				}

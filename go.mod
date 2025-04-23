@@ -6,7 +6,6 @@ require (
 	github.com/bluesky-social/jetstream v0.0.0-20250411043205-f4da85b6e06b
 	github.com/gorilla/websocket v1.5.3
 	github.com/k0kubun/pp v3.0.1+incompatible
-	github.com/lib/pq v1.10.9
 	github.com/nats-io/nats.go v1.41.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/do v1.6.0
