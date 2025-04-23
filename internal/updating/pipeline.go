@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
@@ -34,8 +33,6 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		Then(apply.Rebatch[pips.P[jetstream.Msg, string]](25)).
 		Then(
 			apply.Map(func(ctx context.Context, wraps []pips.P[jetstream.Msg, string]) (any, error) {
-				log.Printf("processing %d", len(wraps))
-
 				dids := lo.Map(wraps, func(item pips.P[jetstream.Msg, string], _ int) string {
 					return item.B()
 				})
@@ -96,9 +93,6 @@ func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
 		if err != nil {
 			return nil, err
 		}
-
-		log.Printf("existing: %d", len(existing))
-
 		return lo.Reject(wraps, func(item pips.P[jetstream.Msg, string], _ int) bool {
 			if lo.Contains(existing, item.B()) {
 				item.A().Ack() //nolint:errcheck
