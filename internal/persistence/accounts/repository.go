@@ -2,11 +2,9 @@ package accounts
 
 import (
 	"context"
-	"database/sql"
 
 	"skylytics/internal/core"
 
-	"github.com/lib/pq"
 	"github.com/samber/do"
 )
 
@@ -24,7 +22,7 @@ func (r Repository) ExistsByDID(_ context.Context, dids ...string) ([]string, er
 	var existing []string
 	err := r.db.Model(&core.AccountModel{}).
 		Select("account->>'did' as did").
-		Where("account->>'did' ?| array[:dids]", sql.Named("dids", pq.Array(dids))).
+		Where("account->>'did' in (?)", dids).
 		Find(&existing).Error
 
 	if err != nil {
