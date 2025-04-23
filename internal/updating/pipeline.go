@@ -3,6 +3,7 @@ package updating
 import (
 	"context"
 	"encoding/json"
+	"errors"
 
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/lo"
+	"gorm.io/gorm"
 
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
@@ -25,9 +27,6 @@ var (
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
-		Then(apply.Each(func(_ context.Context, msg jetstream.Msg) error {
-			return msg.Ack()
-		})).
 		Then(parseDIDs).
 		Then(apply.Batch[pips.P[jetstream.Msg, string]](100)).
 		Then(filterOutExistingAccounts(updater.accountRepo)).
@@ -45,8 +44,9 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 
 				err = updater.accountRepo.Insert(ctx, serializedProfiles...)
 				if err != nil {
-					// TODO: handle duplicated records here
-					return nil, err
+					if !errors.Is(err, gorm.ErrDuplicatedKey) {
+						return nil, err
+					}
 				}
 				lo.ForEach(wraps, func(item pips.P[jetstream.Msg, string], _ int) {
 					if item.A() != nil {
@@ -59,14 +59,25 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		)
 }
 
-func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids []string) ([][]byte, error) {
+func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids []string) ([]core.AccountModel, error) {
 	profiles, err := strmy.GetProfiles(ctx, dids...)
 	if err != nil {
 		return nil, err
 	}
 
-	return async.AsyncMap(ctx, profiles, func(_ context.Context, profile *stormy.Profile) ([]byte, error) {
-		return json.Marshal(profile)
+	return async.AsyncMap(ctx, profiles, func(_ context.Context, profile *stormy.Profile) (core.AccountModel, error) {
+		account, err := json.Marshal(profile)
+		if err != nil {
+			return core.AccountModel{}, err
+		}
+		var accountModel core.AccountModel
+
+		err = json.Unmarshal(account, &accountModel)
+		if err != nil {
+			return core.AccountModel{}, err
+		}
+
+		return core.AccountModel{Account: account}, nil
 	})
 }
 

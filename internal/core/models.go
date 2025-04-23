@@ -19,7 +19,7 @@ func (EventModel) TableName() string {
 type AccountModel struct {
 	gorm.Model
 
-	Account []byte `gorm:"type:jsonb"`
+	Account []byte `gorm:"type:jsonb;index:idx_did,expression:((account->>'did')),unique"`
 }
 
 func (AccountModel) TableName() string {

@@ -27,12 +27,12 @@ type Forwarder interface{}
 type CommitAnalyzer interface{}
 
 type EventRepository interface {
-	Insert(ctx context.Context, raw ...EventModel) error
+	Insert(context.Context, ...EventModel) error
 }
 
 type AccountRepository interface {
-	Insert(ctx context.Context, raw ...[]byte) error
-	ExistsByDID(ctx context.Context, dids ...string) ([]string, error)
+	Insert(context.Context, ...AccountModel) error
+	ExistsByDID(context.Context, ...string) ([]string, error)
 }
 
 type AccountUpdater interface {
