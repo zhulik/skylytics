@@ -2,8 +2,9 @@ package bluesky
 
 import (
 	"context"
-	"encoding/binary"
 	"encoding/json"
+	"fmt"
+	"strconv"
 
 	"time"
 
@@ -91,11 +92,9 @@ func (s Subscriber) Subscribe() <-chan pips.D[core.BlueskyEvent] {
 }
 
 func SerializeInt64(n int64) []byte {
-	b := make([]byte, 8)
-	binary.LittleEndian.PutUint64(b, uint64(n)) //nolint:gosec
-	return b
+	return []byte(fmt.Sprintf("%d", n))
 }
 
 func DeserializeInt64(b []byte) int64 {
-	return int64(binary.LittleEndian.Uint64(b)) //nolint:gosec
+	return lo.Must(strconv.ParseInt(string(b), 10, 64))
 }
