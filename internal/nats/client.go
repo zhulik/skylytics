@@ -19,6 +19,10 @@ type Client struct {
 	handle *async.JobHandle[any]
 }
 
+func (c Client) KV(ctx context.Context, bucket string) (core.KeyValueClient, error) {
+	return NewKV(ctx, c, bucket)
+}
+
 func NewClient(_ *do.Injector) (core.JetstreamClient, error) {
 	url := os.Getenv("NATS_URL")
 	if url == "" {

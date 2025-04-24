@@ -16,6 +16,8 @@ type JetstreamClient interface {
 
 	Consume(ctx context.Context, stream, name string) (<-chan pips.D[jetstream.Msg], error)
 	ConsumeToPipeline(ctx context.Context, stream, name string, pipeline *pips.Pipeline[jetstream.Msg, any]) error
+
+	KV(ctx context.Context, bucket string) (KeyValueClient, error)
 }
 
 type BlueskySubscriber interface {
@@ -51,4 +53,25 @@ type DB interface {
 
 	LastEventTimestamp() (int64, error)
 	Migrate() error
+}
+
+// KeyValueClient defines the interface for interacting with a JetStream key-value store
+type KeyValueClient interface {
+	// Get retrieves a value for the given key
+	Get(ctx context.Context, key string) ([]byte, error)
+
+	// Put stores a value for the given key
+	Put(ctx context.Context, key string, value []byte) error
+
+	// Delete removes a key-value pair
+	Delete(ctx context.Context, key string) error
+
+	// Keys returns all keys in the bucket
+	Keys(ctx context.Context) ([]string, error)
+
+	// HealthCheck checks if the client is healthy
+	HealthCheck() error
+
+	// Shutdown gracefully shuts down the client
+	Shutdown() error
 }

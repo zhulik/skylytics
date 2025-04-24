@@ -76,11 +76,3 @@ func ProcessedIs(processed bool) func(db *gorm.DB) *gorm.DB {
 		return db.Where("processed = ?", processed)
 	}
 }
-
-func Processed(db *gorm.DB) *gorm.DB {
-	return ProcessedIs(true)(db)
-}
-
-func NotProcessed(db *gorm.DB) *gorm.DB {
-	return ProcessedIs(false)(db)
-}

@@ -5,11 +5,13 @@ go 1.24.2
 require (
 	github.com/bluesky-social/jetstream v0.0.0-20250411043205-f4da85b6e06b
 	github.com/gorilla/websocket v1.5.3
+	github.com/jackc/pgx/v5 v5.5.4
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/nats-io/nats.go v1.41.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/do v1.6.0
 	github.com/samber/lo v1.38.1
+	github.com/stretchr/testify v1.10.0
 	github.com/zhulik/pips v0.6.1
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.9
@@ -21,6 +23,7 @@ require (
 	github.com/bluesky-social/indigo v0.0.0-20240905024844-a4f38639767f // indirect
 	github.com/carlmjohnson/versioninfo v0.22.5 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -44,7 +47,6 @@ require (
 	github.com/ipfs/go-metrics-interface v0.0.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/pgx/v5 v5.5.4 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jbenet/goprocess v0.1.4 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
@@ -65,6 +67,7 @@ require (
 	github.com/nats-io/nkeys v0.4.9 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/polydawn/refmt v0.89.1-0.20221221234430-40501e09de1f // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
@@ -86,5 +89,6 @@ require (
 	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
