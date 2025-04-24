@@ -79,7 +79,7 @@ func (s Subscriber) Subscribe() <-chan pips.D[core.BlueskyEvent] {
 
 			var event core.BlueskyEvent
 			err = json.Unmarshal(message, &event)
-			if err != nil {
+			if err == nil {
 				err = s.kv.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
 			}
 
