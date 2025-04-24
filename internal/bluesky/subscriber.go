@@ -65,7 +65,7 @@ func (s Subscriber) Subscribe() <-chan pips.D[core.BlueskyEvent] {
 
 		go func() {
 			for range timer.C {
-				s.conn.Close()
+				panic("hanged")
 			}
 		}()
 
