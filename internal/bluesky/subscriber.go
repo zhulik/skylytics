@@ -2,7 +2,9 @@ package bluesky
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/json"
+
 	"time"
 
 	"skylytics/internal/core"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/samber/do"
+	"github.com/samber/lo"
 
 	"github.com/zhulik/pips"
 )
@@ -20,7 +23,20 @@ const (
 
 type Subscriber struct {
 	conn   *websocket.Conn
+	kv     core.KeyValueClient
 	handle *async.JobHandle[any]
+}
+
+func NewSubscriber(i *do.Injector) (core.BlueskySubscriber, error) {
+	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return Subscriber{
+		conn: conn,
+		kv:   lo.Must(do.MustInvoke[core.JetstreamClient](i).KV(context.Background(), "skylytics")),
+	}, nil
 }
 
 func (s Subscriber) Shutdown() error {
@@ -41,7 +57,7 @@ func (s Subscriber) HealthCheck() error {
 func (s Subscriber) Subscribe() <-chan pips.D[core.BlueskyEvent] {
 	var ch <-chan pips.D[core.BlueskyEvent]
 
-	s.handle, ch = async.Generator(func(_ context.Context, yield async.Yielder[core.BlueskyEvent]) error {
+	s.handle, ch = async.Generator(func(ctx context.Context, yield async.Yielder[core.BlueskyEvent]) error {
 		defer s.conn.Close()
 
 		timer := time.NewTimer(5 * time.Second)
@@ -63,6 +79,9 @@ func (s Subscriber) Subscribe() <-chan pips.D[core.BlueskyEvent] {
 
 			var event core.BlueskyEvent
 			err = json.Unmarshal(message, &event)
+			if err != nil {
+				err = s.kv.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
+			}
 
 			yield(event, err)
 		}
@@ -71,11 +90,12 @@ func (s Subscriber) Subscribe() <-chan pips.D[core.BlueskyEvent] {
 	return ch
 }
 
-func NewSubscriber(_ *do.Injector) (core.BlueskySubscriber, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
-	if err != nil {
-		return nil, err
-	}
+func SerializeInt64(n int64) []byte {
+	b := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b, uint64(n)) //nolint:gosec
+	return b
+}
 
-	return Subscriber{conn: conn}, nil
+func DeserializeInt64(b []byte) int64 {
+	return int64(binary.LittleEndian.Uint64(b)) //nolint:gosec
 }
