@@ -3,8 +3,13 @@ package bluesky
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
+	"net/url"
 	"strconv"
+
+	"github.com/nats-io/nats.go/jetstream"
 
 	"time"
 
@@ -19,7 +24,7 @@ import (
 )
 
 const (
-	url = "wss://jetstream2.us-east.bsky.network/subscribe"
+	jetstreamURL = "wss://jetstream2.us-east.bsky.network/subscribe"
 )
 
 type Subscriber struct {
@@ -29,14 +34,37 @@ type Subscriber struct {
 }
 
 func NewSubscriber(i *do.Injector) (core.BlueskySubscriber, error) {
-	conn, _, err := websocket.DefaultDialer.Dial(url, nil)
+	kv := lo.Must(do.MustInvoke[core.JetstreamClient](i).KV(context.Background(), "skylytics"))
+
+	lastEventTimestampBytes, err := kv.Get(context.Background(), "last_event_timestamp")
+	if err != nil {
+		if !errors.Is(err, jetstream.ErrKeyNotFound) {
+			return nil, err
+		}
+	}
+
+	lastEventTimestamp := DeserializeInt64(lastEventTimestampBytes)
+
+	streamURL, err := url.Parse(jetstreamURL)
+	if err != nil {
+		return nil, err
+	}
+	if lastEventTimestamp > 0 {
+		params := make(url.Values)
+		params.Add("cursor", fmt.Sprintf("%d", lastEventTimestamp))
+		streamURL.RawQuery = params.Encode()
+
+		log.Printf("Continuing from last event timestamp: %d, url: %s", lastEventTimestamp, streamURL.String())
+	}
+
+	conn, _, err := websocket.DefaultDialer.Dial(streamURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}
 
 	return Subscriber{
 		conn: conn,
-		kv:   lo.Must(do.MustInvoke[core.JetstreamClient](i).KV(context.Background(), "skylytics")),
+		kv:   kv,
 	}, nil
 }
 
