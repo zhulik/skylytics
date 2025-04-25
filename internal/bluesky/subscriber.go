@@ -114,9 +114,6 @@ func (s Subscriber) Subscribe() <-chan pips.D[core.BlueskyEvent] {
 			err = json.Unmarshal(message, &event)
 			if err == nil {
 				err = s.kv.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
-				if err == nil {
-					log.Println("timer reset, last_event_timestamp updated")
-				}
 			}
 
 			yield(event, err)
