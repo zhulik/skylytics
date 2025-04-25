@@ -90,23 +90,27 @@ func (s Subscriber) Subscribe() <-chan pips.D[core.BlueskyEvent] {
 		defer s.conn.Close()
 
 		timer := time.NewTimer(5 * time.Second)
+
 		defer timer.Stop()
+		defer log.Println("subscriber stopped")
 
 		go func() {
-			for range timer.C {
-				panic("hanged")
-			}
+			<-timer.C
+			panic("hanged")
 		}()
 
 		for {
+			var event core.BlueskyEvent
+
 			_, message, err := s.conn.ReadMessage()
 			if err != nil {
+				yield(event, err)
+
 				return err
 			}
 
 			timer.Reset(5 * time.Second)
 
-			var event core.BlueskyEvent
 			err = json.Unmarshal(message, &event)
 			if err == nil {
 				err = s.kv.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
