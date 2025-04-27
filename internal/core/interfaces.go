@@ -51,7 +51,6 @@ type DB interface {
 	Model(any) *gorm.DB
 	EstimatedCount(string) (int64, error)
 
-	LastEventTimestamp() (int64, error)
 	Migrate() error
 }
 

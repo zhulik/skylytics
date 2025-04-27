@@ -48,31 +48,11 @@ func NewDB(_ *do.Injector) (core.DB, error) {
 
 func (db DB) Migrate() error {
 	return db.Transaction(func(tx *gorm.DB) error {
-		err := tx.AutoMigrate(&core.EventModel{})
-		if err != nil {
-			return err
-		}
-
-		err = tx.AutoMigrate(&core.AccountModel{})
+		err := tx.AutoMigrate(&core.AccountModel{})
 		if err != nil {
 			return err
 		}
 
 		return nil
 	})
-}
-
-func (db DB) LastEventTimestamp() (int64, error) {
-	var event core.EventModel
-	err := db.Order("timestamp DESC").First(&event).Error
-	if err != nil {
-		return 0, err
-	}
-	return event.Event.TimeUS, nil
-}
-
-func ProcessedIs(processed bool) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("processed = ?", processed)
-	}
 }

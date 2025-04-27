@@ -40,12 +40,7 @@ func NewCollector(i *do.Injector) (core.MetricsCollector, error) {
 
 				return nil, nil
 			case <-ticker.C:
-				err := collectTableEstimatedCount(collector, core.EventModel{})
-				if err != nil {
-					return nil, err
-				}
-
-				err = collectTableEstimatedCount(collector, core.AccountModel{})
+				err := collectTableEstimatedCount(collector, core.AccountModel{})
 				if err != nil {
 					return nil, err
 				}

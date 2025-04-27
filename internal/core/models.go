@@ -6,6 +6,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// CREATE EXTENSION timescaledb;
+// SELECT create_hypertable('events', by_range('created_at'));
+
 // EventModel represents a raw bluesky jetstream event.
 type EventModel struct {
 	CreatedAt time.Time `gorm:"nullable:false"`
