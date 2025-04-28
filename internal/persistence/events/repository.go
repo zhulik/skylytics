@@ -60,5 +60,3 @@ func (r Repository) HealthCheck() error {
 func (r Repository) Shutdown() error {
 	return r.kv.Shutdown()
 }
-
-// event.did:plc:peuujkwsz2fiplizt32xjcc6.1745834898232998
