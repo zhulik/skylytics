@@ -48,7 +48,7 @@ func (r Repository) Insert(ctx context.Context, events ...core.EventModel) error
 }
 
 func key(event core.EventModel) string {
-	return fmt.Sprintf("event-%s-%d", event.Event.Did, event.Event.TimeUS)
+	return fmt.Sprintf("event.%s.%d", event.Event.Did, event.Event.TimeUS)
 }
 
 func (r Repository) HealthCheck() error {
