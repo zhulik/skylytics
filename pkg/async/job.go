@@ -10,7 +10,7 @@ import (
 type JobHandle[T any] struct {
 	cancel func()
 	done   chan pips.D[T]
-	err    atomic.Pointer[error]
+	result atomic.Pointer[pips.D[T]]
 }
 
 func Job[T any](job func(ctx context.Context) (T, error)) *JobHandle[T] {
@@ -25,8 +25,9 @@ func Job[T any](job func(ctx context.Context) (T, error)) *JobHandle[T] {
 
 		res, err := job(ctx)
 
-		handle.err.Store(&err)
-		handle.done <- pips.NewD(res, err)
+		d := pips.NewD(res, err)
+		handle.result.Store(&d)
+		handle.done <- d
 	}()
 
 	return &handle
@@ -43,13 +44,19 @@ func (j *JobHandle[T]) StopWait() (T, error) {
 }
 
 func (j *JobHandle[T]) Wait() (T, error) {
-	return (<-j.done).Unpack()
+	p := j.result.Load()
+	if p == nil {
+		return (<-j.done).Unpack()
+	}
+
+	return (*p).Unpack()
 }
 
 func (j *JobHandle[T]) Error() error {
-	var err = j.err.Load()
-	if err == nil {
+	p := j.result.Load()
+	if p == nil {
 		return nil
 	}
-	return *err
+
+	return (*p).Error()
 }
