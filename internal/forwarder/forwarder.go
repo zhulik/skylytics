@@ -2,6 +2,7 @@ package forwarder
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"skylytics/pkg/async"
@@ -52,9 +53,11 @@ func New(i *do.Injector) (core.Forwarder, error) {
 						return nil, err
 					}
 
+					hashedDID := sha256.Sum256([]byte(event.Did))
+
 					return f.jetstream.Publish(
 						ctx,
-						fmt.Sprintf("skylytics.events.%s", event.Kind),
+						fmt.Sprintf("events.%s.%x", event.Kind, hashedDID),
 						payload,
 					)
 				}),
