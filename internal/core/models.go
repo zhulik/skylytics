@@ -6,16 +6,13 @@ import (
 	"gorm.io/gorm"
 )
 
-// CREATE EXTENSION timescaledb;
-// SELECT create_hypertable('events', by_range('created_at'));
-
 // EventModel represents a raw bluesky jetstream event.
 type EventModel struct {
-	CreatedAt time.Time `gorm:"nullable:false"`
+	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt `gorm:"index"`
+	DeletedAt gorm.DeletedAt
 
-	Event BlueskyEvent `gorm:"type:jsonb;index:idx_event_did,expression:((event->>'did'));index:idx_event_kind,expression:((event->>'kind'));index:idx_event_time_us,expression:((event->>'time_us'))"`
+	Event BlueskyEvent
 }
 
 func (EventModel) TableName() string {
