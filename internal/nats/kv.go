@@ -2,6 +2,8 @@ package nats
 
 import (
 	"context"
+	"fmt"
+
 	"skylytics/internal/core"
 
 	"github.com/nats-io/nats.go/jetstream"
@@ -36,7 +38,10 @@ func (c *KV) Get(ctx context.Context, key string) ([]byte, error) {
 // Put stores a value for the given key
 func (c *KV) Put(ctx context.Context, key string, value []byte) error {
 	_, err := c.kv.Put(ctx, key, value)
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to store key %s: %w", key, err)
+	}
+	return nil
 }
 
 // Delete removes a key-value pair

@@ -40,7 +40,7 @@ func (r Repository) Insert(ctx context.Context, events ...core.EventModel) error
 		}
 
 		if err := r.kv.Put(ctx, key(event), data); err != nil {
-			return fmt.Errorf("failed to store event %d: %w", i, err)
+			return fmt.Errorf("failed to store event %d, %w", i, err)
 		}
 	}
 
