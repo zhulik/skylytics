@@ -50,7 +50,7 @@ func (r Repository) Insert(ctx context.Context, events ...core.EventModel) error
 
 func key(event core.EventModel) string {
 	hashedDID := sha256.Sum256([]byte(event.Event.Did))
-	return fmt.Sprintf("event.%x-%d", hashedDID, event.Event.TimeUS)
+	return fmt.Sprintf("event.%x.%d", hashedDID, event.Event.TimeUS)
 }
 
 func (r Repository) HealthCheck() error {
