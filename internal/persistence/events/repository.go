@@ -2,6 +2,7 @@ package events
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 
@@ -48,7 +49,8 @@ func (r Repository) Insert(ctx context.Context, events ...core.EventModel) error
 }
 
 func key(event core.EventModel) string {
-	return fmt.Sprintf("event.%s.%d", event.Event.Did, event.Event.TimeUS)
+	hashedDID := sha256.Sum256([]byte(event.Event.Did))
+	return fmt.Sprintf("event.%s-%d", hashedDID, event.Event.TimeUS)
 }
 
 func (r Repository) HealthCheck() error {
@@ -58,3 +60,5 @@ func (r Repository) HealthCheck() error {
 func (r Repository) Shutdown() error {
 	return r.kv.Shutdown()
 }
+
+// event.did:plc:peuujkwsz2fiplizt32xjcc6.1745834898232998
