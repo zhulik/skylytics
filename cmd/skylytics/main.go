@@ -62,12 +62,11 @@ func main() {
 		log.Fatalf("unknown command: %s", command)
 	}
 
-	err := pal.New(
-		services...,
-	).
+	err := pal.New(services...).
 		InitTimeout(3*time.Second).
 		HealthCheckTimeout(1*time.Second).
-		ShutdownTimeout(3*time.Second).Run(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		ShutdownTimeout(3*time.Second).
+		Run(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	if err != nil {
 		log.Fatal(err)

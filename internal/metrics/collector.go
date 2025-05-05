@@ -24,12 +24,11 @@ type Collector struct {
 
 func (c *Collector) Run(ctx context.Context) error {
 	ticker := time.NewTicker(15 * time.Second)
+	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
-			ticker.Stop()
-
 			return nil
 		case <-ticker.C:
 			err := c.collectTableEstimatedCount(core.AccountModel{})
