@@ -29,7 +29,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
 		Then(parseDIDs).
 		Then(apply.Batch[pips.P[jetstream.Msg, string]](100)).
-		Then(filterOutExistingAccounts(updater.accountRepo)).
+		Then(filterOutExistingAccounts(updater.AccountRepo)).
 		Then(apply.Rebatch[pips.P[jetstream.Msg, string]](25)).
 		Then(
 			apply.Map(func(ctx context.Context, wraps []pips.P[jetstream.Msg, string]) (any, error) {
@@ -37,12 +37,12 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					return item.B()
 				})
 
-				serializedProfiles, err := fetchAndSerializeProfiles(ctx, updater.stormy, dids)
+				serializedProfiles, err := fetchAndSerializeProfiles(ctx, updater.Stormy, dids)
 				if err != nil {
 					return nil, err
 				}
 
-				err = updater.accountRepo.Insert(ctx, serializedProfiles...)
+				err = updater.AccountRepo.Insert(ctx, serializedProfiles...)
 				if err != nil {
 					// Ignore duplicate key errors.
 					var pgError *pgconn.PgError

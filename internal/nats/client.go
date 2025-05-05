@@ -11,19 +11,18 @@ import (
 
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/samber/do"
 )
 
 type Client struct {
 	jetstream.JetStream
-	handle *async.JobHandle[any]
+	Handle *async.JobHandle[any]
 }
 
-func (c Client) KV(ctx context.Context, bucket string) (core.KeyValueClient, error) {
+func (c *Client) KV(ctx context.Context, bucket string) (core.KeyValueClient, error) {
 	return NewKV(ctx, c, bucket)
 }
 
-func NewClient(_ *do.Injector) (core.JetstreamClient, error) {
+func (c *Client) Init(_ context.Context) error {
 	url := os.Getenv("NATS_URL")
 	if url == "" {
 		url = nats.DefaultURL
@@ -31,18 +30,20 @@ func NewClient(_ *do.Injector) (core.JetstreamClient, error) {
 
 	nc, err := nats.Connect(url)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	c, err := jetstream.New(nc)
+	js, err := jetstream.New(nc)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return Client{JetStream: c}, nil
+	c.JetStream = js
+
+	return nil
 }
 
-func (c Client) ConsumeToPipeline(ctx context.Context, stream, name string, pipeline *pips.Pipeline[jetstream.Msg, any]) error {
+func (c *Client) ConsumeToPipeline(ctx context.Context, stream, name string, pipeline *pips.Pipeline[jetstream.Msg, any]) error {
 	ch, err := c.Consume(ctx, stream, name)
 	if err != nil {
 		return err
@@ -53,7 +54,7 @@ func (c Client) ConsumeToPipeline(ctx context.Context, stream, name string, pipe
 		Wait(ctx)
 }
 
-func (c Client) Consume(ctx context.Context, stream, name string) (<-chan pips.D[jetstream.Msg], error) {
+func (c *Client) Consume(ctx context.Context, stream, name string) (<-chan pips.D[jetstream.Msg], error) {
 	cons, err := c.Consumer(ctx, stream, name)
 	if err != nil {
 		return nil, err
@@ -61,7 +62,7 @@ func (c Client) Consume(ctx context.Context, stream, name string) (<-chan pips.D
 
 	var ch <-chan pips.D[jetstream.Msg]
 
-	c.handle, ch = async.Generator(func(ctx context.Context, y async.Yielder[jetstream.Msg]) error {
+	c.Handle, ch = async.Generator(func(ctx context.Context, y async.Yielder[jetstream.Msg]) error {
 		for {
 			select {
 			case <-ctx.Done():
@@ -83,17 +84,17 @@ func (c Client) Consume(ctx context.Context, stream, name string) (<-chan pips.D
 	return ch, nil
 }
 
-func (c Client) HealthCheck() error {
-	if c.handle == nil {
+func (c *Client) HealthCheck(_ context.Context) error {
+	if c.Handle == nil {
 		return nil
 	}
-	return c.handle.Error()
+	return c.Handle.Error()
 }
 
-func (c Client) Shutdown() error {
-	if c.handle == nil {
+func (c *Client) Shutdown(_ context.Context) error {
+	if c.Handle == nil {
 		return nil
 	}
-	_, err := c.handle.StopWait()
+	_, err := c.Handle.StopWait()
 	return err
 }

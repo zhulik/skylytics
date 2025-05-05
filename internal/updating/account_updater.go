@@ -12,7 +12,6 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/samber/do"
 	"resty.dev/v3"
 )
 
@@ -28,29 +27,23 @@ var (
 )
 
 type AccountUpdater struct {
-	accountRepo core.AccountRepository
-	stormy      *stormy.Client
-
-	handle *async.JobHandle[any]
+	JS          core.JetstreamClient
+	AccountRepo core.AccountRepository
+	Stormy      *stormy.Client
 }
 
-func NewAccountUpdater(injector *do.Injector) (core.AccountUpdater, error) {
-	updater := AccountUpdater{
-		accountRepo: do.MustInvoke[core.AccountRepository](injector),
-		stormy: stormy.NewClient(&stormy.ClientConfig{
-			TransportSettings: stormy.DefaultConfig.TransportSettings,
+func (a *AccountUpdater) Init(_ context.Context) error {
+	a.Stormy = stormy.NewClient(&stormy.ClientConfig{
+		TransportSettings: stormy.DefaultConfig.TransportSettings,
 
-			ResponseMiddlewares: []resty.ResponseMiddleware{metricMiddleware},
-		}),
-	}
-
-	updater.handle = async.Job(func(ctx context.Context) (any, error) {
-		js := do.MustInvoke[core.JetstreamClient](injector)
-
-		return nil, js.ConsumeToPipeline(ctx, "skylytics", "account-updater", pipeline(&updater))
+		ResponseMiddlewares: []resty.ResponseMiddleware{metricMiddleware},
 	})
 
-	return &updater, nil
+	return nil
+}
+
+func (a *AccountUpdater) Run(ctx context.Context) error {
+	return a.JS.ConsumeToPipeline(ctx, "skylytics", "account-updater", pipeline(a))
 }
 
 func metricMiddleware(_ *resty.Client, response *resty.Response) error {
@@ -69,17 +62,8 @@ func metricMiddleware(_ *resty.Client, response *resty.Response) error {
 	return nil
 }
 
-func (a AccountUpdater) Update(ctx context.Context, msgs ...jetstream.Msg) error {
+func (a *AccountUpdater) Update(ctx context.Context, msgs ...jetstream.Msg) error {
 	return async.AsyncEach(ctx, msgs, func(_ context.Context, msg jetstream.Msg) error {
 		return msg.Ack()
 	})
-}
-
-func (a AccountUpdater) HealthCheck() error {
-	return a.handle.Error()
-}
-
-func (a AccountUpdater) Shutdown() error {
-	_, err := a.handle.StopWait()
-	return err
 }

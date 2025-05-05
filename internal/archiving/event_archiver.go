@@ -8,7 +8,6 @@ import (
 	"skylytics/pkg/async"
 
 	"github.com/nats-io/nats.go/jetstream"
-	"github.com/samber/do"
 
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
@@ -19,40 +18,21 @@ const (
 )
 
 type EventsArchiver struct {
-	eventRepository core.EventRepository
-	handle          *async.JobHandle[any]
+	JS              core.JetstreamClient
+	EventRepository core.EventRepository
 }
 
-func NewEventsArchiver(injector *do.Injector) (core.EventsArchiver, error) {
-	archiver := EventsArchiver{
-		eventRepository: do.MustInvoke[core.EventRepository](injector),
-	}
-
-	archiver.handle = async.Job(func(ctx context.Context) (any, error) {
-		js := do.MustInvoke[core.JetstreamClient](injector)
-
-		return nil, js.ConsumeToPipeline(ctx, "skylytics", "events-archiver", pips.New[jetstream.Msg, any]().
-			Then(apply.Batch[jetstream.Msg](batchSize)).
-			Then(
-				apply.Map(func(ctx context.Context, msgs []jetstream.Msg) ([]jetstream.Msg, error) {
-					return msgs, archiver.Archive(ctx, msgs...)
-				}),
-			))
-	})
-
-	return &archiver, nil
+func (a *EventsArchiver) Run(ctx context.Context) error {
+	return a.JS.ConsumeToPipeline(ctx, "skylytics", "events-archiver", pips.New[jetstream.Msg, any]().
+		Then(apply.Batch[jetstream.Msg](batchSize)).
+		Then(
+			apply.Map(func(ctx context.Context, msgs []jetstream.Msg) ([]jetstream.Msg, error) {
+				return msgs, a.Archive(ctx, msgs...)
+			}),
+		))
 }
 
-func (a EventsArchiver) Shutdown() error {
-	_, err := a.handle.StopWait()
-	return err
-}
-
-func (a EventsArchiver) HealthCheck() error {
-	return a.handle.Error()
-}
-
-func (a EventsArchiver) Archive(ctx context.Context, msgs ...jetstream.Msg) error {
+func (a *EventsArchiver) Archive(ctx context.Context, msgs ...jetstream.Msg) error {
 	events, err := async.AsyncMap(ctx, msgs, func(_ context.Context, item jetstream.Msg) (core.EventModel, error) {
 		var event core.BlueskyEvent
 
@@ -63,7 +43,7 @@ func (a EventsArchiver) Archive(ctx context.Context, msgs ...jetstream.Msg) erro
 		return err
 	}
 
-	if err := a.eventRepository.Insert(ctx, events...); err != nil {
+	if err := a.EventRepository.Insert(ctx, events...); err != nil {
 		return err
 	}
 

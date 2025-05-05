@@ -5,11 +5,9 @@ import (
 	"time"
 
 	"skylytics/internal/core"
-	"skylytics/pkg/async"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/samber/do"
 	"gorm.io/gorm/schema"
 )
 
@@ -21,52 +19,34 @@ var (
 )
 
 type Collector struct {
-	db     core.DB
-	handle *async.JobHandle[any]
+	DB core.DB
 }
 
-func NewCollector(i *do.Injector) (core.MetricsCollector, error) {
-	collector := Collector{
-		db: do.MustInvoke[core.DB](i),
-	}
+func (c *Collector) Run(ctx context.Context) error {
+	ticker := time.NewTicker(15 * time.Second)
 
-	collector.handle = async.Job(func(ctx context.Context) (any, error) {
-		ticker := time.NewTicker(15 * time.Second)
+	for {
+		select {
+		case <-ctx.Done():
+			ticker.Stop()
 
-		for {
-			select {
-			case <-ctx.Done():
-				ticker.Stop()
-
-				return nil, nil
-			case <-ticker.C:
-				err := collectTableEstimatedCount(collector, core.AccountModel{})
-				if err != nil {
-					return nil, err
-				}
+			return nil
+		case <-ticker.C:
+			err := c.collectTableEstimatedCount(core.AccountModel{})
+			if err != nil {
+				return err
 			}
 		}
-	})
-
-	return &collector, nil
+	}
 }
 
-func collectTableEstimatedCount(collector Collector, tabler schema.Tabler) error {
+func (c *Collector) collectTableEstimatedCount(tabler schema.Tabler) error {
 	var count int64
-	count, err := collector.db.EstimatedCount(tabler.TableName())
+	count, err := c.DB.EstimatedCount(tabler.TableName())
 
 	if err != nil {
 		return err
 	}
 	tableCount.WithLabelValues(tabler.TableName()).Set(float64(count))
 	return nil
-}
-
-func (c Collector) Shutdown() error {
-	_, err := c.handle.StopWait()
-	return err
-}
-
-func (c Collector) HealthCheck() error {
-	return c.handle.Error()
 }
