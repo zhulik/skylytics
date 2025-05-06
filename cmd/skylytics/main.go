@@ -24,32 +24,45 @@ import (
 
 func main() {
 	services := []pal.ServiceImpl{
-		pal.Provide[core.DB, persistence.DB](),
-		pal.Provide[core.JetstreamClient, inats.Client](),
 		pal.Provide[core.MetricsServer, metrics.HTTPServer](),
-		pal.Provide[core.BlueskySubscriber, bluesky.Subscriber](),
-		pal.Provide[core.EventRepository, events.Repository](),
-		pal.Provide[core.AccountRepository, accounts.Repository](),
 	}
 
 	command := os.Args[1]
 	switch command {
 	case "subscriber":
-		services = append(services, pal.Provide[core.Forwarder, forwarder.Forwarder]())
+		services = append(services,
+			pal.Provide[core.JetstreamClient, inats.Client](),
+			pal.Provide[core.BlueskySubscriber, bluesky.Subscriber](),
+			pal.Provide[core.Forwarder, forwarder.Forwarder](),
+		)
 
 	case "commit-analyzer":
-		services = append(services, pal.Provide[core.CommitAnalyzer, commitanalyzer.Analyzer]())
+		services = append(services,
+			pal.Provide[core.JetstreamClient, inats.Client](),
+			pal.Provide[core.CommitAnalyzer, commitanalyzer.Analyzer](),
+		)
 
 	case "event-archiver":
-		services = append(services, pal.Provide[core.EventsArchiver, archiving.EventsArchiver]())
+
+		services = append(services,
+			pal.Provide[core.JetstreamClient, inats.Client](),
+			pal.Provide[core.EventRepository, events.Repository](),
+			pal.Provide[core.EventsArchiver, archiving.EventsArchiver](),
+		)
 
 	case "account-updater":
-		services = append(services, pal.Provide[core.AccountUpdater, updating.AccountUpdater]())
+		services = append(services,
+			pal.Provide[core.DB, persistence.DB](),
+			pal.Provide[core.AccountRepository, accounts.Repository](),
+			pal.Provide[core.JetstreamClient, inats.Client](),
+			pal.Provide[core.AccountUpdater, updating.AccountUpdater](),
+		)
 
 	case "metrics-server":
-		services = append(services, pal.Provide[core.MetricsServer, metrics.Collector]())
+		services = append(services, pal.Provide[core.MetricsCollector, metrics.Collector]())
 
 	case "migrate":
+		// TODO: extract migration runner.
 		// db := do.MustInvoke[core.DB](injector)
 		// err := db.Migrate()
 		// if err != nil {
@@ -63,7 +76,10 @@ func main() {
 	}
 
 	err := pal.New(services...).
-		InitTimeout(3*time.Second).
+		SetLogger(func(fmt string, args ...any) {
+			log.Printf(fmt, args...)
+		}).
+		InitTimeout(300*time.Second).
 		HealthCheckTimeout(1*time.Second).
 		ShutdownTimeout(3*time.Second).
 		Run(context.Background(), syscall.SIGINT, syscall.SIGTERM)

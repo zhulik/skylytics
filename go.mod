@@ -10,7 +10,7 @@ require (
 	github.com/nats-io/nats.go v1.41.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/lo v1.38.1
-	github.com/zhulik/pal v0.3.2
+	github.com/zhulik/pal v0.3.7
 	github.com/zhulik/pips v0.6.1
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.9
@@ -84,12 +84,12 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
-	golang.org/x/crypto v0.37.0 // indirect
+	golang.org/x/crypto v0.38.0 // indirect
 	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8 // indirect
-	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
+	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
