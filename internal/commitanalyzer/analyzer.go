@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"skylytics/pkg/async"
-
 	"github.com/zhulik/pips/apply"
 
 	"skylytics/internal/core"
@@ -15,7 +13,6 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/samber/do"
 )
 
 var (
@@ -26,32 +23,16 @@ var (
 )
 
 type Analyzer struct {
-	handle *async.JobHandle[any]
+	JS core.JetstreamClient
 }
 
-func New(i *do.Injector) (core.CommitAnalyzer, error) {
-	analyzer := Analyzer{}
-
-	analyzer.handle = async.Job(func(ctx context.Context) (any, error) {
-		js := do.MustInvoke[core.JetstreamClient](i)
-		return nil, js.ConsumeToPipeline(ctx,
-			"skylytics", "commit-analyzer",
-			pips.New[jetstream.Msg, any](apply.Map(analyzer.Analyze)))
-	})
-
-	return &analyzer, nil
+func (a *Analyzer) Run(ctx context.Context) error {
+	return a.JS.ConsumeToPipeline(ctx,
+		"skylytics", "commit-analyzer",
+		pips.New[jetstream.Msg, any](apply.Map(a.Analyze)))
 }
 
-func (a Analyzer) Shutdown() error {
-	_, err := a.handle.StopWait()
-	return err
-}
-
-func (a Analyzer) HealthCheck() error {
-	return a.handle.Error()
-}
-
-func (a Analyzer) Analyze(_ context.Context, msg jetstream.Msg) (any, error) {
+func (a *Analyzer) Analyze(_ context.Context, msg jetstream.Msg) (any, error) {
 	msg.Ack() //nolint:errcheck
 
 	event := core.BlueskyEvent{}

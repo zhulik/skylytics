@@ -8,16 +8,13 @@ import (
 	"log"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
 
-	"time"
-
 	"skylytics/internal/core"
-	"skylytics/pkg/async"
 
 	"github.com/gorilla/websocket"
-	"github.com/samber/do"
 	"github.com/samber/lo"
 
 	"github.com/zhulik/pips"
@@ -28,18 +25,23 @@ const (
 )
 
 type Subscriber struct {
-	conn   *websocket.Conn
-	kv     core.KeyValueClient
-	handle *async.JobHandle[any]
+	JS core.JetstreamClient
+
+	Conn *websocket.Conn
+	KV   core.KeyValueClient
+	ch   chan pips.D[core.BlueskyEvent]
 }
 
-func NewSubscriber(i *do.Injector) (core.BlueskySubscriber, error) {
-	kv := lo.Must(do.MustInvoke[core.JetstreamClient](i).KV(context.Background(), "skylytics"))
+func (s *Subscriber) Init(ctx context.Context) error {
+	kv, err := s.JS.KV(ctx, "skylytics")
+	if err != nil {
+		return err
+	}
 
-	lastEventTimestampBytes, err := kv.Get(context.Background(), "last_event_timestamp")
+	lastEventTimestampBytes, err := kv.Get(ctx, "last_event_timestamp")
 	if err != nil {
 		if !errors.Is(err, jetstream.ErrKeyNotFound) {
-			return nil, err
+			return err
 		}
 	}
 
@@ -47,7 +49,7 @@ func NewSubscriber(i *do.Injector) (core.BlueskySubscriber, error) {
 
 	streamURL, err := url.Parse(jetstreamURL)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if lastEventTimestamp > 0 {
 		params := make(url.Values)
@@ -59,68 +61,55 @@ func NewSubscriber(i *do.Injector) (core.BlueskySubscriber, error) {
 
 	conn, _, err := websocket.DefaultDialer.Dial(streamURL.String(), nil)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return Subscriber{
-		conn: conn,
-		kv:   kv,
-	}, nil
+	s.Conn = conn
+	s.KV = kv
+	s.ch = make(chan pips.D[core.BlueskyEvent])
+
+	return nil
 }
 
-func (s Subscriber) Shutdown() error {
-	if s.handle == nil {
-		return nil
-	}
-	_, err := s.handle.StopWait()
-	return err
+func (s *Subscriber) Shutdown(_ context.Context) error {
+	return s.Conn.Close()
 }
 
-func (s Subscriber) HealthCheck() error {
-	if s.handle == nil {
-		return nil
-	}
-	return s.handle.Error()
+func (s *Subscriber) C() <-chan pips.D[core.BlueskyEvent] {
+	return s.ch
 }
 
-func (s Subscriber) Subscribe() <-chan pips.D[core.BlueskyEvent] {
-	var ch <-chan pips.D[core.BlueskyEvent]
+func (s *Subscriber) Run(ctx context.Context) error {
+	defer close(s.ch)
+	timer := time.NewTimer(5 * time.Second)
 
-	s.handle, ch = async.Generator(func(ctx context.Context, yield async.Yielder[core.BlueskyEvent]) error {
-		defer s.conn.Close()
+	defer timer.Stop()
+	defer log.Println("subscriber stopped")
 
-		timer := time.NewTimer(5 * time.Second)
+	go func() {
+		<-timer.C
+		panic("hanged")
+	}()
 
-		defer timer.Stop()
-		defer log.Println("subscriber stopped")
+	for {
+		var event core.BlueskyEvent
 
-		go func() {
-			<-timer.C
-			panic("hanged")
-		}()
+		_, message, err := s.Conn.ReadMessage()
+		if err != nil {
+			s.ch <- pips.NewD(event, err)
 
-		for {
-			var event core.BlueskyEvent
-
-			_, message, err := s.conn.ReadMessage()
-			if err != nil {
-				yield(event, err)
-
-				return err
-			}
-
-			timer.Reset(5 * time.Second)
-
-			err = json.Unmarshal(message, &event)
-			if err == nil {
-				err = s.kv.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
-			}
-
-			yield(event, err)
+			return err
 		}
-	})
 
-	return ch
+		timer.Reset(5 * time.Second)
+
+		err = json.Unmarshal(message, &event)
+		if err == nil {
+			err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
+		}
+
+		s.ch <- pips.NewD(event, err)
+	}
 }
 
 func SerializeInt64(n int64) []byte {

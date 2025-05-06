@@ -7,8 +7,6 @@ import (
 	"fmt"
 
 	"skylytics/internal/core"
-
-	"github.com/samber/do"
 )
 
 const (
@@ -17,30 +15,29 @@ const (
 )
 
 type Repository struct {
-	kv core.KeyValueClient
+	JS core.JetstreamClient
+
+	KV core.KeyValueClient
 }
 
-func NewRepository(i *do.Injector) (core.EventRepository, error) {
-	js := do.MustInvoke[core.JetstreamClient](i)
-
-	kv, err := js.KV(context.Background(), KVBucketName)
+func (r *Repository) Init(ctx context.Context) error {
+	kv, err := r.JS.KV(ctx, KVBucketName)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create KV client: %w", err)
+		return fmt.Errorf("failed to create KV client: %w", err)
 	}
+	r.KV = kv
 
-	return Repository{
-		kv: kv,
-	}, nil
+	return nil
 }
 
-func (r Repository) Insert(ctx context.Context, events ...core.EventModel) error {
+func (r *Repository) Insert(ctx context.Context, events ...core.EventModel) error {
 	for i, event := range events {
 		data, err := json.Marshal(event)
 		if err != nil {
 			return fmt.Errorf("failed to marshal event %d: %w", i, err)
 		}
 
-		if err := r.kv.Put(ctx, key(event), data); err != nil {
+		if err := r.KV.Put(ctx, key(event), data); err != nil {
 			return fmt.Errorf("failed to store event %d, %w", i, err)
 		}
 	}
@@ -48,15 +45,11 @@ func (r Repository) Insert(ctx context.Context, events ...core.EventModel) error
 	return nil
 }
 
+func (r *Repository) Shutdown(_ context.Context) error {
+	return r.KV.Shutdown()
+}
+
 func key(event core.EventModel) string {
 	hashedDID := sha256.Sum256([]byte(event.Event.Did))
 	return fmt.Sprintf("event.%x.%d", hashedDID, event.Event.TimeUS)
-}
-
-func (r Repository) HealthCheck() error {
-	return nil
-}
-
-func (r Repository) Shutdown() error {
-	return r.kv.Shutdown()
 }

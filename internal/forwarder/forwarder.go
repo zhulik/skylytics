@@ -2,10 +2,8 @@ package forwarder
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
-	"skylytics/pkg/async"
 
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
@@ -13,10 +11,8 @@ import (
 	"skylytics/internal/core"
 
 	"github.com/bluesky-social/jetstream/pkg/models"
-	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
-	"github.com/samber/do"
 )
 
 var (
@@ -27,55 +23,29 @@ var (
 )
 
 type Forwarder struct {
-	sub       core.BlueskySubscriber
-	jetstream jetstream.JetStream
-
-	handle *async.JobHandle[any]
+	Sub core.BlueskySubscriber
+	JS  core.JetstreamClient
 }
 
-func New(i *do.Injector) (core.Forwarder, error) {
-	js := do.MustInvoke[core.JetstreamClient](i)
+func (f *Forwarder) Run(ctx context.Context) error {
+	return pips.New[core.BlueskyEvent, any]().
+		Then(apply.Each(countEvent)).
+		Then(
+			apply.Map(func(ctx context.Context, event core.BlueskyEvent) (any, error) {
+				payload, err := json.Marshal(event)
+				if err != nil {
+					return nil, err
+				}
 
-	f := Forwarder{
-		sub:       do.MustInvoke[core.BlueskySubscriber](i),
-		jetstream: js,
-	}
-
-	f.handle = async.Job(func(ctx context.Context) (any, error) {
-		ch := f.sub.Subscribe()
-
-		return nil, pips.New[core.BlueskyEvent, any]().
-			Then(apply.Each(countEvent)).
-			Then(
-				apply.Map(func(ctx context.Context, event core.BlueskyEvent) (any, error) {
-					payload, err := json.Marshal(event)
-					if err != nil {
-						return nil, err
-					}
-
-					hashedDID := sha256.Sum256([]byte(event.Did))
-
-					return f.jetstream.Publish(
-						ctx,
-						fmt.Sprintf("events.%s.%x", event.Kind, hashedDID),
-						payload,
-					)
-				}),
-			).
-			Run(ctx, ch).
-			Wait(ctx)
-	})
-
-	return f, nil
-}
-
-func (f Forwarder) HealthCheck() error {
-	return f.handle.Error()
-}
-
-func (f Forwarder) Shutdown() error {
-	_, err := f.handle.StopWait()
-	return err
+				return f.JS.Publish(
+					ctx,
+					fmt.Sprintf("skylytics.events.%s", event.Kind),
+					payload,
+				)
+			}),
+		).
+		Run(ctx, f.Sub.C()).
+		Wait(ctx)
 }
 
 func countEvent(_ context.Context, event core.BlueskyEvent) error {

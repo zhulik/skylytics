@@ -1,74 +1,90 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"syscall"
+	"time"
 
 	"skylytics/internal/archiving"
+	"skylytics/internal/bluesky"
+	"skylytics/internal/commitanalyzer"
+	"skylytics/internal/core"
+	"skylytics/internal/forwarder"
+	"skylytics/internal/metrics"
 	inats "skylytics/internal/nats"
 	"skylytics/internal/persistence"
 	"skylytics/internal/persistence/accounts"
 	"skylytics/internal/persistence/events"
 	"skylytics/internal/updating"
 
-	"skylytics/internal/bluesky"
-	"skylytics/internal/commitanalyzer"
-	"skylytics/internal/core"
-	"skylytics/internal/forwarder"
-	"skylytics/internal/metrics"
-
-	"github.com/samber/do"
+	"github.com/zhulik/pal"
 )
 
 func main() {
-	injector := do.New()
-	defer injector.Shutdown() //nolint:errcheck
-
-	do.Provide[core.DB](injector, persistence.NewDB)
-	do.Provide[core.JetstreamClient](injector, inats.NewClient)
-	do.Provide[core.MetricsServer](injector, metrics.NewHTTPServer)
-	do.MustInvoke[core.MetricsServer](injector)
+	services := []pal.ServiceImpl{
+		pal.Provide[core.MetricsServer, metrics.HTTPServer](),
+	}
 
 	command := os.Args[1]
 	switch command {
 	case "subscriber":
-		do.Provide[core.BlueskySubscriber](injector, bluesky.NewSubscriber)
-		do.Provide[core.Forwarder](injector, forwarder.New)
-		do.MustInvoke[core.Forwarder](injector)
+		services = append(services,
+			pal.Provide[core.JetstreamClient, inats.Client](),
+			pal.Provide[core.BlueskySubscriber, bluesky.Subscriber](),
+			pal.Provide[core.Forwarder, forwarder.Forwarder](),
+		)
 
 	case "commit-analyzer":
-		do.Provide[core.CommitAnalyzer](injector, commitanalyzer.New)
-		do.MustInvoke[core.CommitAnalyzer](injector)
+		services = append(services,
+			pal.Provide[core.JetstreamClient, inats.Client](),
+			pal.Provide[core.CommitAnalyzer, commitanalyzer.Analyzer](),
+		)
 
 	case "event-archiver":
-		do.Provide[core.EventRepository](injector, events.NewRepository)
-		do.Provide[core.EventsArchiver](injector, archiving.NewEventsArchiver)
-		do.MustInvoke[core.EventsArchiver](injector)
+
+		services = append(services,
+			pal.Provide[core.JetstreamClient, inats.Client](),
+			pal.Provide[core.EventRepository, events.Repository](),
+			pal.Provide[core.EventsArchiver, archiving.EventsArchiver](),
+		)
 
 	case "account-updater":
-		do.Provide[core.AccountRepository](injector, accounts.NewRepository)
-		do.Provide[core.AccountUpdater](injector, updating.NewAccountUpdater)
-		do.MustInvoke[core.AccountUpdater](injector)
+		services = append(services,
+			pal.Provide[core.DB, persistence.DB](),
+			pal.Provide[core.AccountRepository, accounts.Repository](),
+			pal.Provide[core.JetstreamClient, inats.Client](),
+			pal.Provide[core.AccountUpdater, updating.AccountUpdater](),
+		)
 
 	case "metrics-server":
-		do.Provide[core.MetricsCollector](injector, metrics.NewCollector)
-		do.MustInvoke[core.MetricsCollector](injector)
+		services = append(services, pal.Provide[core.MetricsCollector, metrics.Collector]())
 
 	case "migrate":
-		db := do.MustInvoke[core.DB](injector)
-		err := db.Migrate()
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println("Database migrated")
-		return
+		// TODO: extract migration runner.
+		// db := do.MustInvoke[core.DB](injector)
+		// err := db.Migrate()
+		// if err != nil {
+		// 	log.Fatal(err)
+		// }
+		// log.Println("Database migrated")
+		// return
 
 	default:
 		log.Fatalf("unknown command: %s", command)
 	}
 
-	if err := injector.ShutdownOnSignals(syscall.SIGINT, syscall.SIGTERM); err != nil {
+	err := pal.New(services...).
+		SetLogger(func(fmt string, args ...any) {
+			log.Printf(fmt, args...)
+		}).
+		InitTimeout(300*time.Second).
+		HealthCheckTimeout(1*time.Second).
+		ShutdownTimeout(3*time.Second).
+		Run(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+
+	if err != nil {
 		log.Fatal(err)
 	}
 }
