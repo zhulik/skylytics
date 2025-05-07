@@ -196,6 +196,8 @@ github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9dec
 github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
 github.com/zhulik/pal v0.3.7 h1:ZuQAiiCDE4bxosdpjxAicWKNmar5517iiKywth7dWSQ=
 github.com/zhulik/pal v0.3.7/go.mod h1:Qf568k7cPfdhW2O5p3YKQuD15+bO8vo0bZf4zLALk90=
+github.com/zhulik/pal v0.3.8 h1:8bP6/4hj8k5WJqkpzz4vpukHsN5XYbAQpEFSVs0dwI8=
+github.com/zhulik/pal v0.3.8/go.mod h1:Qf568k7cPfdhW2O5p3YKQuD15+bO8vo0bZf4zLALk90=
 github.com/zhulik/pips v0.6.1 h1:gqCae+weDwEburq2ZMmuS8NAirKu5c9f49bGZ1TjW14=
 github.com/zhulik/pips v0.6.1/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1 h1:aFJWCqJMNjENlcleuuOkGAPH82y0yULBScfXcIEdS24=

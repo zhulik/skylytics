@@ -10,7 +10,7 @@ require (
 	github.com/nats-io/nats.go v1.41.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/lo v1.38.1
-	github.com/zhulik/pal v0.3.7
+	github.com/zhulik/pal v0.3.8
 	github.com/zhulik/pips v0.6.1
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.9
