@@ -95,23 +95,29 @@ func (s *Subscriber) Run(ctx context.Context) error {
 	}()
 
 	for {
-		var event core.BlueskyEvent
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
 
-		_, message, err := s.Conn.ReadMessage()
-		if err != nil {
+		default:
+			var event core.BlueskyEvent
+
+			_, message, err := s.Conn.ReadMessage()
+			if err != nil {
+				s.ch <- pips.NewD(event, err)
+
+				return err
+			}
+
+			timer.Reset(5 * time.Second)
+
+			err = json.Unmarshal(message, &event)
+			if err == nil {
+				err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
+			}
+
 			s.ch <- pips.NewD(event, err)
-
-			return err
 		}
-
-		timer.Reset(5 * time.Second)
-
-		err = json.Unmarshal(message, &event)
-		if err == nil {
-			err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
-		}
-
-		s.ch <- pips.NewD(event, err)
 	}
 }
 

@@ -44,12 +44,18 @@ func (s *HTTPServer) Init(ctx context.Context) error {
 	return nil
 }
 
-func (s *HTTPServer) Run(_ context.Context) error {
+func (s *HTTPServer) Run(ctx context.Context) error {
 	ln, err := net.Listen("tcp", s.Addr)
 	if err != nil {
 		return err
 	}
 	log.Println("Starting HTTP server at", s.Addr)
+
+	go func() {
+		<-ctx.Done()
+		// TODO: figure out a good context here, Run's ctx is cancelled.
+		s.Shutdown(context.TODO()) //nolint:errcheck
+	}()
 
 	return s.Serve(ln)
 }
