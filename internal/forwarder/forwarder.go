@@ -2,6 +2,7 @@ package forwarder
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 
@@ -37,9 +38,11 @@ func (f *Forwarder) Run(ctx context.Context) error {
 					return nil, err
 				}
 
+				did64 := base64.StdEncoding.EncodeToString([]byte(event.Did))
+
 				return f.JS.Publish(
 					ctx,
-					fmt.Sprintf("skylytics.events.%s", event.Kind),
+					fmt.Sprintf("event.%s.%s", event.Kind, did64),
 					payload,
 				)
 			}),
