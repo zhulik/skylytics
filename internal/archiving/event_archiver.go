@@ -3,6 +3,7 @@ package archiving
 import (
 	"context"
 	"encoding/json"
+	"os"
 
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
@@ -23,7 +24,7 @@ type EventsArchiver struct {
 }
 
 func (a *EventsArchiver) Run(ctx context.Context) error {
-	return a.JS.ConsumeToPipeline(ctx, "skylytics", "events-archiver", pips.New[jetstream.Msg, any]().
+	return a.JS.ConsumeToPipeline(ctx, os.Getenv("NATS_STREAM"), "events-archiver", pips.New[jetstream.Msg, any]().
 		Then(apply.Batch[jetstream.Msg](batchSize)).
 		Then(
 			apply.Map(func(ctx context.Context, msgs []jetstream.Msg) ([]jetstream.Msg, error) {

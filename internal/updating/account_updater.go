@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
@@ -43,7 +44,7 @@ func (a *AccountUpdater) Init(_ context.Context) error {
 }
 
 func (a *AccountUpdater) Run(ctx context.Context) error {
-	return a.JS.ConsumeToPipeline(ctx, "skylytics", "account-updater", pipeline(a))
+	return a.JS.ConsumeToPipeline(ctx, os.Getenv("NATS_STREAM"), "account-updater", pipeline(a))
 }
 
 func metricMiddleware(_ *resty.Client, response *resty.Response) error {

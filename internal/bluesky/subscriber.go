@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/url"
+	"os"
 	"strconv"
 	"time"
 
@@ -33,7 +34,7 @@ type Subscriber struct {
 }
 
 func (s *Subscriber) Init(ctx context.Context) error {
-	kv, err := s.JS.KV(ctx, "skylytics")
+	kv, err := s.JS.KV(ctx, os.Getenv("NATS_STATE_KV_BUCKET"))
 	if err != nil {
 		return err
 	}

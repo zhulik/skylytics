@@ -3,6 +3,7 @@ package commitanalyzer
 import (
 	"context"
 	"encoding/json"
+	"os"
 
 	"github.com/zhulik/pips/apply"
 
@@ -28,7 +29,7 @@ type Analyzer struct {
 
 func (a *Analyzer) Run(ctx context.Context) error {
 	return a.JS.ConsumeToPipeline(ctx,
-		"skylytics", "commit-analyzer",
+		os.Getenv("NATS_STREAM"), "commit-analyzer",
 		pips.New[jetstream.Msg, any](apply.Map(a.Analyze)))
 }
 
