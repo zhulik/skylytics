@@ -16,7 +16,6 @@ import (
 	"skylytics/internal/core"
 
 	"github.com/gorilla/websocket"
-	"github.com/samber/lo"
 
 	"github.com/zhulik/pips"
 )
@@ -46,7 +45,10 @@ func (s *Subscriber) Init(ctx context.Context) error {
 		}
 	}
 
-	lastEventTimestamp := DeserializeInt64(lastEventTimestampBytes)
+	lastEventTimestamp, err := DeserializeInt64(lastEventTimestampBytes)
+	if err != nil {
+		lastEventTimestamp = 0
+	}
 
 	streamURL, err := url.Parse(jetstreamURL)
 	if err != nil {
@@ -117,6 +119,6 @@ func SerializeInt64(n int64) []byte {
 	return []byte(fmt.Sprintf("%d", n))
 }
 
-func DeserializeInt64(b []byte) int64 {
-	return lo.Must(strconv.ParseInt(string(b), 10, 64))
+func DeserializeInt64(b []byte) (int64, error) {
+	return strconv.ParseInt(string(b), 10, 64)
 }
