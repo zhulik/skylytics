@@ -43,7 +43,7 @@ func (f *Forwarder) Run(ctx context.Context) error {
 
 				subject := fmt.Sprintf("event.%s.%s", event.Kind, did64)
 
-				slog.Info("Event published to NATS subject: %s", subject)
+				slog.Info("Event published to NATS subject", "subject", subject)
 
 				return f.JS.Publish(
 					ctx,

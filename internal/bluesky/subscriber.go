@@ -116,6 +116,9 @@ func (s *Subscriber) Run(ctx context.Context) error {
 
 			if err == nil {
 				err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
