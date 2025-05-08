@@ -69,7 +69,11 @@ func (c *Client) Consume(ctx context.Context, stream, name string) (<-chan pips.
 				return nil
 
 			default:
-				y(cons.Next())
+				msg, err := cons.Next()
+				if err != nil {
+					return nil
+				}
+				y(msg, nil)
 			}
 		}
 	})
