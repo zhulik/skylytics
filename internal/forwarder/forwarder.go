@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
@@ -42,8 +41,6 @@ func (f *Forwarder) Run(ctx context.Context) error {
 				did64 := base64.StdEncoding.EncodeToString([]byte(event.Did))
 
 				subject := fmt.Sprintf("event.%s.%s", event.Kind, did64)
-
-				slog.Info("Event published to NATS subject", "subject", subject)
 
 				return f.JS.Publish(
 					ctx,
