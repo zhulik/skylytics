@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"skylytics/pkg/retry"
+
 	"strconv"
 	"time"
 
@@ -33,42 +35,12 @@ type Subscriber struct {
 }
 
 func (s *Subscriber) Init(ctx context.Context) error {
-	kv, err := s.JS.KV(ctx, os.Getenv("NATS_STATE_KV_BUCKET"))
+	var err error
+	s.KV, err = s.JS.KV(ctx, os.Getenv("NATS_STATE_KV_BUCKET"))
 	if err != nil {
 		return err
 	}
 
-	lastEventTimestampBytes, err := kv.Get(ctx, "last_event_timestamp")
-	if err != nil {
-		if !errors.Is(err, jetstream.ErrKeyNotFound) {
-			return err
-		}
-	}
-
-	lastEventTimestamp, err := DeserializeInt64(lastEventTimestampBytes)
-	if err != nil {
-		lastEventTimestamp = 0
-	}
-
-	streamURL, err := url.Parse(jetstreamURL)
-	if err != nil {
-		return err
-	}
-	if lastEventTimestamp > 0 {
-		params := make(url.Values)
-		params.Add("cursor", fmt.Sprintf("%d", lastEventTimestamp))
-		streamURL.RawQuery = params.Encode()
-
-		log.Printf("Continuing from last event timestamp: %d, url: %s", lastEventTimestamp, streamURL.String())
-	}
-
-	conn, _, err := websocket.DefaultDialer.Dial(streamURL.String(), nil)
-	if err != nil {
-		return err
-	}
-
-	s.Conn = conn
-	s.KV = kv
 	s.ch = make(chan pips.D[core.BlueskyEvent])
 
 	return nil
@@ -91,15 +63,42 @@ func (s *Subscriber) Run(ctx context.Context) error {
 
 	go func() {
 		<-timer.C
-		panic("hanged")
+		s.Conn.Close()
 	}()
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
+	fn := retry.WrapWithRetry(func() error {
+		lastEventTimestampBytes, err := s.KV.Get(ctx, "last_event_timestamp")
+		if err != nil {
+			if !errors.Is(err, jetstream.ErrKeyNotFound) {
+				return err
+			}
+		}
 
-		default:
+		lastEventTimestamp, err := DeserializeInt64(lastEventTimestampBytes)
+		if err != nil {
+			lastEventTimestamp = 0
+		}
+
+		streamURL, err := url.Parse(jetstreamURL)
+		if err != nil {
+			return err
+		}
+		if lastEventTimestamp > 0 {
+			params := make(url.Values)
+			params.Add("cursor", fmt.Sprintf("%d", lastEventTimestamp))
+			streamURL.RawQuery = params.Encode()
+
+			log.Printf("Continuing from last event timestamp: %d, url: %s", lastEventTimestamp, streamURL.String())
+		}
+
+		conn, _, err := websocket.DefaultDialer.Dial(streamURL.String(), nil)
+		if err != nil {
+			return err
+		}
+
+		s.Conn = conn
+
+		for {
 			var event core.BlueskyEvent
 
 			_, message, err := s.Conn.ReadMessage()
@@ -112,16 +111,17 @@ func (s *Subscriber) Run(ctx context.Context) error {
 			timer.Reset(5 * time.Second)
 
 			err = json.Unmarshal(message, &event)
-			s.ch <- pips.NewD(event, err)
-
 			if err == nil {
 				err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
-				if err != nil {
-					return err
-				}
 			}
+
+			s.ch <- pips.NewD(event, err)
 		}
-	}
+	}, func(_ error, _ int) bool {
+		return true
+	}, 3)
+
+	return fn()
 }
 
 func SerializeInt64(n int64) []byte {
