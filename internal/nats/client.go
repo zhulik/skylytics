@@ -2,6 +2,7 @@ package nats
 
 import (
 	"context"
+	"log"
 	"os"
 
 	"skylytics/internal/core"
@@ -69,14 +70,21 @@ func (c *Client) Consume(ctx context.Context, stream, name string) (<-chan pips.
 				return nil
 
 			default:
-				batch, err := cons.Fetch(1000)
+				c := 0
+				batch, err := cons.FetchNoWait(1000)
 				if err != nil {
 					y(nil, err)
 				}
 
+				if batch.Error() != nil {
+					return batch.Error()
+				}
+
 				for msg := range batch.Messages() {
 					y(msg, nil)
+					c++
 				}
+				log.Printf("Batch of %d messages", c)
 			}
 		}
 	})

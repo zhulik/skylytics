@@ -43,7 +43,7 @@ func (a *Analyzer) Analyze(_ context.Context, msg jetstream.Msg) (any, error) {
 		return nil, err
 	}
 
-	slog.Info("Processing", "event", event)
+	slog.Info("Processing", "did", event.Did)
 
 	commitProcessed.WithLabelValues(event.Commit.Collection, event.Commit.Operation).Inc()
 	return nil, nil
