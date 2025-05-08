@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"syscall"
@@ -20,6 +21,7 @@ import (
 	"skylytics/internal/updating"
 
 	"github.com/zhulik/pal"
+	"golang.org/x/exp/slog"
 )
 
 func main() {
@@ -73,7 +75,9 @@ func main() {
 	}
 
 	err := pal.New(services...).
-		SetLogger(log.Printf).
+		SetLogger(func(fm string, args ...any) {
+			slog.With("component", "pal").Info(fmt.Sprintf(fm, args...))
+		}).
 		InitTimeout(300*time.Second).
 		HealthCheckTimeout(1*time.Second).
 		ShutdownTimeout(3*time.Second).

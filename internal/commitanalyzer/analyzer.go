@@ -3,6 +3,7 @@ package commitanalyzer
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"os"
 
 	"github.com/zhulik/pips/apply"
@@ -41,6 +42,8 @@ func (a *Analyzer) Analyze(_ context.Context, msg jetstream.Msg) (any, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	slog.Info("Processing", "event", event)
 
 	commitProcessed.WithLabelValues(event.Commit.Collection, event.Commit.Operation).Inc()
 	return nil, nil
