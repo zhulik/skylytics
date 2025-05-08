@@ -112,11 +112,11 @@ func (s *Subscriber) Run(ctx context.Context) error {
 			timer.Reset(5 * time.Second)
 
 			err = json.Unmarshal(message, &event)
+			s.ch <- pips.NewD(event, err)
+
 			if err == nil {
 				err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
 			}
-
-			s.ch <- pips.NewD(event, err)
 		}
 	}
 }
