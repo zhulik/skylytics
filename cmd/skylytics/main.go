@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"syscall"
@@ -21,14 +20,14 @@ import (
 	"skylytics/internal/updating"
 
 	"github.com/zhulik/pal"
-	"golang.org/x/exp/slog"
+	"github.com/zhulik/pal/inspect"
 )
 
 func main() {
-	services := []pal.ServiceImpl{
+	services := append([]pal.ServiceImpl{
 		pal.Provide[core.JetstreamClient, inats.Client](),
 		pal.Provide[core.MetricsServer, metrics.HTTPServer](),
-	}
+	}, inspect.Provide()...)
 
 	command := os.Args[1]
 	switch command {
@@ -60,6 +59,9 @@ func main() {
 	case "metrics-server":
 		services = append(services, pal.Provide[core.MetricsCollector, metrics.Collector]())
 
+	case "repl":
+		services = append(services, pal.Provide[*inspect.RemoteConsole, inspect.RemoteConsole]())
+
 	case "migrate":
 		// TODO: extract migration runner.
 		// db := do.MustInvoke[core.DB](injector)
@@ -75,9 +77,6 @@ func main() {
 	}
 
 	err := pal.New(services...).
-		SetLogger(func(fm string, args ...any) {
-			slog.With("component", "pal").Info(fmt.Sprintf(fm, args...))
-		}).
 		InitTimeout(300*time.Second).
 		HealthCheckTimeout(1*time.Second).
 		ShutdownTimeout(3*time.Second).
