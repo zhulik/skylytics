@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
 	"net/http"
@@ -57,5 +58,10 @@ func (s *HTTPServer) Run(ctx context.Context) error {
 		s.Shutdown(context.TODO()) //nolint:errcheck
 	}()
 
-	return s.Serve(ln)
+	err = s.Serve(ln)
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+
+	return err
 }
