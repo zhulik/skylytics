@@ -28,7 +28,7 @@ var (
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
 		Then(parseDIDs).
-		Then(apply.Batch[pips.P[jetstream.Msg, string]](100)).
+		Then(apply.Batch[pips.P[jetstream.Msg, string]](1000)).
 		Then(filterOutExistingAccounts(updater.AccountRepo)).
 		Then(apply.Rebatch[pips.P[jetstream.Msg, string]](25)).
 		Then(
