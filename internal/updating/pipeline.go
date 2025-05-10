@@ -44,7 +44,6 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 
 				err = updater.AccountRepo.Insert(ctx, serializedProfiles...)
 				if err != nil {
-
 					var pgError *pgconn.PgError
 					if errors.As(err, &pgError) {
 						// Ignore duplicate key errors.
