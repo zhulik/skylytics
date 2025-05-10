@@ -54,11 +54,6 @@ func (c *KV) Keys(ctx context.Context) ([]string, error) {
 	return c.kv.Keys(ctx)
 }
 
-// HealthCheck checks if the client is healthy
-func (c *KV) HealthCheck() error {
-	return nil
-}
-
 // Shutdown gracefully shuts down the client
 func (c *KV) Shutdown() error {
 	return nil

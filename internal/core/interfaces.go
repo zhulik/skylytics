@@ -68,9 +68,6 @@ type KeyValueClient interface {
 	// Keys returns all keys in the bucket
 	Keys(ctx context.Context) ([]string, error)
 
-	// HealthCheck checks if the client is healthy
-	HealthCheck() error
-
 	// Shutdown gracefully shuts down the client
 	Shutdown() error
 }
