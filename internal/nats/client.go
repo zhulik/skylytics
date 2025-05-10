@@ -69,7 +69,7 @@ func (c *Client) Consume(ctx context.Context, stream, name string) (<-chan pips.
 				return nil
 
 			default:
-				batch, err := cons.Fetch(500)
+				batch, err := cons.FetchNoWait(100)
 				if err != nil {
 					y(nil, err)
 				}
