@@ -29,7 +29,7 @@ type Analyzer struct {
 
 func (a *Analyzer) Run(ctx context.Context) error {
 	return a.JS.ConsumeToPipeline(ctx,
-		os.Getenv("NATS_STREAM"), "commit-analyzer",
+		os.Getenv("NATS_STREAM"), os.Getenv("NATS_CONSUMER"),
 		pips.New[jetstream.Msg, any](apply.Map(a.Analyze)))
 }
 
