@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"skylytics/internal/core"
@@ -31,6 +32,7 @@ func (c *Collector) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
+			log.Println("Collecting metrics")
 			err := c.collectTableEstimatedCount(core.AccountModel{})
 			if err != nil {
 				return err

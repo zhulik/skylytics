@@ -7,7 +7,6 @@ import (
 	"syscall"
 	"time"
 
-	"skylytics/internal/archiving"
 	"skylytics/internal/bluesky"
 	"skylytics/internal/commitanalyzer"
 	"skylytics/internal/core"
@@ -16,7 +15,6 @@ import (
 	inats "skylytics/internal/nats"
 	"skylytics/internal/persistence"
 	"skylytics/internal/persistence/accounts"
-	"skylytics/internal/persistence/events"
 	"skylytics/internal/updating"
 
 	"github.com/zhulik/pal"
@@ -33,7 +31,6 @@ func main() {
 	switch command {
 	case "subscriber":
 		services = append(services,
-
 			pal.Provide[core.BlueskySubscriber, bluesky.Subscriber](),
 			pal.Provide[core.Forwarder, forwarder.Forwarder](),
 		)
@@ -41,12 +38,6 @@ func main() {
 	case "commit-analyzer":
 		services = append(services,
 			pal.Provide[core.CommitAnalyzer, commitanalyzer.Analyzer](),
-		)
-
-	case "event-archiver":
-		services = append(services,
-			pal.Provide[core.EventRepository, events.Repository](),
-			pal.Provide[core.EventsArchiver, archiving.EventsArchiver](),
 		)
 
 	case "account-updater":
@@ -57,7 +48,9 @@ func main() {
 		)
 
 	case "metrics-server":
-		services = append(services, pal.Provide[core.MetricsCollector, metrics.Collector]())
+		services = append(services,
+			pal.Provide[core.DB, persistence.DB](),
+			pal.Provide[core.MetricsCollector, metrics.Collector]())
 
 	case "repl":
 		services = append(services, pal.Provide[*inspect.RemoteConsole, inspect.RemoteConsole]())
