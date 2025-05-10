@@ -22,14 +22,15 @@ import (
 )
 
 func main() {
-	services := append([]pal.ServiceImpl{
+	services := []pal.ServiceImpl{
 		pal.Provide[core.JetstreamClient, inats.Client](),
 		pal.Provide[core.MetricsServer, metrics.HTTPServer](),
-	}, inspect.Provide()...)
+	}
 
 	command := os.Args[1]
 	switch command {
 	case "subscriber":
+		services = append(services, inspect.Provide()...)
 		services = append(services,
 			pal.Provide[core.BlueskySubscriber, bluesky.Subscriber](),
 			pal.Provide[core.Forwarder, forwarder.Forwarder](),
