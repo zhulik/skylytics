@@ -66,7 +66,7 @@ func (s *Subscriber) Run(ctx context.Context) error {
 		s.Conn.Close()
 	}()
 
-	fn := retry.WrapWithRetry(func() error {
+	return retry.WrapWithRetry(func() error {
 		lastEventTimestampBytes, err := s.KV.Get(ctx, "last_event_timestamp")
 		if err != nil {
 			if !errors.Is(err, jetstream.ErrKeyNotFound) {
@@ -103,8 +103,7 @@ func (s *Subscriber) Run(ctx context.Context) error {
 
 			_, message, err := s.Conn.ReadMessage()
 			if err != nil {
-				s.ch <- pips.NewD(event, err)
-
+				// We do not forward errors to the channel, if something fails, we close the channel instead
 				return err
 			}
 
@@ -119,9 +118,7 @@ func (s *Subscriber) Run(ctx context.Context) error {
 		}
 	}, func(_ error, _ int) bool {
 		return true
-	}, 10)
-
-	return fn()
+	}, 10)()
 }
 
 func SerializeInt64(n int64) []byte {
