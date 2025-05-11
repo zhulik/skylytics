@@ -37,6 +37,9 @@ var (
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
+		Then(apply.Each(func(_ context.Context, msg jetstream.Msg) error {
+			return msg.Ack()
+		})).
 		Then(parseDIDs).
 		Then(apply.Batch[pips.P[jetstream.Msg, string]](1000)).
 		Then(filterOutExistingAccounts(updater.AccountRepo)).
