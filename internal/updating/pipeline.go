@@ -28,7 +28,7 @@ var (
 	})
 
 	accountsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
-		Name: "skylytics_updater_accounts_created",
+		Name: "skylytics_updater_accounts_created_total",
 		Help: "The total amount of accounts created but the updater.",
 	}, []string{"test"})
 )
