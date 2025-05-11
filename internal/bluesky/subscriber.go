@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/url"
 	"os"
 	"skylytics/pkg/retry"
@@ -27,6 +27,8 @@ const (
 )
 
 type Subscriber struct {
+	Logger *slog.Logger
+
 	JS core.JetstreamClient
 
 	Conn *websocket.Conn
@@ -35,6 +37,7 @@ type Subscriber struct {
 }
 
 func (s *Subscriber) Init(ctx context.Context) error {
+	s.Logger = s.Logger.With("component", s)
 	var err error
 	s.KV, err = s.JS.KV(ctx, os.Getenv("NATS_STATE_KV_BUCKET"))
 	if err != nil {
@@ -59,7 +62,7 @@ func (s *Subscriber) Run(ctx context.Context) error {
 	timer := time.NewTimer(5 * time.Second)
 
 	defer timer.Stop()
-	defer log.Println("subscriber stopped")
+	defer s.Logger.Info("Subscriber stopped")
 
 	go func() {
 		<-timer.C
@@ -87,9 +90,9 @@ func (s *Subscriber) Run(ctx context.Context) error {
 			params := make(url.Values)
 			params.Add("cursor", fmt.Sprintf("%d", lastEventTimestamp))
 			streamURL.RawQuery = params.Encode()
-
-			log.Printf("Continuing from last event timestamp: %d, url: %s", lastEventTimestamp, streamURL.String())
 		}
+
+		s.Logger.Info("Listening to bluesky jetstream", "url", streamURL.String())
 
 		conn, _, err := websocket.DefaultDialer.Dial(streamURL.String(), nil)
 		if err != nil {

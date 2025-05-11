@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"os"
 	"syscall"
 	"time"
@@ -22,6 +23,7 @@ import (
 
 func main() {
 	services := []pal.ServiceImpl{
+		pal.ProvideConst[*slog.Logger](slog.New(slog.NewTextHandler(os.Stdout, nil))),
 		pal.Provide[core.JetstreamClient, inats.Client](),
 		pal.Provide[core.MetricsServer, metrics.HTTPServer](),
 	}
