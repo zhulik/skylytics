@@ -29,9 +29,9 @@ func WrapWithRetry(f fn, shouldRetry shouldRetry, rate float32,
 
 			if len(errorTimestamps) < size {
 				continue
-			} else {
-				errorTimestamps = errorTimestamps[1:]
 			}
+
+			errorTimestamps = errorTimestamps[1:]
 
 			if errorTimestamps[len(errorTimestamps)-1].Sub(errorTimestamps[0]) < time.Second ||
 				!shouldRetry(err, attempt) {
