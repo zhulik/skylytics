@@ -49,6 +49,9 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				dids := lo.Map(wraps, func(item pips.P[jetstream.Msg, string], _ int) string {
 					return item.B()
 				})
+				if len(dids) == 0 {
+					return nil, nil
+				}
 
 				serializedProfiles, err := fetchAndSerializeProfiles(ctx, updater.Stormy, dids)
 				if err != nil {
