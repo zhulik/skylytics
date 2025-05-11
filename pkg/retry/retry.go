@@ -11,14 +11,8 @@ type shouldRetry func(err error, attempt int) bool
 // is above the threshold.
 func WrapWithRetry(f fn, shouldRetry shouldRetry, rate float32,
 ) func() error {
+	size := int(rate + 1)
 	var errorTimestamps []time.Time
-
-	pruneOldErrors := func(now time.Time) {
-		oneSecAgo := now.Add(-1 * time.Second)
-		for len(errorTimestamps) > 0 && errorTimestamps[0].Before(oneSecAgo) {
-			errorTimestamps = errorTimestamps[1:]
-		}
-	}
 
 	return func() error {
 		attempt := 0
@@ -32,11 +26,24 @@ func WrapWithRetry(f fn, shouldRetry shouldRetry, rate float32,
 			attempt++
 
 			now := time.Now()
-			pruneOldErrors(now)
+
 			errorTimestamps = append(errorTimestamps, now)
 
-			currErrorRate := float32(len(errorTimestamps))
+			if len(errorTimestamps) > size {
+				errorTimestamps = errorTimestamps[1:]
+			}
+			if len(errorTimestamps) < size {
+				continue
+			}
 
+			first := errorTimestamps[0]
+			last := errorTimestamps[len(errorTimestamps)-1]
+
+			if last.Sub(first) > time.Second {
+				continue
+			}
+
+			currErrorRate := float32(len(errorTimestamps)) / float32(duration.Seconds())
 			if shouldRetry(err, attempt) && currErrorRate < rate {
 				continue
 			}
