@@ -26,8 +26,6 @@ type BlueskySubscriber interface {
 
 type Forwarder interface{}
 
-type CommitAnalyzer interface{}
-
 type EventRepository interface {
 	Insert(context.Context, ...EventModel) error
 }

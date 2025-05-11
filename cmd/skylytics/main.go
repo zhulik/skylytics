@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"skylytics/internal/bluesky"
-	"skylytics/internal/commitanalyzer"
 	"skylytics/internal/core"
 	"skylytics/internal/forwarder"
 	"skylytics/internal/metrics"
@@ -34,11 +33,6 @@ func main() {
 		services = append(services,
 			pal.Provide[core.BlueskySubscriber, bluesky.Subscriber](),
 			pal.Provide[core.Forwarder, forwarder.Forwarder](),
-		)
-
-	case "commit-analyzer":
-		services = append(services,
-			pal.Provide[core.CommitAnalyzer, commitanalyzer.Analyzer](),
 		)
 
 	case "account-updater":

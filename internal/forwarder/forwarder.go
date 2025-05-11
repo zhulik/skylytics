@@ -21,6 +21,11 @@ var (
 		Name: "skylytics_events_processed_total",
 		Help: "The total number of processed events",
 	}, []string{"kind", "operation", "status"})
+
+	commitProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "skylytics_commit_processed_total",
+		Help: "The total number of processed commits",
+	}, []string{"commit_type", "operation"})
 )
 
 type Forwarder struct {
@@ -60,6 +65,7 @@ func countEvent(_ context.Context, event core.BlueskyEvent) error {
 	switch event.Kind {
 	case models.EventKindCommit:
 		operation = event.Commit.Operation
+		commitProcessed.WithLabelValues(event.Commit.Collection, event.Commit.Operation).Inc()
 	case models.EventKindAccount:
 		if event.Account.Status != nil {
 			status = *event.Account.Status
