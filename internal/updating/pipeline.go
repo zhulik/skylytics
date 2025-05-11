@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
@@ -23,6 +26,11 @@ var (
 		err := json.Unmarshal(msg.Data(), &event)
 		return event.Did, err
 	})
+
+	accountsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "skylytics_updater_accounts_created",
+		Help: "The total amount of accounts created but the updater.",
+	}, []string{"test"})
 )
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
@@ -55,6 +63,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 						return nil, err
 					}
 				}
+				accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
 				lo.ForEach(wraps, func(item pips.P[jetstream.Msg, string], _ int) {
 					if item.A() != nil {
 						item.A().Ack() //nolint:errcheck
@@ -98,6 +107,7 @@ func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
 		if err != nil {
 			return nil, err
 		}
+
 		return lo.Reject(wraps, func(item pips.P[jetstream.Msg, string], _ int) bool {
 			if lo.Contains(existing, item.B()) {
 				item.A().Ack() //nolint:errcheck
