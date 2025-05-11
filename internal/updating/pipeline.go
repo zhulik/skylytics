@@ -80,7 +80,6 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids []string) ([]core.AccountModel, error) {
 	g, ctx := errgroup.WithContext(ctx)
 	resultChan := make(chan []core.AccountModel, (len(dids)+24)/25)
-	defer close(resultChan)
 
 	chunks := lo.Chunk(dids, 25)
 	for _, chunk := range chunks {
@@ -117,6 +116,8 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 	if err := g.Wait(); err != nil {
 		return nil, err
 	}
+
+	close(resultChan)
 
 	var result []core.AccountModel
 	for models := range resultChan {
