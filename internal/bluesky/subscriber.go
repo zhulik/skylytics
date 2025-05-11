@@ -119,7 +119,7 @@ func (s *Subscriber) Run(ctx context.Context) error {
 		}
 	}, func(_ error, _ int) bool {
 		return true
-	}, 3)
+	}, 10)
 
 	return fn()
 }
