@@ -25,28 +25,18 @@ func WrapWithRetry(f fn, shouldRetry shouldRetry, rate float32,
 
 			attempt++
 
-			now := time.Now()
+			errorTimestamps = append(errorTimestamps, time.Now())
 
-			errorTimestamps = append(errorTimestamps, now)
-
-			if len(errorTimestamps) > size {
-				errorTimestamps = errorTimestamps[1:]
-			}
 			if len(errorTimestamps) < size {
 				continue
+			} else {
+				errorTimestamps = errorTimestamps[1:]
 			}
 
-			first := errorTimestamps[0]
-			last := errorTimestamps[len(errorTimestamps)-1]
-
-			if last.Sub(first) > time.Second {
-				continue
+			if errorTimestamps[len(errorTimestamps)-1].Sub(errorTimestamps[0]) < time.Second ||
+				!shouldRetry(err, attempt) {
+				return err // TODO: join and return last N errors
 			}
-
-			if shouldRetry(err, attempt) {
-				continue
-			}
-			return err
 		}
 	}
 }
