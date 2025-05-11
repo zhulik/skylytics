@@ -43,8 +43,7 @@ func WrapWithRetry(f fn, shouldRetry shouldRetry, rate float32,
 				continue
 			}
 
-			currErrorRate := float32(len(errorTimestamps)) / float32(duration.Seconds())
-			if shouldRetry(err, attempt) && currErrorRate < rate {
+			if shouldRetry(err, attempt) {
 				continue
 			}
 			return err
