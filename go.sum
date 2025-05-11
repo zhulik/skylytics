@@ -254,6 +254,10 @@ github.com/zhulik/pal/inspect v0.0.0-20250510110442-6ba439686a22 h1:9MhdTF6YR3AZ
 github.com/zhulik/pal/inspect v0.0.0-20250510110442-6ba439686a22/go.mod h1:Vzfjc15jvmqS9l3QksgugQwjV5163LztcI2/Xmy+wXs=
 github.com/zhulik/pal/inspect v0.0.0-20250511190609-0c5b7be7564b h1:BdRZIw7bxQlx+2fo/RZACPQdsJHz+Vk652zT9vy18XY=
 github.com/zhulik/pal/inspect v0.0.0-20250511190609-0c5b7be7564b/go.mod h1:Vzfjc15jvmqS9l3QksgugQwjV5163LztcI2/Xmy+wXs=
+github.com/zhulik/pal/inspect v1.0.0 h1:/9fubf4PMFQWavCAguc/iwYYs44OLik6K8THbXmJ6Bw=
+github.com/zhulik/pal/inspect v1.0.0/go.mod h1:Vzfjc15jvmqS9l3QksgugQwjV5163LztcI2/Xmy+wXs=
+github.com/zhulik/pal/inspect v1.0.1 h1:5rTHR1xb+HAQtDS2rHZUvsdIutLtSY2euMvUN2a/tLw=
+github.com/zhulik/pal/inspect v1.0.1/go.mod h1:Vzfjc15jvmqS9l3QksgugQwjV5163LztcI2/Xmy+wXs=
 github.com/zhulik/pips v0.6.2 h1:McUOpnZEG5pUwcdvS3IM94eHACdUMqtRciNvL4WiK8Y=
 github.com/zhulik/pips v0.6.2/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
 github.com/zhulik/pips v0.6.3 h1:JshaB4v5E7Tm1N5BX3ylkatQ8kQ7V50GPBYvZVD5Dhg=

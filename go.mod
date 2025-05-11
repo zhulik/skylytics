@@ -11,7 +11,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/lo v1.38.1
 	github.com/zhulik/pal v0.4.6
-	github.com/zhulik/pal/inspect v0.0.0-20250511190609-0c5b7be7564b
+	github.com/zhulik/pal/inspect v1.0.1
 	github.com/zhulik/pips v0.6.4
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.9
