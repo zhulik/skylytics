@@ -10,7 +10,6 @@ type shouldRetry func(err error, attempt int) bool
 // WrapWithRetry - wraps the given function, retries it if it fails and shouldRetry returns true. Exists if errors rate
 // is above the threshold.
 func WrapWithRetry(f fn, shouldRetry shouldRetry, rate float32) func() error {
-	size := int(rate + 1)
 	var errorTimestamps []time.Time
 
 	return func() error {
@@ -26,7 +25,7 @@ func WrapWithRetry(f fn, shouldRetry shouldRetry, rate float32) func() error {
 
 			errorTimestamps = append(errorTimestamps, time.Now())
 
-			if len(errorTimestamps) < size {
+			if len(errorTimestamps) < int(rate+1) {
 				continue
 			}
 
