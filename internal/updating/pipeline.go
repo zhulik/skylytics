@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
@@ -12,6 +15,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/lo"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
@@ -23,6 +28,11 @@ var (
 		err := json.Unmarshal(msg.Data(), &event)
 		return event.Did, err
 	})
+
+	accountsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "skylytics_updater_accounts_created_total",
+		Help: "The total amount of accounts created but the updater.",
+	}, []string{"test"})
 )
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
@@ -30,7 +40,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		Then(parseDIDs).
 		Then(apply.Batch[pips.P[jetstream.Msg, string]](1000)).
 		Then(filterOutExistingAccounts(updater.AccountRepo)).
-		Then(apply.Rebatch[pips.P[jetstream.Msg, string]](25)).
+		Then(apply.Rebatch[pips.P[jetstream.Msg, string]](100)).
 		Then(
 			apply.Map(func(ctx context.Context, wraps []pips.P[jetstream.Msg, string]) (any, error) {
 				dids := lo.Map(wraps, func(item pips.P[jetstream.Msg, string], _ int) string {
@@ -55,6 +65,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 						return nil, err
 					}
 				}
+				accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
 				lo.ForEach(wraps, func(item pips.P[jetstream.Msg, string], _ int) {
 					if item.A() != nil {
 						item.A().Ack() //nolint:errcheck
@@ -67,25 +78,53 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 }
 
 func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids []string) ([]core.AccountModel, error) {
-	profiles, err := strmy.GetProfiles(ctx, dids...)
-	if err != nil {
+	g, ctx := errgroup.WithContext(ctx)
+	resultChan := make(chan []core.AccountModel, (len(dids)+24)/25)
+
+	chunks := lo.Chunk(dids, 25)
+	for _, chunk := range chunks {
+		didChunk := chunk
+		g.Go(func() error {
+			profiles, err := strmy.GetProfiles(ctx, didChunk...)
+			if err != nil {
+				return err
+			}
+
+			models, err := async.AsyncMap(ctx, profiles, func(_ context.Context, profile *stormy.Profile) (core.AccountModel, error) {
+				account, err := json.Marshal(profile)
+				if err != nil {
+					return core.AccountModel{}, err
+				}
+				var accountModel core.AccountModel
+
+				err = json.Unmarshal(account, &accountModel)
+				if err != nil {
+					return core.AccountModel{}, err
+				}
+
+				return core.AccountModel{Account: account}, nil
+			})
+			if err != nil {
+				return err
+			}
+
+			resultChan <- models
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
 		return nil, err
 	}
 
-	return async.AsyncMap(ctx, profiles, func(_ context.Context, profile *stormy.Profile) (core.AccountModel, error) {
-		account, err := json.Marshal(profile)
-		if err != nil {
-			return core.AccountModel{}, err
-		}
-		var accountModel core.AccountModel
+	close(resultChan)
 
-		err = json.Unmarshal(account, &accountModel)
-		if err != nil {
-			return core.AccountModel{}, err
-		}
+	var result []core.AccountModel
+	for models := range resultChan {
+		result = append(result, models...)
+	}
 
-		return core.AccountModel{Account: account}, nil
-	})
+	return result, nil
 }
 
 func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
@@ -98,6 +137,7 @@ func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
 		if err != nil {
 			return nil, err
 		}
+
 		return lo.Reject(wraps, func(item pips.P[jetstream.Msg, string], _ int) bool {
 			if lo.Contains(existing, item.B()) {
 				item.A().Ack() //nolint:errcheck
