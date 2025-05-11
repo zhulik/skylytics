@@ -48,7 +48,17 @@ func main() {
 			pal.Provide[core.MetricsCollector, metrics.Collector]())
 
 	case "repl":
-		services = append(services, pal.Provide[*inspect.RemoteConsole, inspect.RemoteConsole]())
+		err := pal.New(
+			pal.Provide[*inspect.RemoteConsole, inspect.RemoteConsole](),
+		).
+			InitTimeout(time.Second).
+			HealthCheckTimeout(time.Second).
+			ShutdownTimeout(time.Second).
+			Run(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
 
 	case "migrate":
 		// TODO: extract migration runner.
@@ -65,9 +75,9 @@ func main() {
 	}
 
 	err := pal.New(services...).
-		InitTimeout(300*time.Second).
+		InitTimeout(2*time.Second).
 		HealthCheckTimeout(1*time.Second).
-		ShutdownTimeout(3*time.Second).
+		ShutdownTimeout(10*time.Second).
 		Run(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	if err != nil {
