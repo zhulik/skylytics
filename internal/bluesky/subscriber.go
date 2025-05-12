@@ -8,10 +8,10 @@ import (
 	"log/slog"
 	"net/url"
 	"os"
-	"skylytics/pkg/retry"
-
 	"strconv"
 	"time"
+
+	"skylytics/pkg/retry"
 
 	"github.com/nats-io/nats.go/jetstream"
 
@@ -37,7 +37,7 @@ type Subscriber struct {
 }
 
 func (s *Subscriber) Init(ctx context.Context) error {
-	s.Logger = s.Logger.With("component", s)
+	s.Logger = s.Logger.With("component", "bluesky.Subscriber")
 	var err error
 	s.KV, err = s.JS.KV(ctx, os.Getenv("NATS_STATE_KV_BUCKET"))
 	if err != nil {
