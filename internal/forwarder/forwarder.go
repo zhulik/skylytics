@@ -68,7 +68,7 @@ func subjectName(event *core.BlueskyEvent) string {
 		suffix = "identity"
 	}
 
-	return fmt.Sprintf("event.%s.%s.%s", event.Kind, suffix, did64)
+	return fmt.Sprintf("event.%s.%s.%s", did64, event.Kind, suffix)
 }
 
 func countEvent(_ context.Context, event *core.BlueskyEvent) error {
