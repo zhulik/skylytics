@@ -13,6 +13,7 @@ require (
 	github.com/zhulik/pal v0.5.1
 	github.com/zhulik/pal/inspect v1.1.0
 	github.com/zhulik/pips v0.6.4
+	golang.org/x/sync v0.14.0
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.9
 	resty.dev/v3 v3.0.0-beta.2
@@ -100,7 +101,6 @@ require (
 	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8 // indirect
 	golang.org/x/image v0.27.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
-	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect

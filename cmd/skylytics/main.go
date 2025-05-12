@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"log"
+	"log/slog"
 	"os"
 	"syscall"
 	"time"
 
 	"skylytics/internal/bluesky"
-	"skylytics/internal/commitanalyzer"
 	"skylytics/internal/core"
 	"skylytics/internal/forwarder"
 	"skylytics/internal/metrics"
@@ -23,6 +23,7 @@ import (
 
 func main() {
 	services := []pal.ServiceDef{
+		pal.ProvideConst[*slog.Logger](slog.New(slog.NewTextHandler(os.Stdout, nil))),
 		pal.Provide[core.JetstreamClient, inats.Client](),
 		pal.Provide[core.MetricsServer, metrics.HTTPServer](),
 	}
@@ -34,11 +35,6 @@ func main() {
 		services = append(services,
 			pal.Provide[core.BlueskySubscriber, bluesky.Subscriber](),
 			pal.Provide[core.Forwarder, forwarder.Forwarder](),
-		)
-
-	case "commit-analyzer":
-		services = append(services,
-			pal.Provide[core.CommitAnalyzer, commitanalyzer.Analyzer](),
 		)
 
 	case "account-updater":
@@ -54,7 +50,17 @@ func main() {
 			pal.Provide[core.MetricsCollector, metrics.Collector]())
 
 	case "repl":
-		services = append(services, pal.Provide[*inspect.RemoteConsole, inspect.RemoteConsole]())
+		err := pal.New(
+			pal.Provide[*inspect.RemoteConsole, inspect.RemoteConsole](),
+		).
+			InitTimeout(time.Second).
+			HealthCheckTimeout(time.Second).
+			ShutdownTimeout(time.Second).
+			Run(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
 
 	case "migrate":
 		// TODO: extract migration runner.
@@ -71,9 +77,9 @@ func main() {
 	}
 
 	err := pal.New(services...).
-		InitTimeout(300*time.Second).
+		InitTimeout(2*time.Second).
 		HealthCheckTimeout(1*time.Second).
-		ShutdownTimeout(3*time.Second).
+		ShutdownTimeout(10*time.Second).
 		Run(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
 	if err != nil {

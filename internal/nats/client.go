@@ -2,7 +2,7 @@ package nats
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 
 	"skylytics/internal/core"
@@ -16,6 +16,9 @@ import (
 
 type Client struct {
 	jetstream.JetStream
+
+	Logger *slog.Logger
+
 	Handle *async.JobHandle[any]
 }
 
@@ -24,6 +27,8 @@ func (c *Client) KV(ctx context.Context, bucket string) (core.KeyValueClient, er
 }
 
 func (c *Client) Init(_ context.Context) error {
+	c.Logger = c.Logger.With("component", c)
+
 	url := os.Getenv("NATS_URL")
 	if url == "" {
 		url = nats.DefaultURL
@@ -79,12 +84,12 @@ func (c *Client) Consume(ctx context.Context, stream, name string) (<-chan pips.
 					return batch.Error()
 				}
 
-				c := 0
+				n := 0
 				for msg := range batch.Messages() {
 					y(msg, nil)
-					c++
+					n++
 				}
-				log.Printf("Processed %d messages from %s by %s", c, stream, name)
+				c.Logger.Info("Batch processed", "len", n, "stream", stream, "consumer", name)
 			}
 		}
 	})

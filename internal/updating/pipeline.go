@@ -55,6 +55,10 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					return nil, err
 				}
 
+				if len(serializedProfiles) == 0 {
+					return nil, nil
+				}
+
 				err = updater.AccountRepo.Insert(ctx, serializedProfiles...)
 				if err != nil {
 					var pgError *pgconn.PgError

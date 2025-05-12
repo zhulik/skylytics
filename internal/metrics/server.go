@@ -3,7 +3,7 @@ package metrics
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
@@ -15,9 +15,13 @@ import (
 
 type HTTPServer struct {
 	*http.Server
+
+	Logger *slog.Logger
 }
 
 func (s *HTTPServer) Init(ctx context.Context) error {
+	s.Logger = s.Logger.With("component", s)
+
 	s.Server = &http.Server{
 		Addr:              ":8080",
 		ReadHeaderTimeout: time.Second,
@@ -35,7 +39,7 @@ func (s *HTTPServer) Init(ctx context.Context) error {
 		defer r.Body.Close()
 
 		if err != nil {
-			log.Printf("Health check failed: %+v", err)
+			s.Logger.Warn("Health check failed", "error", err)
 			w.WriteHeader(500)
 		}
 	})
@@ -50,7 +54,7 @@ func (s *HTTPServer) Run(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	log.Println("Starting HTTP server at", s.Addr)
+	s.Logger.Info("Starting HTTP server", "addr", s.Addr)
 
 	go func() {
 		<-ctx.Done()
