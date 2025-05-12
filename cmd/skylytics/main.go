@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	services := []pal.ServiceImpl{
+	services := []pal.ServiceDef{
 		pal.Provide[core.JetstreamClient, inats.Client](),
 		pal.Provide[core.MetricsServer, metrics.HTTPServer](),
 	}
