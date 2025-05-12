@@ -34,10 +34,10 @@ type Forwarder struct {
 }
 
 func (f *Forwarder) Run(ctx context.Context) error {
-	return pips.New[core.BlueskyEvent, any]().
+	return pips.New[*core.BlueskyEvent, any]().
 		Then(apply.Each(countEvent)).
 		Then(
-			apply.Map(func(ctx context.Context, event core.BlueskyEvent) (any, error) {
+			apply.Map(func(ctx context.Context, event *core.BlueskyEvent) (any, error) {
 				payload, err := json.Marshal(event)
 				if err != nil {
 					return nil, err
@@ -58,7 +58,7 @@ func (f *Forwarder) Run(ctx context.Context) error {
 		Wait(ctx)
 }
 
-func countEvent(_ context.Context, event core.BlueskyEvent) error {
+func countEvent(_ context.Context, event *core.BlueskyEvent) error {
 	operation := ""
 	status := ""
 
