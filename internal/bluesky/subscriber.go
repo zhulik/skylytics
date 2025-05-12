@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"skylytics/pkg/retry"
 	"strconv"
 	"time"
 
@@ -85,13 +86,17 @@ func (s *Subscriber) Run(ctx context.Context) error {
 
 	cursor := &lastEventTimestamp
 
-	err = s.client.ConnectAndRead(ctx, cursor)
+	return retry.WrapWithRetry(func() error {
+		err = s.client.ConnectAndRead(ctx, cursor)
 
-	// A separate context because the original one will be canceled for shutdown.
-	putCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+		// A separate context because the original one will be canceled for shutdown.
+		putCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
 
-	return errors.Join(err, s.KV.Put(putCtx, "last_event_timestamp", SerializeInt64(*cursor)))
+		return errors.Join(err, s.KV.Put(putCtx, "last_event_timestamp", SerializeInt64(*cursor)))
+	}, func(_ error, _ int) bool {
+		return true
+	}, 10)()
 
 	//timer := time.NewTimer(5 * time.Second)
 	//
@@ -101,14 +106,6 @@ func (s *Subscriber) Run(ctx context.Context) error {
 	//	<-timer.C
 	//	s.Shutdown(ctx)
 	//}()
-	//
-	//timer.Reset(5 * time.Second)
-	//
-	//retry.WrapWithRetry(func() error {
-	// TODO:
-	//}, func(_ error, _ int) bool {
-	//	return true
-	//}, 10
 }
 
 func SerializeInt64(n int64) []byte {
