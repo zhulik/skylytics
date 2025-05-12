@@ -21,7 +21,7 @@ type JetstreamClient interface {
 }
 
 type BlueskySubscriber interface {
-	C() <-chan pips.D[*BlueskyEvent]
+	ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipeline[*BlueskyEvent, any]) error
 }
 
 type Forwarder interface{}

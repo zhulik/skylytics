@@ -26,13 +26,11 @@ const (
 
 type Subscriber struct {
 	Logger *slog.Logger
+	JS     core.JetstreamClient
+	KV     core.KeyValueClient
 
-	JS core.JetstreamClient
-
+	ch     chan pips.D[*core.BlueskyEvent]
 	client *bsky.Client
-
-	KV core.KeyValueClient
-	ch chan pips.D[*core.BlueskyEvent]
 }
 
 func (s *Subscriber) Init(ctx context.Context) error {
@@ -40,23 +38,24 @@ func (s *Subscriber) Init(ctx context.Context) error {
 
 	s.ch = make(chan pips.D[*core.BlueskyEvent])
 	s.Logger = s.Logger.With("component", "bluesky.Subscriber")
+
 	s.KV, err = s.JS.KV(ctx, os.Getenv("NATS_STATE_KV_BUCKET"))
 	if err != nil {
 		return err
 	}
+
+	handler := sequential.NewScheduler("scheduler", s.Logger, func(_ context.Context, event *models.Event) error {
+		s.ch <- pips.NewD(event)
+
+		return nil
+	})
 
 	s.client, err = bsky.NewClient(
 		&bsky.ClientConfig{
 			Compress:     true,
 			WebsocketURL: jetstreamURL,
 			ExtraHeaders: map[string]string{},
-		},
-		s.Logger.With("component", "bsky-jetstream-client"),
-		sequential.NewScheduler("scheduler", s.Logger, func(_ context.Context, event *models.Event) error {
-			s.ch <- pips.NewD(event)
-
-			return nil
-		}),
+		}, s.Logger, handler,
 	)
 
 	return err
@@ -67,8 +66,10 @@ func (s *Subscriber) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (s *Subscriber) C() <-chan pips.D[*core.BlueskyEvent] {
-	return s.ch
+func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipeline[*core.BlueskyEvent, any]) error {
+	return pipeline.
+		Run(ctx, s.ch).
+		Wait(ctx)
 }
 
 func (s *Subscriber) Run(ctx context.Context) error {

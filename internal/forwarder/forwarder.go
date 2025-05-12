@@ -34,7 +34,7 @@ type Forwarder struct {
 }
 
 func (f *Forwarder) Run(ctx context.Context) error {
-	return pips.New[*core.BlueskyEvent, any]().
+	return f.Sub.ConsumeToPipeline(ctx, pips.New[*core.BlueskyEvent, any]().
 		Then(apply.Each(countEvent)).
 		Then(
 			apply.Map(func(ctx context.Context, event *core.BlueskyEvent) (any, error) {
@@ -43,19 +43,32 @@ func (f *Forwarder) Run(ctx context.Context) error {
 					return nil, err
 				}
 
-				did64 := base64.StdEncoding.EncodeToString([]byte(event.Did))
-
-				subject := fmt.Sprintf("event.%s.%s", event.Kind, did64)
-
-				return f.JS.Publish(
-					ctx,
-					subject,
-					payload,
-				)
+				return f.JS.Publish(ctx, subjectName(event), payload)
 			}),
-		).
-		Run(ctx, f.Sub.C()).
-		Wait(ctx)
+		),
+	)
+}
+
+func subjectName(event *core.BlueskyEvent) string {
+	did64 := base64.StdEncoding.EncodeToString([]byte(event.Did))
+
+	suffix := ""
+
+	switch event.Kind {
+	case models.EventKindCommit:
+		suffix = fmt.Sprintf("%s.%s", event.Commit.Operation, event.Commit.Collection)
+	case models.EventKindAccount:
+		if event.Account.Active {
+			suffix = "active"
+		} else {
+			suffix = "inactive"
+		}
+
+	case models.EventKindIdentity:
+		suffix = "identity"
+	}
+
+	return fmt.Sprintf("event.%s.%s.%s", event.Kind, suffix, did64)
 }
 
 func countEvent(_ context.Context, event *core.BlueskyEvent) error {
