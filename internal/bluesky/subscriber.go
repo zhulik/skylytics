@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"time"
 
 	"skylytics/pkg/retry"
 
@@ -54,7 +55,7 @@ func (s *Subscriber) Init(ctx context.Context) error {
 		&bsky.ClientConfig{
 			Compress:     true,
 			WebsocketURL: jetstreamURL,
-			ExtraHeaders: map[string]string{},
+			ReadTimeout:  10 * time.Second,
 		}, s.Logger, handler,
 	)
 

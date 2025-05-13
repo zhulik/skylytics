@@ -4,7 +4,6 @@ go 1.24.2
 
 require (
 	github.com/bluesky-social/jetstream v0.0.0-20250411043205-f4da85b6e06b
-	github.com/gorilla/websocket v1.5.3
 	github.com/jackc/pgx/v5 v5.5.4
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/nats-io/nats.go v1.41.1
@@ -45,6 +44,7 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/google/pprof v0.0.0-20250501235452-c0086092b71a // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
@@ -107,3 +107,5 @@ require (
 	google.golang.org/protobuf v1.36.5 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
+
+replace github.com/bluesky-social/jetstream => github.com/zhulik/jetstream v0.0.0-20250513110542-1c4a70c108b0
