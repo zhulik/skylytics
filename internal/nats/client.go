@@ -3,7 +3,6 @@ package nats
 import (
 	"context"
 	"log/slog"
-	"os"
 
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
@@ -31,7 +30,7 @@ func (c *Client) KV(ctx context.Context, bucket string) (core.KeyValueClient, er
 func (c *Client) Init(_ context.Context) error {
 	c.Logger = c.Logger.With("component", "nats.Client")
 
-	url := os.Getenv(c.Config.NatsURL)
+	url := c.Config.NatsURL
 	if url == "" {
 		url = nats.DefaultURL
 	}
