@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"skylytics/pkg/retry"
 	"strconv"
-	"time"
+
+	"skylytics/pkg/retry"
 
 	bsky "github.com/bluesky-social/jetstream/pkg/client"
 	"github.com/bluesky-social/jetstream/pkg/client/schedulers/sequential"
@@ -44,10 +44,10 @@ func (s *Subscriber) Init(ctx context.Context) error {
 		return err
 	}
 
-	handler := sequential.NewScheduler("scheduler", s.Logger, func(_ context.Context, event *models.Event) error {
+	handler := sequential.NewScheduler("scheduler", s.Logger, func(ctx context.Context, event *models.Event) error {
 		s.ch <- pips.NewD(event)
 
-		return nil
+		return s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
 	})
 
 	s.client, err = bsky.NewClient(
@@ -73,40 +73,32 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 }
 
 func (s *Subscriber) Run(ctx context.Context) error {
-	lastEventTimestampBytes, err := s.KV.Get(ctx, "last_event_timestamp")
-	if err != nil {
-		if !errors.Is(err, jetstream.ErrKeyNotFound) {
-			return err
-		}
-	}
-
-	lastEventTimestamp, err := DeserializeInt64(lastEventTimestampBytes)
-	if err != nil {
-		lastEventTimestamp = 0
-	}
-
-	cursor := &lastEventTimestamp
-
 	return retry.WrapWithRetry(func() error {
-		err = s.client.ConnectAndRead(ctx, cursor)
+		lastEventTimestampBytes, err := s.KV.Get(ctx, "last_event_timestamp")
+		if err != nil {
+			if !errors.Is(err, jetstream.ErrKeyNotFound) {
+				return err
+			}
+		}
 
-		// A separate context because the original one will be canceled for shutdown.
-		putCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
+		lastEventTimestamp, err := DeserializeInt64(lastEventTimestampBytes)
+		if err != nil {
+			lastEventTimestamp = 0
+		}
 
-		return errors.Join(err, s.KV.Put(putCtx, "last_event_timestamp", SerializeInt64(*cursor)))
+		return s.client.ConnectAndRead(ctx, &lastEventTimestamp)
 	}, func(_ error, _ int) bool {
 		return true
 	}, 10)()
 
-	//timer := time.NewTimer(5 * time.Second)
+	// timer := time.NewTimer(3 * time.Second)
 	//
-	//defer timer.Stop()
+	// defer timer.Stop()
 	//
-	//go func() {
+	// go func() {
 	//	<-timer.C
 	//	s.Shutdown(ctx)
-	//}()
+	// }()
 }
 
 func SerializeInt64(n int64) []byte {
