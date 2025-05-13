@@ -17,6 +17,8 @@ import (
 type Client struct {
 	jetstream.JetStream
 
+	Config *core.Config
+
 	Logger *slog.Logger
 
 	Handle *async.JobHandle[any]
@@ -29,7 +31,7 @@ func (c *Client) KV(ctx context.Context, bucket string) (core.KeyValueClient, er
 func (c *Client) Init(_ context.Context) error {
 	c.Logger = c.Logger.With("component", "nats.Client")
 
-	url := os.Getenv("NATS_URL")
+	url := os.Getenv(c.Config.NatsURL)
 	if url == "" {
 		url = nats.DefaultURL
 	}

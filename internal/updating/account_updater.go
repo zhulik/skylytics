@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"os"
 
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
@@ -31,6 +30,7 @@ type AccountUpdater struct {
 	JS          core.JetstreamClient
 	AccountRepo core.AccountRepository
 	Stormy      *stormy.Client
+	Config      *core.Config
 }
 
 func (a *AccountUpdater) Init(_ context.Context) error {
@@ -46,8 +46,8 @@ func (a *AccountUpdater) Init(_ context.Context) error {
 func (a *AccountUpdater) Run(ctx context.Context) error {
 	return a.JS.ConsumeToPipeline(
 		ctx,
-		os.Getenv("NATS_STREAM"),
-		os.Getenv("NATS_CONSUMER"),
+		a.Config.NatsStream,
+		a.Config.NatsConsumer,
 		pipeline(a),
 	)
 }

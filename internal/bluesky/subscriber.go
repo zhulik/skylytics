@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"strconv"
 	"time"
 
@@ -29,6 +28,7 @@ type Subscriber struct {
 	Logger *slog.Logger
 	JS     core.JetstreamClient
 	KV     core.KeyValueClient
+	Config *core.Config
 
 	ch     chan pips.D[*core.BlueskyEvent]
 	client *bsky.Client
@@ -40,7 +40,7 @@ func (s *Subscriber) Init(ctx context.Context) error {
 	s.ch = make(chan pips.D[*core.BlueskyEvent])
 	s.Logger = s.Logger.With("component", "bluesky.Subscriber")
 
-	s.KV, err = s.JS.KV(ctx, os.Getenv("NATS_STATE_KV_BUCKET"))
+	s.KV, err = s.JS.KV(ctx, s.Config.NatsStateKVBucket)
 	if err != nil {
 		return err
 	}

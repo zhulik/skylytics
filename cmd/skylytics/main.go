@@ -26,6 +26,7 @@ func main() {
 		pal.ProvideConst[*slog.Logger](slog.New(slog.NewTextHandler(os.Stdout, nil))),
 		pal.Provide[core.JetstreamClient, inats.Client](),
 		pal.Provide[core.MetricsServer, metrics.HTTPServer](),
+		pal.Provide[*core.Config, core.Config](),
 	}
 
 	command := os.Args[1]

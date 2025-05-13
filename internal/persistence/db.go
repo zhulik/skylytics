@@ -2,8 +2,6 @@ package persistence
 
 import (
 	"context"
-	"fmt"
-	"os"
 
 	"gorm.io/gorm/logger"
 
@@ -14,6 +12,8 @@ import (
 )
 
 type DB struct {
+	Config *core.Config
+
 	*gorm.DB
 }
 
@@ -26,17 +26,8 @@ func (db *DB) EstimatedCount(tableName string) (int64, error) {
 	).Scan(&count).Error
 }
 
-func dsnFromENV() string {
-	host := os.Getenv("POSTGRES_HOST")
-	user := os.Getenv("POSTGRES_USER")
-	password := os.Getenv("POSTGRES_PASSWORD")
-	dbname := os.Getenv("POSTGRES_DB")
-
-	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s", host, user, password, dbname)
-}
-
 func (db *DB) Init(_ context.Context) error {
-	gormDB, err := gorm.Open(postgres.Open(dsnFromENV()), &gorm.Config{
+	gormDB, err := gorm.Open(postgres.Open(db.Config.PostgresDSN()), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
