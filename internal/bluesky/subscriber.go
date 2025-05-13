@@ -11,12 +11,12 @@ import (
 
 	"skylytics/pkg/retry"
 
+	"skylytics/internal/core"
+
 	bsky "github.com/bluesky-social/jetstream/pkg/client"
 	"github.com/bluesky-social/jetstream/pkg/client/schedulers/sequential"
 	"github.com/bluesky-social/jetstream/pkg/models"
 	"github.com/nats-io/nats.go/jetstream"
-
-	"skylytics/internal/core"
 
 	"github.com/zhulik/pips"
 )
@@ -45,10 +45,9 @@ func (s *Subscriber) Init(ctx context.Context) error {
 		return err
 	}
 
-	handler := sequential.NewScheduler("scheduler", s.Logger, func(ctx context.Context, event *models.Event) error {
+	handler := sequential.NewScheduler("scheduler", s.Logger, func(_ context.Context, event *models.Event) error {
 		s.ch <- pips.NewD(event)
-
-		return s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
+		return nil
 	})
 
 	s.client, err = bsky.NewClient(
@@ -68,9 +67,17 @@ func (s *Subscriber) Shutdown(_ context.Context) error {
 }
 
 func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipeline[*core.BlueskyEvent, any]) error {
-	return pipeline.
-		Run(ctx, s.ch).
-		Wait(ctx)
+	for d := range pipeline.Run(ctx, s.ch) {
+		event, err := d.Unpack()
+		if err != nil {
+			return err
+		}
+		err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.(*core.BlueskyEvent).TimeUS))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Subscriber) Run(ctx context.Context) error {
