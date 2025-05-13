@@ -3,11 +3,13 @@ package core
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"github.com/kelseyhightower/envconfig"
 )
 
 type Config struct {
+	Logger *slog.Logger
 	// Common
 	NatsURL      string `envconfig:"NATS_URL"`
 	NatsConsumer string `envconfig:"NATS_CONSUMER"`
@@ -24,7 +26,9 @@ type Config struct {
 }
 
 func (c *Config) Init(_ context.Context) error {
-	return envconfig.Process("skylytics", c)
+	err := envconfig.Process("skylytics", c)
+	c.Logger.Info("Config loaded", "config", *c, "error", err)
+	return err
 }
 
 func (c *Config) PostgresDSN() string {
