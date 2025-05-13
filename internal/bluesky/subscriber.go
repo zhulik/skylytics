@@ -72,6 +72,7 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 		if err != nil {
 			return err
 		}
+		s.Logger.Info("Received event", "event", event)
 		err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.(*core.BlueskyEvent).TimeUS))
 		if err != nil {
 			return err

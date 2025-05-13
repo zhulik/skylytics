@@ -37,13 +37,14 @@ func (f *Forwarder) Run(ctx context.Context) error {
 	return f.Sub.ConsumeToPipeline(ctx, pips.New[*core.BlueskyEvent, any]().
 		Then(apply.Each(countEvent)).
 		Then(
-			apply.Map(func(ctx context.Context, event *core.BlueskyEvent) (any, error) {
+			apply.Each(func(ctx context.Context, event *core.BlueskyEvent) error {
 				payload, err := json.Marshal(event)
 				if err != nil {
-					return nil, err
+					return err
 				}
 
-				return f.JS.Publish(ctx, subjectName(event), payload)
+				_, err = f.JS.Publish(ctx, subjectName(event), payload)
+				return err
 			}),
 		),
 	)
