@@ -3,6 +3,7 @@ package nats
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"skylytics/internal/core"
 
@@ -56,7 +57,7 @@ func (c *Client) ConsumeToPipeline(ctx context.Context, stream, name string, pip
 
 	consCtx, err := cons.Consume(func(msg jetstream.Msg) {
 		ch <- pips.NewD(msg)
-	})
+	}, jetstream.PullExpiry(time.Second))
 	if err != nil {
 		return err
 	}
