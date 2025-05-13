@@ -91,15 +91,6 @@ func (s *Subscriber) Run(ctx context.Context) error {
 	}, func(_ error, _ int) bool {
 		return true
 	}, 10)()
-
-	// timer := time.NewTimer(3 * time.Second)
-	//
-	// defer timer.Stop()
-	//
-	// go func() {
-	//	<-timer.C
-	//	s.Shutdown(ctx)
-	// }()
 }
 
 func SerializeInt64(n int64) []byte {
