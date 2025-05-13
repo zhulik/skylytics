@@ -14,7 +14,6 @@ type MetricsServer interface{}
 type JetstreamClient interface {
 	jetstream.JetStream
 
-	Consume(ctx context.Context, stream, name string) (<-chan pips.D[jetstream.Msg], error)
 	ConsumeToPipeline(ctx context.Context, stream, name string, pipeline *pips.Pipeline[jetstream.Msg, any]) error
 
 	KV(ctx context.Context, bucket string) (KeyValueClient, error)
