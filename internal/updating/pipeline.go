@@ -175,13 +175,13 @@ func tryInsertInBatches(updater *AccountUpdater) pips.Stage {
 		})
 
 		err := updater.AccountRepo.Insert(ctx, serializedProfiles...)
-		//if err == nil {
-		lo.ForEach(items, func(item pipelineItem, _ int) {
-			accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
-			item.msg.Ack() //nolint:errcheck
-		})
-		return nil, nil
-		//}
+		if err == nil {
+			lo.ForEach(items, func(item pipelineItem, _ int) {
+				accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
+				item.msg.Ack() //nolint:errcheck
+			})
+			return nil, nil
+		}
 
 		updater.Logger.Error("failed to insert accounts batch, processing them one by one", "error", err)
 
@@ -191,7 +191,7 @@ func tryInsertInBatches(updater *AccountUpdater) pips.Stage {
 
 func insertOneByOne(updater *AccountUpdater) pips.Stage {
 	return apply.Each(func(ctx context.Context, item pipelineItem) error {
-		item.msg.Ack()
+		//item.msg.Ack()
 
 		err := updater.AccountRepo.Insert(ctx, item.account)
 		if err != nil {
