@@ -4,7 +4,11 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log/slog"
+
+	"github.com/nats-io/nats.go"
 
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
@@ -29,8 +33,9 @@ var (
 )
 
 type Forwarder struct {
-	Sub core.BlueskySubscriber
-	JS  core.JetstreamClient
+	Logger *slog.Logger
+	Sub    core.BlueskySubscriber
+	JS     core.JetstreamClient
 }
 
 func (f *Forwarder) Run(ctx context.Context) error {
@@ -44,6 +49,10 @@ func (f *Forwarder) Run(ctx context.Context) error {
 				}
 
 				_, err = f.JS.Publish(ctx, subjectName(event), payload)
+				if errors.Is(err, nats.ErrMaxPayload) {
+					f.Logger.Warn("event payload too large", "event", event)
+					return nil
+				}
 				return err
 			}),
 		),
