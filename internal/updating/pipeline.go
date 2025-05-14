@@ -39,7 +39,8 @@ var (
 
 	filterOutExisting = apply.Filter[pipelineItem](func(_ context.Context, item pipelineItem) (bool, error) {
 		if item.exists {
-			return false, item.msg.Ack()
+			item.msg.Ack() // nolint:errcheck
+			return false, nil
 		}
 		return true, nil
 	})
@@ -208,6 +209,7 @@ func insertOneByOne(updater *AccountUpdater) pips.Stage {
 		}
 
 		accountsCreated.WithLabelValues("test").Inc()
-		return item.msg.Ack()
+		item.msg.Ack() // nolint:errcheck
+		return nil
 	})
 }
