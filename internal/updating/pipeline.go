@@ -175,13 +175,13 @@ func tryInsertInBatches(updater *AccountUpdater) pips.Stage {
 		})
 
 		err := updater.AccountRepo.Insert(ctx, serializedProfiles...)
-		//if err == nil {
-		lo.ForEach(items, func(item pipelineItem, _ int) {
-			accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
-			item.msg.Ack() //nolint:errcheck
-		})
-		return nil, nil
-		//}
+		if err == nil {
+			lo.ForEach(items, func(item pipelineItem, _ int) {
+				accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
+				item.msg.Ack() //nolint:errcheck
+			})
+			return nil, nil
+		}
 
 		updater.Logger.Error("failed to insert accounts batch, processing them one by one", "error", err)
 
@@ -190,23 +190,21 @@ func tryInsertInBatches(updater *AccountUpdater) pips.Stage {
 }
 
 func insertOneByOne(updater *AccountUpdater) pips.Stage {
-	return apply.Each(func(ctx context.Context, item pipelineItem) error {
-		item.msg.Ack()
-
+	return apply.Map(func(ctx context.Context, item pipelineItem) (any, error) {
 		err := updater.AccountRepo.Insert(ctx, item.account)
 		if err != nil {
 			var pgError *pgconn.PgError
 			if errors.As(err, &pgError) {
 				// Ignore duplicate key errors.
 				if pgError.Code != "23505" && pgError.Code != "40P01" {
-					return err
+					return nil, err
 				}
 			} else {
-				return err
+				return nil, err
 			}
 		}
 
 		accountsCreated.WithLabelValues("test").Inc()
-		return item.msg.Ack()
+		return nil, item.msg.Ack()
 	})
 }
