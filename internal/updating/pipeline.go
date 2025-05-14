@@ -60,13 +60,13 @@ type pipelineItem struct {
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
+		Then(apply.Each(func(_ context.Context, item pipelineItem) error {
+			return item.msg.Ack()
+		})).
 		Then(parseItems).
 		Then(apply.Batch[pipelineItem](1000)).
 		Then(fetchExistingAccounts(updater)).
 		Then(apply.Flatten[pipelineItem]()).
-		Then(apply.Each(func(_ context.Context, item pipelineItem) error {
-			return item.msg.Ack()
-		})).
 		Then(filterOutExisting).
 		Then(apply.Batch[pipelineItem](100)).
 		Then(fetchProfiles(updater)).
