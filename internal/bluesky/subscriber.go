@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"skylytics/pkg/retry"
 
 	"skylytics/internal/core"
@@ -29,28 +31,27 @@ type Subscriber struct {
 	JS     core.JetstreamClient
 	KV     core.KeyValueClient
 	Config *core.Config
-
-	ch     chan pips.D[*core.BlueskyEvent]
-	client *bsky.Client
 }
 
 func (s *Subscriber) Init(ctx context.Context) error {
 	var err error
 
-	s.ch = make(chan pips.D[*core.BlueskyEvent])
 	s.Logger = s.Logger.With("component", "bluesky.Subscriber")
 
 	s.KV, err = s.JS.KV(ctx, s.Config.NatsStateKVBucket)
-	if err != nil {
-		return err
-	}
+	return err
+}
+
+func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipeline[*core.BlueskyEvent, any]) error {
+	ch := make(chan pips.D[*core.BlueskyEvent])
+	defer close(ch)
 
 	handler := sequential.NewScheduler("scheduler", s.Logger, func(_ context.Context, event *models.Event) error {
-		s.ch <- pips.NewD(event)
+		ch <- pips.NewD(event)
 		return nil
 	})
 
-	s.client, err = bsky.NewClient(
+	client, err := bsky.NewClient(
 		&bsky.ClientConfig{
 			Compress:     true,
 			WebsocketURL: jetstreamURL,
@@ -58,30 +59,13 @@ func (s *Subscriber) Init(ctx context.Context) error {
 		}, s.Logger, handler,
 	)
 
-	return err
-}
-
-func (s *Subscriber) Shutdown(_ context.Context) error {
-	defer close(s.ch)
-	return nil
-}
-
-func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipeline[*core.BlueskyEvent, any]) error {
-	for d := range pipeline.Run(ctx, s.ch) {
-		event, err := d.Unpack()
-		if err != nil {
-			return err
-		}
-		err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.(*core.BlueskyEvent).TimeUS))
-		if err != nil {
-			return err
-		}
+	if err != nil {
+		return err
 	}
-	return nil
-}
 
-func (s *Subscriber) Run(ctx context.Context) error {
-	return retry.WrapWithRetry(func() error {
+	wg := errgroup.Group{}
+
+	wg.Go(retry.WrapWithRetry(func() error {
 		lastEventTimestampBytes, err := s.KV.Get(ctx, "last_event_timestamp")
 		if err != nil {
 			if !errors.Is(err, jetstream.ErrKeyNotFound) {
@@ -94,10 +78,26 @@ func (s *Subscriber) Run(ctx context.Context) error {
 			lastEventTimestamp = 0
 		}
 
-		return s.client.ConnectAndRead(ctx, &lastEventTimestamp)
+		return client.ConnectAndRead(ctx, &lastEventTimestamp)
 	}, func(_ error, _ int) bool {
 		return true
-	}, 10)()
+	}, 10))
+
+	wg.Go(func() error {
+		for d := range pipeline.Run(ctx, ch) {
+			event, err := d.Unpack()
+			if err != nil {
+				return err
+			}
+			err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.(*core.BlueskyEvent).TimeUS))
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	return wg.Wait()
 }
 
 func SerializeInt64(n int64) []byte {
