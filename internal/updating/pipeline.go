@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 
@@ -12,7 +13,6 @@ import (
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
 
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/lo"
 
@@ -37,6 +37,13 @@ var (
 		}, nil
 	})
 
+	filterOutExisting = apply.Filter[pipelineItem](func(_ context.Context, item pipelineItem) (bool, error) {
+		if item.exists {
+			return false, item.msg.Ack()
+		}
+		return true, nil
+	})
+
 	accountsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "skylytics_updater_accounts_created_total",
 		Help: "The total amount of accounts created but the updater.",
@@ -44,59 +51,26 @@ var (
 )
 
 type pipelineItem struct {
-	msg    jetstream.Msg
-	event  *core.BlueskyEvent
-	exists bool
+	msg     jetstream.Msg
+	event   *core.BlueskyEvent
+	exists  bool
+	account core.AccountModel
 }
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
-		Then(apply.Each(func(_ context.Context, msg jetstream.Msg) error {
-			return msg.Ack()
-		})).
 		Then(parseItems).
 		Then(apply.Batch[pipelineItem](1000)).
-		Then(filterOutExistingAccounts(updater.AccountRepo)).
+		Then(fetchExistingAccounts(updater.AccountRepo)).
+		Then(filterOutExisting).
 		Then(apply.Rebatch[pipelineItem](100)).
-		Then(
-			apply.Map(func(ctx context.Context, items []pipelineItem) (any, error) {
-				dids := lo.Map(items, func(item pipelineItem, _ int) string {
-					return item.event.Did
-				})
-
-				serializedProfiles, err := fetchAndSerializeProfiles(ctx, updater.stormy, dids)
-				if err != nil {
-					return nil, err
-				}
-
-				if len(serializedProfiles) == 0 {
-					return nil, nil
-				}
-
-				err = updater.AccountRepo.Insert(ctx, serializedProfiles...)
-				if err != nil {
-					var pgError *pgconn.PgError
-					if errors.As(err, &pgError) {
-						// Ignore duplicate key errors.
-						if pgError.Code != "23505" &&
-							pgError.Code != "40P01" {
-							return nil, err
-						}
-					} else {
-						return nil, err
-					}
-				}
-				accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
-				lo.ForEach(items, func(item pipelineItem, _ int) {
-					item.msg.Ack() //nolint:errcheck
-				})
-
-				return nil, nil
-			}),
-		)
+		Then(fetchProfiles(updater.stormy)).
+		Then(tryInsertInBatches(updater)).
+		Then(apply.Flatten[pipelineItem]()).
+		Then(insertOneByOne(updater))
 }
 
-func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids []string) ([]core.AccountModel, error) {
+func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids []string) (map[string]core.AccountModel, error) {
 	g, ctx := errgroup.WithContext(ctx)
 	resultChan := make(chan []core.AccountModel, (len(dids)+24)/25)
 
@@ -121,7 +95,7 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 					return core.AccountModel{}, err
 				}
 
-				return core.AccountModel{Account: account}, nil
+				return core.AccountModel{Account: account, DID: profile.DID}, nil
 			})
 			if err != nil {
 				return err
@@ -143,10 +117,12 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 		result = append(result, models...)
 	}
 
-	return result, nil
+	return lo.Associate(result, func(item core.AccountModel) (string, core.AccountModel) {
+		return item.DID, item
+	}), nil
 }
 
-func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
+func fetchExistingAccounts(repo core.AccountRepository) pips.Stage {
 	return apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
 		dids := lo.Map(items, func(item pipelineItem, _ int) string {
 			return item.event.Did
@@ -157,12 +133,77 @@ func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
 			return nil, err
 		}
 
-		return lo.Reject(items, func(item pipelineItem, _ int) bool {
-			if lo.Contains(existing, item.event.Did) {
-				item.msg.Ack() //nolint:errcheck
-				return true
+		return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
+			_, exists := existing[item.event.Did]
+
+			return pipelineItem{
+				msg:    item.msg,
+				event:  item.event,
+				exists: exists,
 			}
-			return false
 		}), nil
+	})
+}
+
+func fetchProfiles(strmy *stormy.Client) pips.Stage {
+	return apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
+		dids := lo.Map(items, func(item pipelineItem, _ int) string {
+			return item.event.Did
+		})
+
+		profiles, err := fetchAndSerializeProfiles(ctx, strmy, dids)
+		if err != nil {
+			return nil, err
+		}
+
+		return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
+			return pipelineItem{
+				msg:     item.msg,
+				event:   item.event,
+				exists:  item.exists,
+				account: profiles[item.event.Did],
+			}
+		}), nil
+	})
+}
+
+func tryInsertInBatches(updater *AccountUpdater) pips.Stage {
+	return apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
+		serializedProfiles := lo.Map(items, func(item pipelineItem, _ int) core.AccountModel {
+			return item.account
+		})
+
+		err := updater.AccountRepo.Insert(ctx, serializedProfiles...)
+		if err == nil {
+			lo.ForEach(items, func(item pipelineItem, _ int) {
+				accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
+				item.msg.Ack() //nolint:errcheck
+			})
+			return nil, nil
+		}
+
+		updater.Logger.Error("failed to insert accounts batch, processing them one by one", "error", err)
+
+		return items, nil
+	})
+}
+
+func insertOneByOne(updater *AccountUpdater) pips.Stage {
+	return apply.Map(func(ctx context.Context, item pipelineItem) (any, error) {
+		err := updater.AccountRepo.Insert(ctx, item.account)
+		if err != nil {
+			var pgError *pgconn.PgError
+			if errors.As(err, &pgError) {
+				// Ignore duplicate key errors.
+				if pgError.Code != "23505" && pgError.Code != "40P01" {
+					return nil, err
+				}
+			} else {
+				return nil, err
+			}
+		}
+
+		accountsCreated.WithLabelValues("test").Inc()
+		return nil, item.msg.Ack()
 	})
 }

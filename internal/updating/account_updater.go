@@ -3,6 +3,7 @@ package updating
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 
 	"skylytics/internal/core"
@@ -28,6 +29,7 @@ var (
 
 type AccountUpdater struct {
 	JS          core.JetstreamClient
+	Logger      *slog.Logger
 	AccountRepo core.AccountRepository
 	Config      *core.Config
 

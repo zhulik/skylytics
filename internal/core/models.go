@@ -25,6 +25,8 @@ type AccountModel struct {
 	UpdatedAt time.Time
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 
+	DID string `gorm:"-"`
+
 	Account []byte `gorm:"type:jsonb;index:idx_did,expression:((account->>'did')),unique"`
 }
 
