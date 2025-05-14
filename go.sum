@@ -230,8 +230,12 @@ github.com/zhulik/jetstream v0.0.0-20250513110542-1c4a70c108b0 h1:zT3QTEksTT8DuF
 github.com/zhulik/jetstream v0.0.0-20250513110542-1c4a70c108b0/go.mod h1:WiYEeyJSdUwqoaZ71KJSpTblemUCpwJfh5oVXplK6T4=
 github.com/zhulik/pal v0.5.5 h1:x8kfrGFixfds26N24l+/zIZUhiXSPgRvyk/J24zvM6w=
 github.com/zhulik/pal v0.5.5/go.mod h1:Qf568k7cPfdhW2O5p3YKQuD15+bO8vo0bZf4zLALk90=
+github.com/zhulik/pal v0.5.6 h1:P+RwFDc5ENrzB15nImKu5+7MK75MlRZHxhuLZ53l06I=
+github.com/zhulik/pal v0.5.6/go.mod h1:Qf568k7cPfdhW2O5p3YKQuD15+bO8vo0bZf4zLALk90=
 github.com/zhulik/pal/inspect v1.1.1 h1:rlya8CR70+EXtv5EEX7lpBp2jW5ohx4k9+ZnG6jF+xY=
 github.com/zhulik/pal/inspect v1.1.1/go.mod h1:wmHN2nYcQvm7Osg5DdeKyLdTXrD1vqgrLQOcvD6NceM=
+github.com/zhulik/pal/inspect v1.1.2 h1:b2FtIwL57A41UmvlxU+6yN4ASHm2QvVfzsg4/hnAn94=
+github.com/zhulik/pal/inspect v1.1.2/go.mod h1:uyYYw/tD6ndsy+L9iF6aizMmpd+28K6IlpWFv69INFw=
 github.com/zhulik/pips v0.6.4 h1:RyhzRbkIynqxqb1yR1gnI05y5axWbKVTJ5pugKr2PQI=
 github.com/zhulik/pips v0.6.4/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1 h1:aFJWCqJMNjENlcleuuOkGAPH82y0yULBScfXcIEdS24=
