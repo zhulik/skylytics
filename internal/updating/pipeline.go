@@ -62,8 +62,9 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		Then(parseItems).
 		Then(apply.Batch[pipelineItem](1000)).
 		Then(fetchExistingAccounts(updater.AccountRepo)).
+		Then(apply.Flatten[pipelineItem]()).
 		Then(filterOutExisting).
-		Then(apply.Rebatch[pipelineItem](100)).
+		Then(apply.Batch[pipelineItem](100)).
 		Then(fetchProfiles(updater.stormy)).
 		Then(tryInsertInBatches(updater)).
 		Then(apply.Flatten[pipelineItem]()).
