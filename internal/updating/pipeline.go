@@ -23,10 +23,18 @@ import (
 )
 
 var (
-	parseDIDs = apply.Zip(func(_ context.Context, msg jetstream.Msg) (string, error) {
-		var event core.BlueskyEvent
-		err := json.Unmarshal(msg.Data(), &event)
-		return event.Did, err
+	parseItems = apply.Map(func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
+		event := &core.BlueskyEvent{}
+		err := json.Unmarshal(msg.Data(), event)
+		if err != nil {
+			return pipelineItem{}, err
+		}
+
+		return pipelineItem{
+			msg:    msg,
+			event:  event,
+			exists: false,
+		}, nil
 	})
 
 	accountsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -35,19 +43,25 @@ var (
 	}, []string{"test"})
 )
 
+type pipelineItem struct {
+	msg    jetstream.Msg
+	event  *core.BlueskyEvent
+	exists bool
+}
+
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
 		Then(apply.Each(func(_ context.Context, msg jetstream.Msg) error {
 			return msg.Ack()
 		})).
-		Then(parseDIDs).
-		Then(apply.Batch[pips.P[jetstream.Msg, string]](1000)).
+		Then(parseItems).
+		Then(apply.Batch[pipelineItem](1000)).
 		Then(filterOutExistingAccounts(updater.AccountRepo)).
-		Then(apply.Rebatch[pips.P[jetstream.Msg, string]](100)).
+		Then(apply.Rebatch[pipelineItem](100)).
 		Then(
-			apply.Map(func(ctx context.Context, wraps []pips.P[jetstream.Msg, string]) (any, error) {
-				dids := lo.Map(wraps, func(item pips.P[jetstream.Msg, string], _ int) string {
-					return item.B()
+			apply.Map(func(ctx context.Context, items []pipelineItem) (any, error) {
+				dids := lo.Map(items, func(item pipelineItem, _ int) string {
+					return item.event.Did
 				})
 
 				serializedProfiles, err := fetchAndSerializeProfiles(ctx, updater.stormy, dids)
@@ -73,10 +87,8 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					}
 				}
 				accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
-				lo.ForEach(wraps, func(item pips.P[jetstream.Msg, string], _ int) {
-					if item.A() != nil {
-						item.A().Ack() //nolint:errcheck
-					}
+				lo.ForEach(items, func(item pipelineItem, _ int) {
+					item.msg.Ack() //nolint:errcheck
 				})
 
 				return nil, nil
@@ -135,9 +147,9 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 }
 
 func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
-	return apply.Map(func(ctx context.Context, wraps []pips.P[jetstream.Msg, string]) ([]pips.P[jetstream.Msg, string], error) {
-		dids := lo.Map(wraps, func(item pips.P[jetstream.Msg, string], _ int) string {
-			return item.B()
+	return apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
+		dids := lo.Map(items, func(item pipelineItem, _ int) string {
+			return item.event.Did
 		})
 
 		existing, err := repo.ExistsByDID(ctx, dids...)
@@ -145,9 +157,9 @@ func filterOutExistingAccounts(repo core.AccountRepository) pips.Stage {
 			return nil, err
 		}
 
-		return lo.Reject(wraps, func(item pips.P[jetstream.Msg, string], _ int) bool {
-			if lo.Contains(existing, item.B()) {
-				item.A().Ack() //nolint:errcheck
+		return lo.Reject(items, func(item pipelineItem, _ int) bool {
+			if lo.Contains(existing, item.event.Did) {
+				item.msg.Ack() //nolint:errcheck
 				return true
 			}
 			return false
