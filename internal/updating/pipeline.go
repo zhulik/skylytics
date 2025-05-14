@@ -50,7 +50,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					return item.B()
 				})
 
-				serializedProfiles, err := fetchAndSerializeProfiles(ctx, updater.Stormy, dids)
+				serializedProfiles, err := fetchAndSerializeProfiles(ctx, updater.stormy, dids)
 				if err != nil {
 					return nil, err
 				}

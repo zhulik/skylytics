@@ -19,7 +19,7 @@ var (
 	apiLatency = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "stormy_request_latency",
-			Help:    "Histogram of Stormy API request latency in seconds",
+			Help:    "Histogram of stormy API request latency in seconds",
 			Buckets: []float64{0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10},
 		},
 		[]string{"method", "path", "status_code"},
@@ -29,12 +29,13 @@ var (
 type AccountUpdater struct {
 	JS          core.JetstreamClient
 	AccountRepo core.AccountRepository
-	Stormy      *stormy.Client
 	Config      *core.Config
+
+	stormy *stormy.Client
 }
 
 func (a *AccountUpdater) Init(_ context.Context) error {
-	a.Stormy = stormy.NewClient(&stormy.ClientConfig{
+	a.stormy = stormy.NewClient(&stormy.ClientConfig{
 		TransportSettings: stormy.DefaultConfig.TransportSettings,
 
 		ResponseMiddlewares: []resty.ResponseMiddleware{metricMiddleware},
