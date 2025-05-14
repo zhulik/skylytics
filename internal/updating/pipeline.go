@@ -174,14 +174,16 @@ func tryInsertInBatches(updater *AccountUpdater) pips.Stage {
 			return item.account
 		})
 
-		updater.AccountRepo.Insert(ctx, serializedProfiles...) //nolint:errcheck
-		//if err == nil {
-		lo.ForEach(items, func(item pipelineItem, _ int) {
-			accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
-			item.msg.Ack() //nolint:errcheck
-		})
-		//return nil, nil
-		//}
+		err := updater.AccountRepo.Insert(ctx, serializedProfiles...)
+		if err == nil {
+			lo.ForEach(items, func(item pipelineItem, _ int) {
+				accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
+				item.msg.Ack() //nolint:errcheck
+			})
+			return nil, nil
+		}
+
+		updater.Logger.Error("failed to insert accounts batch, processing them one by one", "error", err)
 
 		return items, nil
 	})
@@ -189,8 +191,6 @@ func tryInsertInBatches(updater *AccountUpdater) pips.Stage {
 
 func insertOneByOne(updater *AccountUpdater) pips.Stage {
 	return apply.Each(func(ctx context.Context, item pipelineItem) error {
-		item.msg.Ack() //nolint:errcheck
-
 		err := updater.AccountRepo.Insert(ctx, item.account)
 		if err != nil {
 			var pgError *pgconn.PgError
