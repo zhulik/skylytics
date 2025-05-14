@@ -61,11 +61,11 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
 		Then(parseItems).
 		Then(apply.Batch[pipelineItem](1000)).
-		Then(fetchExistingAccounts(updater.AccountRepo)).
+		Then(fetchExistingAccounts(updater)).
 		Then(apply.Flatten[pipelineItem]()).
 		Then(filterOutExisting).
 		Then(apply.Batch[pipelineItem](100)).
-		Then(fetchProfiles(updater.stormy)).
+		Then(fetchProfiles(updater)).
 		Then(tryInsertInBatches(updater)).
 		Then(apply.Flatten[pipelineItem]()).
 		Then(insertOneByOne(updater))
@@ -123,13 +123,13 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 	}), nil
 }
 
-func fetchExistingAccounts(repo core.AccountRepository) pips.Stage {
+func fetchExistingAccounts(updater *AccountUpdater) pips.Stage {
 	return apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
 		dids := lo.Map(items, func(item pipelineItem, _ int) string {
 			return item.event.Did
 		})
 
-		existing, err := repo.ExistsByDID(ctx, dids...)
+		existing, err := updater.AccountRepo.ExistsByDID(ctx, dids...)
 		if err != nil {
 			return nil, err
 		}
@@ -146,13 +146,13 @@ func fetchExistingAccounts(repo core.AccountRepository) pips.Stage {
 	})
 }
 
-func fetchProfiles(strmy *stormy.Client) pips.Stage {
+func fetchProfiles(updater *AccountUpdater) pips.Stage {
 	return apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
 		dids := lo.Map(items, func(item pipelineItem, _ int) string {
 			return item.event.Did
 		})
 
-		profiles, err := fetchAndSerializeProfiles(ctx, strmy, dids)
+		profiles, err := fetchAndSerializeProfiles(ctx, updater.stormy, dids)
 		if err != nil {
 			return nil, err
 		}
