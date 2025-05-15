@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"golang.org/x/exp/slices"
 
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
@@ -23,6 +24,11 @@ import (
 )
 
 var (
+	//https://www.postgresql.org/docs/current/errcodes-appendix.html
+	ignoredErrors = []string{
+		"23505", // Constraint violation.
+	}
+
 	markInProgress = apply.Each(func(_ context.Context, item pipelineItem) error {
 		item.msg.InProgress() // nolint:errcheck
 		return nil
@@ -213,5 +219,5 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 
 func isInsertErrCanBeIgnored(err error) bool {
 	var pgError *pgconn.PgError
-	return errors.As(err, &pgError) && (pgError.Code == "23505" || pgError.Code != "40P01")
+	return errors.As(err, &pgError) && slices.Contains(ignoredErrors, pgError.Code)
 }
