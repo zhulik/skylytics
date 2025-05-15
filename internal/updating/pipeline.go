@@ -49,6 +49,7 @@ type pipelineItem struct {
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
+		Then(markInProgress).
 		Then( // Parse items
 			apply.Map(func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
 				event := &core.BlueskyEvent{}
@@ -64,13 +65,12 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}, nil
 			}),
 		).
-		Then( // Ack everything, temporarily.
-			apply.Each(func(_ context.Context, item pipelineItem) error {
-				item.msg.Ack() // nolint:errcheck
-				return nil
-			}),
-		).
-		Then(markInProgress).
+		//Then( // Ack everything, temporarily.
+		//	apply.Each(func(_ context.Context, item pipelineItem) error {
+		//		item.msg.Ack() // nolint:errcheck
+		//		return nil
+		//	}),
+		//).
 		Then(apply.Batch[pipelineItem](1000)).
 		Then( // Fetch and set existing records
 			apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
