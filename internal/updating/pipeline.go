@@ -152,10 +152,9 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 			apply.Each(func(ctx context.Context, item pipelineItem) error {
 				err := updater.AccountRepo.Insert(ctx, item.account)
 				if err != nil {
-					if isInsertErrCanBeIgnored(err) {
-						return nil
+					if !isInsertErrCanBeIgnored(err) {
+						return err
 					}
-					return err
 				}
 
 				accountsCreated.WithLabelValues("test").Inc()
