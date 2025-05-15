@@ -29,11 +29,6 @@ var (
 		"23505", // Constraint violation.
 	}
 
-	markInProgress = apply.Each(func(_ context.Context, item pipelineItem) error {
-		item.msg.InProgress() // nolint:errcheck
-		return nil
-	})
-
 	accountsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "skylytics_updater_accounts_created_total",
 		Help: "The total amount of accounts created but the updater.",
@@ -64,13 +59,12 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}, nil
 			}),
 		).
-		Then(markInProgress).
-		//Then( // Ack everything, temporarily.
-		//	apply.Each(func(_ context.Context, item pipelineItem) error {
-		//		item.msg.Ack() // nolint:errcheck
-		//		return nil
-		//	}),
-		//).
+		Then(
+			apply.Each(func(_ context.Context, msg jetstream.Msg) error {
+				msg.InProgress() // nolint:errcheck
+				return nil
+			}),
+		).
 		Then(apply.Batch[pipelineItem](1000)).
 		Then( // Fetch and set existing records
 			apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
@@ -107,7 +101,6 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				return true, nil
 			}),
 		).
-		Then(markInProgress).
 		Then(apply.Batch[pipelineItem](100)).
 		Then( // Fetch profiles
 			apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
