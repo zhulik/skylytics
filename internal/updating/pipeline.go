@@ -64,12 +64,6 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}, nil
 			}),
 		).
-		Then( // Ack everything, temporarily.
-			apply.Each(func(_ context.Context, item pipelineItem) error {
-				item.msg.Ack() // nolint:errcheck
-				return nil
-			}),
-		).
 		Then(markInProgress).
 		Then(apply.Batch[pipelineItem](1000)).
 		Then( // Fetch and set existing records
@@ -92,6 +86,12 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 						exists: exists,
 					}
 				}), nil
+			}),
+		).
+		Then( // Ack everything, temporarily.
+			apply.Each(func(_ context.Context, item pipelineItem) error {
+				item.msg.Ack() // nolint:errcheck
+				return nil
 			}),
 		).
 		Then(apply.Flatten[pipelineItem]()).
