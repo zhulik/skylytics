@@ -136,7 +136,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					return nil, nil
 				}
 
-				updater.Logger.Error("failed to insert accounts batch, processing them one by one", "error", err)
+				updater.Logger.Warn("failed to insert accounts batch, processing them one by one", "error", err)
 
 				return items, nil
 			}),
