@@ -93,7 +93,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		).
 		Then(apply.Flatten[pipelineItem]()).
 		Then( // Filter out existing accounts.
-			apply.Filter[pipelineItem](func(_ context.Context, item pipelineItem) (bool, error) {
+			apply.Filter(func(_ context.Context, item pipelineItem) (bool, error) {
 				if item.exists {
 					item.msg.Ack() // nolint:errcheck
 					return false, nil
