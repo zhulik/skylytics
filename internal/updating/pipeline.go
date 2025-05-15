@@ -64,6 +64,10 @@ type pipelineItem struct {
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
+		Then(apply.Each(func(_ context.Context, msg jetstream.Msg) error {
+			msg.Ack() // nolint:errcheck
+			return nil
+		})).
 		Then(parseItems).
 		Then(markInProgress).
 		Then(apply.Batch[pipelineItem](100)).
