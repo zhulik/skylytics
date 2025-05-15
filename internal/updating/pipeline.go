@@ -60,8 +60,8 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 			}),
 		).
 		Then(
-			apply.Each(func(_ context.Context, msg jetstream.Msg) error {
-				msg.InProgress() // nolint:errcheck
+			apply.Each(func(_ context.Context, item pipelineItem) error {
+				item.msg.InProgress() // nolint:errcheck
 				return nil
 			}),
 		).
