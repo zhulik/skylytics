@@ -49,12 +49,6 @@ type pipelineItem struct {
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
-		Then( // Ack everything, temporarily.
-			apply.Each(func(_ context.Context, msg jetstream.Msg) error {
-				msg.Ack() // nolint:errcheck
-				return nil
-			}),
-		).
 		Then( // Parse items
 			apply.Map(func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
 				event := &core.BlueskyEvent{}
@@ -68,6 +62,12 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					event:  event,
 					exists: false,
 				}, nil
+			}),
+		).
+		Then( // Ack everything, temporarily.
+			apply.Each(func(_ context.Context, item pipelineItem) error {
+				item.msg.Ack() // nolint:errcheck
+				return nil
 			}),
 		).
 		Then(markInProgress).
