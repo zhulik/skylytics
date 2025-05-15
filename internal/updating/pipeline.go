@@ -45,8 +45,8 @@ var (
 		return true, nil
 	})
 
-	markInProgress = apply.Each(func(_ context.Context, msg jetstream.Msg) error {
-		return msg.InProgress()
+	markInProgress = apply.Each(func(_ context.Context, item pipelineItem) error {
+		return item.msg.InProgress()
 	})
 
 	accountsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
@@ -64,8 +64,8 @@ type pipelineItem struct {
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
-		Then(markInProgress).
 		Then(parseItems).
+		Then(markInProgress).
 		Then(apply.Batch[pipelineItem](1000)).
 		Then(fetchExistingAccounts(updater)).
 		Then(apply.Flatten[pipelineItem]()).
