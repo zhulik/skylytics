@@ -70,7 +70,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		})).
 		Then(parseItems).
 		Then(markInProgress).
-		Then(apply.Batch[pipelineItem](100)).
+		Then(apply.Batch[pipelineItem](1000)).
 		Then(fetchExistingAccounts(updater)).
 		Then(apply.Flatten[pipelineItem]()).
 		Then(filterOutExisting).
