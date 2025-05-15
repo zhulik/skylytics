@@ -73,7 +73,7 @@ func metricMiddleware(_ *resty.Client, response *resty.Response) error {
 
 func (a *AccountUpdater) Update(ctx context.Context, msgs ...jetstream.Msg) error {
 	return async.AsyncEach(ctx, msgs, func(_ context.Context, msg jetstream.Msg) error {
-		msg.Ack()
+		msg.Ack() // nolint:errcheck
 		return nil
 	})
 }
