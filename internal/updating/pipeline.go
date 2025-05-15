@@ -44,11 +44,11 @@ var (
 		}
 		return true, nil
 	})
-	//
-	//markInProgress = apply.Each(func(_ context.Context, item pipelineItem) error {
-	//	item.msg.InProgress() // nolint:errcheck
-	//	return nil
-	//})
+
+	markInProgress = apply.Each(func(_ context.Context, item pipelineItem) error {
+		item.msg.InProgress() // nolint:errcheck
+		return nil
+	})
 
 	accountsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "skylytics_updater_accounts_created_total",
@@ -65,17 +65,13 @@ type pipelineItem struct {
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
-		Then(apply.Each(func(_ context.Context, msg jetstream.Msg) error {
-			msg.Ack() // nolint:errcheck
-			return nil
-		})).
 		Then(parseItems).
-		//Then(markInProgress).
+		Then(markInProgress).
 		Then(apply.Batch[pipelineItem](1000)).
 		Then(fetchExistingAccounts(updater)).
 		Then(apply.Flatten[pipelineItem]()).
 		Then(filterOutExisting).
-		//Then(markInProgress).
+		Then(markInProgress).
 		Then(apply.Batch[pipelineItem](100)).
 		Then(fetchProfiles(updater)).
 		Then(tryInsertInBatches(updater)).
