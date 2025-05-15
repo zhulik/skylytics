@@ -23,28 +23,6 @@ import (
 )
 
 var (
-	parseItems = apply.Map(func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
-		event := &core.BlueskyEvent{}
-		err := json.Unmarshal(msg.Data(), event)
-		if err != nil {
-			return pipelineItem{}, err
-		}
-
-		return pipelineItem{
-			msg:    msg,
-			event:  event,
-			exists: false,
-		}, nil
-	})
-
-	filterOutExisting = apply.Filter[pipelineItem](func(_ context.Context, item pipelineItem) (bool, error) {
-		if item.exists {
-			item.msg.Ack() // nolint:errcheck
-			return false, nil
-		}
-		return true, nil
-	})
-
 	markInProgress = apply.Each(func(_ context.Context, item pipelineItem) error {
 		item.msg.InProgress() // nolint:errcheck
 		return nil
@@ -65,22 +43,120 @@ type pipelineItem struct {
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
-		Then(apply.Each(func(_ context.Context, msg jetstream.Msg) error {
-			msg.Ack() // nolint:errcheck
-			return nil
-		})).
-		Then(parseItems).
+		Then( // Ack everything, temporarily.
+			apply.Each(func(_ context.Context, msg jetstream.Msg) error {
+				msg.Ack() // nolint:errcheck
+				return nil
+			}),
+		).
+		Then( // Parse items
+			apply.Map(func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
+				event := &core.BlueskyEvent{}
+				err := json.Unmarshal(msg.Data(), event)
+				if err != nil {
+					return pipelineItem{}, err
+				}
+
+				return pipelineItem{
+					msg:    msg,
+					event:  event,
+					exists: false,
+				}, nil
+			}),
+		).
 		Then(markInProgress).
 		Then(apply.Batch[pipelineItem](1000)).
-		Then(fetchExistingAccounts(updater)).
+		Then( // Fetch and set existing records
+			apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
+				dids := lo.Map(items, func(item pipelineItem, _ int) string {
+					return item.event.Did
+				})
+
+				existing, err := updater.AccountRepo.ExistsByDID(ctx, dids...)
+				if err != nil {
+					return nil, err
+				}
+
+				return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
+					_, exists := existing[item.event.Did]
+
+					return pipelineItem{
+						msg:    item.msg,
+						event:  item.event,
+						exists: exists,
+					}
+				}), nil
+			}),
+		).
 		Then(apply.Flatten[pipelineItem]()).
-		Then(filterOutExisting).
+		Then( // Filter out existing accounts.
+			apply.Filter[pipelineItem](func(_ context.Context, item pipelineItem) (bool, error) {
+				if item.exists {
+					item.msg.Ack() // nolint:errcheck
+					return false, nil
+				}
+				return true, nil
+			}),
+		).
 		Then(markInProgress).
 		Then(apply.Batch[pipelineItem](100)).
-		Then(fetchProfiles(updater)).
-		Then(tryInsertInBatches(updater)).
+		Then( // Fetch profiles
+			apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
+				dids := lo.Map(items, func(item pipelineItem, _ int) string {
+					return item.event.Did
+				})
+
+				profiles, err := fetchAndSerializeProfiles(ctx, updater.stormy, dids)
+				if err != nil {
+					return nil, err
+				}
+
+				return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
+					return pipelineItem{
+						msg:     item.msg,
+						event:   item.event,
+						exists:  item.exists,
+						account: profiles[item.event.Did],
+					}
+				}), nil
+			}),
+		).
+		Then( // Try to insert in batches
+			apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
+				serializedProfiles := lo.Map(items, func(item pipelineItem, _ int) core.AccountModel {
+					return item.account
+				})
+
+				err := updater.AccountRepo.Insert(ctx, serializedProfiles...)
+				if err == nil {
+					lo.ForEach(items, func(item pipelineItem, _ int) {
+						accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
+						item.msg.Ack() //nolint:errcheck
+					})
+					return nil, nil
+				}
+
+				updater.Logger.Error("failed to insert accounts batch, processing them one by one", "error", err)
+
+				return items, nil
+			}),
+		).
 		Then(apply.Flatten[pipelineItem]()).
-		Then(insertOneByOne(updater))
+		Then( // Insert records one by one
+			apply.Each(func(ctx context.Context, item pipelineItem) error {
+				err := updater.AccountRepo.Insert(ctx, item.account)
+				if err != nil {
+					if isInsertErrCanBeIgnored(err) {
+						return nil
+					}
+					return err
+				}
+
+				accountsCreated.WithLabelValues("test").Inc()
+				item.msg.Ack() // nolint:errcheck
+				return nil
+			}),
+		)
 }
 
 func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids []string) (map[string]core.AccountModel, error) {
@@ -135,89 +211,7 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 	}), nil
 }
 
-func fetchExistingAccounts(updater *AccountUpdater) pips.Stage {
-	return apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
-		dids := lo.Map(items, func(item pipelineItem, _ int) string {
-			return item.event.Did
-		})
-
-		existing, err := updater.AccountRepo.ExistsByDID(ctx, dids...)
-		if err != nil {
-			return nil, err
-		}
-
-		return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
-			_, exists := existing[item.event.Did]
-
-			return pipelineItem{
-				msg:    item.msg,
-				event:  item.event,
-				exists: exists,
-			}
-		}), nil
-	})
-}
-
-func fetchProfiles(updater *AccountUpdater) pips.Stage {
-	return apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
-		dids := lo.Map(items, func(item pipelineItem, _ int) string {
-			return item.event.Did
-		})
-
-		profiles, err := fetchAndSerializeProfiles(ctx, updater.stormy, dids)
-		if err != nil {
-			return nil, err
-		}
-
-		return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
-			return pipelineItem{
-				msg:     item.msg,
-				event:   item.event,
-				exists:  item.exists,
-				account: profiles[item.event.Did],
-			}
-		}), nil
-	})
-}
-
-func tryInsertInBatches(updater *AccountUpdater) pips.Stage {
-	return apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
-		serializedProfiles := lo.Map(items, func(item pipelineItem, _ int) core.AccountModel {
-			return item.account
-		})
-
-		err := updater.AccountRepo.Insert(ctx, serializedProfiles...)
-		if err == nil {
-			lo.ForEach(items, func(item pipelineItem, _ int) {
-				accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
-				item.msg.Ack() //nolint:errcheck
-			})
-			return nil, nil
-		}
-
-		updater.Logger.Error("failed to insert accounts batch, processing them one by one", "error", err)
-
-		return items, nil
-	})
-}
-
-func insertOneByOne(updater *AccountUpdater) pips.Stage {
-	return apply.Each(func(ctx context.Context, item pipelineItem) error {
-		err := updater.AccountRepo.Insert(ctx, item.account)
-		if err != nil {
-			var pgError *pgconn.PgError
-			if errors.As(err, &pgError) {
-				// Ignore duplicate key errors.
-				if pgError.Code != "23505" && pgError.Code != "40P01" {
-					return err
-				}
-			} else {
-				return err
-			}
-		}
-
-		accountsCreated.WithLabelValues("test").Inc()
-		item.msg.Ack() // nolint:errcheck
-		return nil
-	})
+func isInsertErrCanBeIgnored(err error) bool {
+	var pgError *pgconn.PgError
+	return errors.As(err, &pgError) && (pgError.Code == "23505" || pgError.Code != "40P01")
 }
