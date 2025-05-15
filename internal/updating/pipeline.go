@@ -44,11 +44,11 @@ var (
 		}
 		return true, nil
 	})
-
-	markInProgress = apply.Each(func(_ context.Context, item pipelineItem) error {
-		item.msg.InProgress()
-		return nil
-	})
+	//
+	//markInProgress = apply.Each(func(_ context.Context, item pipelineItem) error {
+	//	item.msg.InProgress() // nolint:errcheck
+	//	return nil
+	//})
 
 	accountsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "skylytics_updater_accounts_created_total",
