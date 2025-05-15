@@ -45,8 +45,8 @@ var (
 		return true, nil
 	})
 
-	markInProgress = apply.Each(func(_ context.Context, item pipelineItem) error {
-		return item.msg.InProgress()
+	markInProgress = apply.Each(func(_ context.Context, msg jetstream.Msg) error {
+		return msg.InProgress()
 	})
 
 	accountsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
