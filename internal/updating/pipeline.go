@@ -68,7 +68,10 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		Then(apply.Batch[pipelineItem](1000)).
 		Then( // Fetch and set existing records
 			apply.Map(func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
+				updater.Logger.Info("Processing batch", "batch_size", len(items))
+
 				dids := lo.Map(items, func(item pipelineItem, _ int) string {
+					item.msg.Ack() // nolint:errcheck
 					return item.event.Did
 				})
 
