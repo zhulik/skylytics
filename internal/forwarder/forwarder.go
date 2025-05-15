@@ -48,7 +48,13 @@ func (f *Forwarder) Run(ctx context.Context) error {
 					return err
 				}
 
-				_, err = f.JS.Publish(ctx, subjectName(event), payload)
+				subject := subjectName(event)
+				msg := nats.NewMsg(subject)
+				msg.Data = payload
+				msg.Header.Set("did", event.Did)
+				msg.Header.Set(nats.MsgIdHdr, fmt.Sprintf("%s-%d", subject, event.TimeUS))
+
+				_, err = f.JS.PublishMsg(ctx, msg)
 				if errors.Is(err, nats.ErrMaxPayload) {
 					f.Logger.Warn("event payload too large", "event", event)
 					return nil
