@@ -37,6 +37,15 @@ var (
 		Name: "skylytics_updater_accounts_evets_processed_total",
 		Help: "The total amount of events processed by the account updater.",
 	}, []string{"acked"})
+
+	eventProcessingLatency = promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    "skylytics_updater_event_processing_latency_seconds",
+			Help:    "Histogram of event processing latency in the account updater latency in seconds",
+			Buckets: []float64{0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10},
+		},
+		[]string{"test"},
+	)
 )
 
 type pipelineItem struct {
@@ -50,6 +59,9 @@ type pipelineItem struct {
 
 func (p pipelineItem) Ack() {
 	eventsProcessed.WithLabelValues("true").Inc()
+
+	eventProcessingLatency.WithLabelValues("test").Observe(time.Since(p.created).Seconds())
+
 	p.msg.Ack() // nolint:errcheck
 }
 
