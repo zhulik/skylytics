@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/prometheus/client_golang/prometheus"
@@ -31,6 +32,11 @@ var (
 		Name: "skylytics_updater_accounts_created_total",
 		Help: "The total amount of accounts created but the updater.",
 	}, []string{"test"})
+
+	eventsProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "skylytics_updater_accounts_evets_processed_total",
+		Help: "The total amount of events processed by the account updater.",
+	}, []string{"acked"})
 )
 
 type pipelineItem struct {
@@ -38,6 +44,18 @@ type pipelineItem struct {
 	event   *core.BlueskyEvent
 	exists  bool
 	account core.AccountModel
+
+	created time.Time
+}
+
+func (p pipelineItem) Ack() {
+	eventsProcessed.WithLabelValues("true").Inc()
+	p.msg.Ack() // nolint:errcheck
+}
+
+func (p pipelineItem) Nak() {
+	eventsProcessed.WithLabelValues("false").Inc()
+	p.msg.Nak() // nolint:errcheck
 }
 
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
@@ -51,9 +69,10 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}
 
 				return pipelineItem{
-					msg:    msg,
-					event:  event,
-					exists: false,
+					msg:     msg,
+					event:   event,
+					exists:  false,
+					created: time.Now(),
 				}, nil
 			}),
 		).
@@ -69,7 +88,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				updater.Logger.Info("Processing batch", "batch_size", len(items))
 
 				dids := lo.Map(items, func(item pipelineItem, _ int) string {
-					item.msg.Ack() // nolint:errcheck
+					item.Ack() // nolint:errcheck
 					return item.event.Did
 				})
 
@@ -81,11 +100,9 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
 					_, exists := existing[item.event.Did]
 
-					return pipelineItem{
-						msg:    item.msg,
-						event:  item.event,
-						exists: exists,
-					}
+					item.exists = exists
+
+					return item
 				}), nil
 			}),
 		).
@@ -93,7 +110,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		Then( // Filter out existing accounts.
 			apply.Filter(func(_ context.Context, item pipelineItem) (bool, error) {
 				if item.exists {
-					item.msg.Ack() // nolint:errcheck
+					item.Ack() // nolint:errcheck
 					return false, nil
 				}
 				return true, nil
@@ -112,12 +129,8 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}
 
 				return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
-					return pipelineItem{
-						msg:     item.msg,
-						event:   item.event,
-						exists:  item.exists,
-						account: profiles[item.event.Did],
-					}
+					item.account = profiles[item.event.Did]
+					return item
 				}), nil
 			}),
 		).
@@ -131,7 +144,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				if err == nil {
 					lo.ForEach(items, func(item pipelineItem, _ int) {
 						accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
-						item.msg.Ack() //nolint:errcheck
+						item.Ack() //nolint:errcheck
 					})
 					return nil, nil
 				}
@@ -152,12 +165,13 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}
 
 				accountsCreated.WithLabelValues("test").Inc()
-				item.msg.Ack() // nolint:errcheck
+				item.Ack() // nolint:errcheck
 				return nil
 			}),
 		)
 }
 
+// TODO: turn into pipeline stages.
 func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids []string) (map[string]core.AccountModel, error) {
 	profiles, err := strmy.GetProfiles(ctx, dids...)
 	if err != nil {
