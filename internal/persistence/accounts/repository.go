@@ -30,6 +30,7 @@ func (r *Repository) ExistsByDID(ctx context.Context, dids ...string) (map[strin
 	keys := lo.Map(dids, func(did string, _ int) string {
 		return base64.StdEncoding.EncodeToString([]byte(did))
 	})
+	keys = lo.Uniq(keys)
 
 	existing, err := r.KV.ExistingKeys(ctx, keys...)
 	if err != nil {
