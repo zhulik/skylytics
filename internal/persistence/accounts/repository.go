@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"context"
+	"encoding/base64"
 	"log/slog"
 
 	"github.com/samber/lo"
@@ -26,7 +27,11 @@ func (r *Repository) Init(ctx context.Context) error {
 }
 
 func (r *Repository) ExistsByDID(ctx context.Context, dids ...string) (map[string]bool, error) {
-	existing, err := r.KV.ExistingKeys(ctx, dids...)
+	keys := lo.Map(dids, func(did string, _ int) string {
+		return base64.StdEncoding.EncodeToString([]byte(did))
+	})
+
+	existing, err := r.KV.ExistingKeys(ctx, keys...)
 	if err != nil {
 		return nil, err
 	}
