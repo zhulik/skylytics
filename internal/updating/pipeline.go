@@ -6,14 +6,12 @@ import (
 	"errors"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"golang.org/x/exp/slices"
-
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/samber/lo"
@@ -23,11 +21,6 @@ import (
 )
 
 var (
-	//https://www.postgresql.org/docs/current/errcodes-appendix.html
-	ignoredErrors = []string{
-		"23505", // Constraint violation.
-	}
-
 	accountsCreated = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "skylytics_updater_accounts_created_total",
 		Help: "The total amount of accounts created but the updater.",
@@ -146,32 +139,12 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}), nil
 			}),
 		).
-		Then( // Try to insert in batches
-			apply.MapC(4, func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
-				serializedProfiles := lo.Map(items, func(item pipelineItem, _ int) core.AccountModel {
-					return item.account
-				})
-
-				err := updater.AccountRepo.Insert(ctx, serializedProfiles...)
-				if err == nil {
-					lo.ForEach(items, func(item pipelineItem, _ int) {
-						accountsCreated.WithLabelValues("test").Add(float64(len(serializedProfiles)))
-						item.Ack() //nolint:errcheck
-					})
-					return nil, nil
-				}
-
-				updater.Logger.Warn("failed to insert accounts batch, processing them one by one", "error", err)
-
-				return items, nil
-			}),
-		).
 		Then(apply.Flatten[pipelineItem]()).
 		Then( // Insert records one by one
 			apply.Each(func(ctx context.Context, item pipelineItem) error {
 				err := updater.AccountRepo.Insert(ctx, item.account)
 				if err != nil {
-					if !isInsertErrCanBeIgnored(err) {
+					if !errors.Is(err, jetstream.ErrKeyExists) {
 						item.Nak()
 						return err
 					}
@@ -212,9 +185,4 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 	return lo.Associate(models, func(item core.AccountModel) (string, core.AccountModel) {
 		return item.DID, item
 	}), nil
-}
-
-func isInsertErrCanBeIgnored(err error) bool {
-	var pgError *pgconn.PgError
-	return errors.As(err, &pgError) && slices.Contains(ignoredErrors, pgError.Code)
 }

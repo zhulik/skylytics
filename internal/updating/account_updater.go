@@ -7,10 +7,8 @@ import (
 	"net/url"
 
 	"skylytics/internal/core"
-	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
 
-	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"resty.dev/v3"
@@ -69,11 +67,4 @@ func metricMiddleware(_ *resty.Client, response *resty.Response) error {
 	).Observe(response.Duration().Seconds())
 
 	return nil
-}
-
-func (a *AccountUpdater) Update(ctx context.Context, msgs ...jetstream.Msg) error {
-	return async.AsyncEach(ctx, msgs, func(_ context.Context, msg jetstream.Msg) error {
-		msg.Ack() // nolint:errcheck
-		return nil
-	})
 }

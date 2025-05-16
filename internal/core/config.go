@@ -18,6 +18,9 @@ type Config struct {
 	// bsky subscriber
 	NatsStateKVBucket string `envconfig:"NATS_STATE_KV_BUCKET"`
 
+	// Accounts cache
+	NatsAccountsCacheKVBucket string `envconfig:"NATS_ACCOUNTS_CACHE_KV_BUCKET"`
+
 	// Posgresql
 	PostgresHost     string `envconfig:"POSTGRES_HOST"`
 	PostgresUser     string `envconfig:"POSTGRES_USER"`

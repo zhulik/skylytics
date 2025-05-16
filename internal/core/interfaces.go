@@ -65,6 +65,6 @@ type KeyValueClient interface {
 	// Keys returns all keys in the bucket
 	Keys(ctx context.Context) ([]string, error)
 
-	// Shutdown gracefully shuts down the client
-	Shutdown() error
+	// ExistingKeys returns a list of keys that already exist in the bucket.
+	ExistingKeys(context.Context, ...string) ([]string, error)
 }

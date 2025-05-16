@@ -54,7 +54,24 @@ func (c *KV) Keys(ctx context.Context) ([]string, error) {
 	return c.kv.Keys(ctx)
 }
 
-// Shutdown gracefully shuts down the client
-func (c *KV) Shutdown() error {
-	return nil
+func (c *KV) ExistingKeys(ctx context.Context, keys ...string) ([]string, error) {
+	l, err := c.kv.ListKeysFiltered(ctx, keys...)
+	if err != nil {
+		return nil, err
+	}
+	defer l.Stop() // nolint:errcheck
+
+	var foundKeys []string
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, err
+		case key, ok := <-l.Keys():
+			if !ok {
+				return foundKeys, nil
+			}
+			foundKeys = append(foundKeys, key)
+		}
+	}
 }

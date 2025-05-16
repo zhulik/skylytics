@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/samber/lo"
 
@@ -9,26 +10,32 @@ import (
 )
 
 type Repository struct {
-	DB core.DB
+	Logger *slog.Logger
+	JS     core.JetstreamClient
+	KV     core.KeyValueClient
+	Config *core.Config
+}
+
+func (r *Repository) Init(ctx context.Context) error {
+	var err error
+
+	r.Logger = r.Logger.With("component", "accounts.Repository")
+
+	r.KV, err = r.JS.KV(ctx, r.Config.NatsAccountsCacheKVBucket)
+	return err
 }
 
 func (r *Repository) ExistsByDID(ctx context.Context, dids ...string) (map[string]bool, error) {
-	var existing []string
-	err := r.DB.
-		Model(&core.AccountModel{}).
-		WithContext(ctx).
-		Select("account->>'did' as did").
-		Where("account->>'did' in (?)", dids).
-		Find(&existing).Error
-
+	existing, err := r.KV.ExistingKeys(ctx, dids...)
 	if err != nil {
 		return nil, err
 	}
+
 	return lo.Associate(existing, func(item string) (string, bool) {
 		return item, true
 	}), nil
 }
 
-func (r *Repository) Insert(_ context.Context, accounts ...core.AccountModel) error {
-	return r.DB.Model(&core.AccountModel{}).Create(&accounts).Error
+func (r *Repository) Insert(ctx context.Context, account core.AccountModel) error {
+	return r.KV.Put(ctx, account.DID, account.Account)
 }

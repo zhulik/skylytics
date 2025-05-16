@@ -45,10 +45,6 @@ func (r *Repository) Insert(ctx context.Context, events ...core.EventModel) erro
 	return nil
 }
 
-func (r *Repository) Shutdown(_ context.Context) error {
-	return r.KV.Shutdown()
-}
-
 func key(event core.EventModel) string {
 	hashedDID := sha256.Sum256([]byte(event.Event.Did))
 	return fmt.Sprintf("event.%x.%d", hashedDID, event.Event.TimeUS)
