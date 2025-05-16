@@ -100,7 +100,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				updater.Logger.Info("Processing batch", "batch_size", len(items))
 
 				dids := lo.Map(items, func(item pipelineItem, _ int) string {
-					item.Ack() // nolint:errcheck
+					item.Ack()
 					return item.event.Did
 				})
 
@@ -122,7 +122,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		Then( // Filter out existing accounts.
 			apply.Filter(func(_ context.Context, item pipelineItem) (bool, error) {
 				if item.exists {
-					item.Ack() // nolint:errcheck
+					item.Ack()
 					return false, nil
 				}
 				return true, nil
@@ -172,12 +172,13 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				err := updater.AccountRepo.Insert(ctx, item.account)
 				if err != nil {
 					if !isInsertErrCanBeIgnored(err) {
+						item.Nak()
 						return err
 					}
 				}
 
 				accountsCreated.WithLabelValues("test").Inc()
-				item.Ack() // nolint:errcheck
+				item.Ack()
 				return nil
 			}),
 		)
