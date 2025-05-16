@@ -42,7 +42,7 @@ var (
 		prometheus.HistogramOpts{
 			Name:    "skylytics_updater_event_processing_latency_seconds",
 			Help:    "Histogram of event processing latency in the account updater latency in seconds",
-			Buckets: []float64{0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10},
+			Buckets: []float64{0.01, 0.05, 0.1, 0.5, 1, 2, 5, 10, 20, 30, 60, 120},
 		},
 		[]string{"test"},
 	)
