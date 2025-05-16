@@ -94,7 +94,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				return nil
 			}),
 		).
-		Then(apply.Batch[pipelineItem](1000)).
+		Then(apply.Batch[pipelineItem](500)).
 		Then( // Fetch and set existing records
 			apply.MapC(4, func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
 				updater.Logger.Info("Processing batch", "batch_size", len(items))
