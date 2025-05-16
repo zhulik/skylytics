@@ -35,7 +35,6 @@ type AccountRepository interface {
 }
 
 type AccountUpdater interface {
-	Update(ctx context.Context, msg ...jetstream.Msg) error
 }
 
 type EventsArchiver interface {
