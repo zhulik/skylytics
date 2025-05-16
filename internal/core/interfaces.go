@@ -30,7 +30,7 @@ type EventRepository interface {
 }
 
 type AccountRepository interface {
-	Insert(context.Context, ...AccountModel) error
+	Insert(context.Context, AccountModel) error
 	ExistsByDID(context.Context, ...string) (map[string]bool, error)
 }
 
