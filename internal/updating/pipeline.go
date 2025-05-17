@@ -88,9 +88,9 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}, nil
 			}),
 		).
-		Then(apply.Batch[pipelineItem](500)).
+		Then(apply.Batch[pipelineItem](250)).
 		Then( // Fetch and set existing records
-			apply.MapC(4, func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
+			apply.MapC(16, func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
 				updater.Logger.Info("fetching existing accounts", "count", len(items))
 				dids := lo.Map(items, func(item pipelineItem, _ int) string {
 					item.Ack()
