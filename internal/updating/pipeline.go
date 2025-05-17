@@ -141,7 +141,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 		).
 		Then(apply.Flatten[pipelineItem]()).
 		Then( // Insert records one by one
-			apply.Each(func(ctx context.Context, item pipelineItem) error {
+			apply.EachC(4, func(ctx context.Context, item pipelineItem) error {
 				err := updater.AccountRepo.Insert(ctx, item.account)
 				if err != nil {
 					if !errors.Is(err, jetstream.ErrKeyExists) {
