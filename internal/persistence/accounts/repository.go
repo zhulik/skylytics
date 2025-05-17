@@ -43,5 +43,7 @@ func (r *Repository) ExistsByDID(ctx context.Context, dids ...string) (map[strin
 }
 
 func (r *Repository) Insert(ctx context.Context, account core.AccountModel) error {
-	return r.KV.Put(ctx, account.DID, account.Account)
+	key := base64.StdEncoding.EncodeToString([]byte(account.DID))
+
+	return r.KV.Put(ctx, key, account.Account)
 }
