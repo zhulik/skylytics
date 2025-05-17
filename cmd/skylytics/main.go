@@ -53,9 +53,9 @@ func main() {
 		err := pal.New(
 			pal.ProvideRunner(inspect.RemoteConsole),
 		).
-			InitTimeout(time.Second).
-			HealthCheckTimeout(time.Second).
-			ShutdownTimeout(time.Second).
+			InitTimeout(2*time.Second).
+			HealthCheckTimeout(2*time.Second).
+			ShutdownTimeout(13*time.Second).
 			Run(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 		if err != nil {
 			log.Fatal(err)

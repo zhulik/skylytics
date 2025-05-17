@@ -88,20 +88,28 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}, nil
 			}),
 		).
+		Then(apply.Batch[pipelineItem](100)).
 		Then( // Fetch and set existing records
-			apply.MapC(16, func(ctx context.Context, item pipelineItem) (pipelineItem, error) {
-				existing, err := updater.AccountRepo.ExistsByDID(ctx, item.event.Did)
+			apply.MapC(4, func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
+				dids := lo.Map(items, func(item pipelineItem, _ int) string {
+					item.Ack()
+					return item.event.Did
+				})
+
+				existing, err := updater.AccountRepo.ExistsByDID(ctx, dids...)
+
 				if err != nil {
-					return pipelineItem{}, err
+					return nil, err
 				}
 
-				_, exists := existing[item.event.Did]
+				return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
+					_, item.exists = existing[item.event.Did]
 
-				item.exists = exists
-
-				return item, nil
+					return item
+				}), nil
 			}),
 		).
+		Then(apply.Flatten[pipelineItem]()).
 		Then( // Filter out existing accounts.
 			apply.Filter(func(_ context.Context, item pipelineItem) (bool, error) {
 				if item.exists {
@@ -140,7 +148,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 			}),
 		).
 		Then( // Insert records one by one
-			apply.EachC(4, func(ctx context.Context, item pipelineItem) error {
+			apply.EachC(16, func(ctx context.Context, item pipelineItem) error {
 				err := updater.AccountRepo.Insert(ctx, item.account)
 				if err != nil {
 					if !errors.Is(err, jetstream.ErrKeyExists) {

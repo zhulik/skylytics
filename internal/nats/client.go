@@ -62,18 +62,14 @@ func (c *Client) ConsumeToPipeline(ctx context.Context, stream, name string, pip
 		return err
 	}
 
-	stop := func() {
-		consCtx.Drain()
-		consCtx.Stop()
-		close(ch)
-	}
-
 	go func() {
 		<-ctx.Done()
-		stop()
-	}()
 
-	defer stop()
+		consCtx.Drain()
+		<-consCtx.Closed()
+
+		close(ch)
+	}()
 
 	return pipeline.
 		Run(ctx, ch).

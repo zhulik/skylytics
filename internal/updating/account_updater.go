@@ -55,6 +55,7 @@ func (a *AccountUpdater) Run(ctx context.Context) error {
 		timer := time.NewTicker(2 * time.Second)
 		defer timer.Stop()
 
+		prevTime := time.Now()
 		var prev int64
 
 		for {
@@ -63,8 +64,13 @@ func (a *AccountUpdater) Run(ctx context.Context) error {
 				return
 			case <-timer.C:
 				total := eventsProcessedCounter.Load()
-				a.Logger.Info("Events processed", "total", total, "diff", total-prev)
+
+				rate := float64(total-prev) / time.Since(prevTime).Seconds()
+
+				a.Logger.Info("Events processed", "total", total, "rate", rate)
+
 				prev = total
+				prevTime = time.Now()
 			}
 		}
 	}()
