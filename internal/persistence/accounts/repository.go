@@ -38,8 +38,7 @@ func (r *Repository) ExistsByDID(ctx context.Context, dids ...string) (map[strin
 	}
 
 	return lo.Associate(existing, func(item string) (string, bool) {
-
-		return stirng(base64.StdEncoding.DecodeString(item)), true
+		return string(lo.Must(base64.StdEncoding.DecodeString(item))), true
 	}), nil
 }
 
