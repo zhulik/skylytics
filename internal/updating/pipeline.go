@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/k0kubun/pp"
+
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
@@ -122,7 +124,8 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
 					item.account = profiles[item.event.Did]
 					if item.account == nil {
-						updater.Logger.Warn("account is nil", "item", item, "profiles", "profiles")
+						pp.Sprint(item)
+						updater.Logger.Warn("account is nil", "item", pp.Sprint(item), "profiles", pp.Sprint(profiles))
 						panic("account is nil")
 					}
 					return item
@@ -159,12 +162,6 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 		if err != nil {
 			return nil, err
 		}
-		var accountModel core.AccountModel
-
-		err = json.Unmarshal(account, &accountModel)
-		if err != nil {
-			return nil, err
-		}
 
 		return &core.AccountModel{Account: account, DID: profile.DID}, nil
 	})
@@ -172,7 +169,7 @@ func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids [
 		return nil, err
 	}
 
-	return lo.Associate(models, func(item *core.AccountModel) (string, *core.AccountModel) {
-		return item.DID, item
+	return lo.Associate(models, func(acc *core.AccountModel) (string, *core.AccountModel) {
+		return acc.DID, acc
 	}), nil
 }
