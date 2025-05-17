@@ -45,5 +45,10 @@ func (r *Repository) ExistsByDID(ctx context.Context, dids ...string) (map[strin
 func (r *Repository) Insert(ctx context.Context, account core.AccountModel) error {
 	key := base64.StdEncoding.EncodeToString([]byte(account.DID))
 
+	if account.DID == "" || key == "" {
+		r.Logger.Warn("Failed to insert account with no did", "account", account)
+		return nil
+	}
+
 	return r.KV.Put(ctx, key, account.Account)
 }
