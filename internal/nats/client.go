@@ -57,7 +57,11 @@ func (c *Client) ConsumeToPipeline(ctx context.Context, stream, name string, pip
 
 	consCtx, err := cons.Consume(func(msg jetstream.Msg) {
 		ch <- pips.NewD(msg)
-	}, jetstream.PullExpiry(5*time.Second), jetstream.PullMaxMessages(10000))
+	},
+		jetstream.PullExpiry(5*time.Second),
+		jetstream.PullMaxMessages(10000),
+		jetstream.PullThresholdMessages(8000),
+	)
 	if err != nil {
 		return err
 	}
