@@ -46,6 +46,10 @@ func (a *AccountUpdater) Init(_ context.Context) error {
 	return nil
 }
 
+func (a *AccountUpdater) Shutdown(_ context.Context) error {
+	return a.stormy.Close()
+}
+
 func (a *AccountUpdater) Run(ctx context.Context) error {
 	go func() {
 		timer := time.NewTicker(2 * time.Second)
