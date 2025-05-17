@@ -88,7 +88,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}, nil
 			}),
 		).
-		Then(apply.Batch[pipelineItem](100)).
+		Then(apply.Batch[pipelineItem](500)).
 		Then( // Fetch and set existing records
 			apply.MapC(4, func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
 				dids := lo.Map(items, func(item pipelineItem, _ int) string {
