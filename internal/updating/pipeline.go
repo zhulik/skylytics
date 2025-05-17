@@ -121,6 +121,10 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 
 				return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
 					item.account = profiles[item.event.Did]
+					if item.account == nil {
+						updater.Logger.Warn("account is nil", "item", item, "profiles", "profiles")
+						panic("account is nil")
+					}
 					return item
 				}), nil
 			}),
