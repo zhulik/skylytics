@@ -125,7 +125,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					item.account = profiles[item.event.Did]
 					if item.account == nil {
 						pp.Sprint(item)
-						updater.Logger.Warn("account is nil", "item", pp.Sprint(item), "profiles", pp.Sprint(profiles))
+						updater.Logger.Warn("account is nil", "did", pp.Sprint(item.event.Did), "profiles", lo.Keys(profiles))
 						panic("account is nil")
 					}
 					return item
