@@ -73,18 +73,14 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 					return pipelineItem{}, err
 				}
 
+				msg.InProgress() // nolint:errcheck
+
 				return pipelineItem{
 					msg:     msg,
 					event:   event,
 					exists:  false,
 					created: time.Now(),
 				}, nil
-			}),
-		).
-		Then(
-			apply.EachC(4, func(_ context.Context, item pipelineItem) error {
-				item.msg.InProgress() // nolint:errcheck
-				return nil
 			}),
 		).
 		Then(apply.Batch[pipelineItem](500)).
