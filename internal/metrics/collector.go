@@ -5,17 +5,13 @@ import (
 	"time"
 
 	"skylytics/internal/core"
-
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
-	"gorm.io/gorm/schema"
 )
 
 var (
-	tableCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "skylytics_table_estimated_count",
-		Help: "Estimated record count for a table.",
-	}, []string{"table"})
+//	tableCount = promauto.NewGaugeVec(prometheus.GaugeOpts{
+//		Name: "skylytics_table_estimated_count",
+//		Help: "Estimated record count for a table.",
+//	}, []string{"table"})
 )
 
 type Collector struct {
@@ -31,21 +27,21 @@ func (c *Collector) Run(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-ticker.C:
-			err := c.collectTableEstimatedCount(core.AccountModel{})
-			if err != nil {
-				return err
-			}
+			//err := c.collectTableEstimatedCount(core.AccountModel{})
+			//if err != nil {
+			//	return err
+			//}
 		}
 	}
 }
 
-func (c *Collector) collectTableEstimatedCount(tabler schema.Tabler) error {
-	var count int64
-	count, err := c.DB.EstimatedCount(tabler.TableName())
-
-	if err != nil {
-		return err
-	}
-	tableCount.WithLabelValues(tabler.TableName()).Set(float64(count))
-	return nil
-}
+//func (c *Collector) collectTableEstimatedCount(tabler schema.Tabler) error {
+//	var count int64
+//	count, err := c.DB.EstimatedCount(tabler.TableName())
+//
+//	if err != nil {
+//		return err
+//	}
+//	tableCount.WithLabelValues(tabler.TableName()).Set(float64(count))
+//	return nil
+//}

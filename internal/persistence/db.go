@@ -49,7 +49,7 @@ func (db *DB) Shutdown(_ context.Context) error {
 
 func (db *DB) Migrate() error {
 	return db.Transaction(func(tx *gorm.DB) error {
-		err := tx.AutoMigrate(&core.AccountModel{})
+		err := tx.AutoMigrate()
 		if err != nil {
 			return err
 		}

@@ -42,10 +42,11 @@ var (
 )
 
 type pipelineItem struct {
-	msg     jetstream.Msg
-	event   *core.BlueskyEvent
-	exists  bool
-	account core.AccountModel
+	msg    jetstream.Msg
+	event  *core.BlueskyEvent
+	exists bool
+
+	account *core.AccountModel
 
 	created time.Time
 }
@@ -143,31 +144,31 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 }
 
 // TODO: turn into pipeline stages.
-func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids []string) (map[string]core.AccountModel, error) {
+func fetchAndSerializeProfiles(ctx context.Context, strmy *stormy.Client, dids []string) (map[string]*core.AccountModel, error) {
 	profiles, err := strmy.GetProfiles(ctx, dids...)
 	if err != nil {
 		return nil, err
 	}
 
-	models, err := async.AsyncMap(ctx, profiles, func(_ context.Context, profile *stormy.Profile) (core.AccountModel, error) {
+	models, err := async.AsyncMap(ctx, profiles, func(_ context.Context, profile *stormy.Profile) (*core.AccountModel, error) {
 		account, err := json.Marshal(profile)
 		if err != nil {
-			return core.AccountModel{}, err
+			return nil, err
 		}
 		var accountModel core.AccountModel
 
 		err = json.Unmarshal(account, &accountModel)
 		if err != nil {
-			return core.AccountModel{}, err
+			return nil, err
 		}
 
-		return core.AccountModel{Account: account, DID: profile.DID}, nil
+		return &core.AccountModel{Account: account, DID: profile.DID}, nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	return lo.Associate(models, func(item core.AccountModel) (string, core.AccountModel) {
+	return lo.Associate(models, func(item *core.AccountModel) (string, *core.AccountModel) {
 		return item.DID, item
 	}), nil
 }
