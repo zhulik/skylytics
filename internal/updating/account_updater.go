@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"time"
 
 	"skylytics/internal/core"
 	"skylytics/pkg/stormy"
@@ -39,12 +40,31 @@ func (a *AccountUpdater) Init(_ context.Context) error {
 		TransportSettings: stormy.DefaultConfig.TransportSettings,
 
 		ResponseMiddlewares: []resty.ResponseMiddleware{metricMiddleware},
+		RequestMiddlewares:  []resty.RequestMiddleware{},
 	})
 
 	return nil
 }
 
 func (a *AccountUpdater) Run(ctx context.Context) error {
+	go func() {
+		timer := time.NewTicker(2 * time.Second)
+		defer timer.Stop()
+
+		var prev int64
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-timer.C:
+				total := eventsProcessedCounter.Load()
+				a.Logger.Info("Events processed", "total", total, "diff", total-prev)
+				prev = total
+			}
+		}
+	}()
+
 	return a.JS.ConsumeToPipeline(
 		ctx,
 		a.Config.NatsStream,

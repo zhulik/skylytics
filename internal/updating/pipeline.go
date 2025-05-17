@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"sync/atomic"
 	"time"
 
 	"skylytics/internal/core"
@@ -31,6 +32,8 @@ var (
 		Help: "The total amount of events processed by the account updater.",
 	}, []string{"acked"})
 
+	eventsProcessedCounter atomic.Int64
+
 	eventProcessingLatency = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Name:    "skylytics_updater_event_processing_latency_seconds",
@@ -53,6 +56,7 @@ type pipelineItem struct {
 
 func (p pipelineItem) Ack() {
 	eventsProcessed.WithLabelValues("true").Inc()
+	eventsProcessedCounter.Add(1)
 
 	eventProcessingLatency.WithLabelValues("test").Observe(time.Since(p.created).Seconds())
 
@@ -121,15 +125,20 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 
 				return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
 					item.account = profiles[item.event.Did]
-					if item.account == nil {
-						updater.Logger.Warn("account is nil", "did", item.event.Did, "profiles", lo.Keys(profiles), "dids", dids)
-						panic("account is nil")
-					}
 					return item
 				}), nil
 			}),
 		).
 		Then(apply.Flatten[pipelineItem]()).
+		Then( // Filter out accounts without profiles, those were suspended or deleted
+			apply.Filter(func(_ context.Context, item pipelineItem) (bool, error) {
+				if item.account == nil {
+					item.Ack()
+					return false, nil
+				}
+				return true, nil
+			}),
+		).
 		Then( // Insert records one by one
 			apply.EachC(4, func(ctx context.Context, item pipelineItem) error {
 				err := updater.AccountRepo.Insert(ctx, item.account)
