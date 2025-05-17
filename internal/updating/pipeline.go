@@ -6,8 +6,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/k0kubun/pp"
-
 	"skylytics/internal/core"
 	"skylytics/pkg/async"
 	"skylytics/pkg/stormy"
@@ -124,8 +122,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
 					item.account = profiles[item.event.Did]
 					if item.account == nil {
-						pp.Sprint(item)
-						updater.Logger.Warn("account is nil", "did", pp.Sprint(item.event.Did), "profiles", lo.Keys(profiles))
+						updater.Logger.Warn("account is nil", "did", item.event.Did, "profiles", lo.Keys(profiles), "dids", dids)
 						panic("account is nil")
 					}
 					return item

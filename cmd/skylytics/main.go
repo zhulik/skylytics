@@ -40,7 +40,6 @@ func main() {
 
 	case "account-updater":
 		services = append(services,
-			pal.Provide[core.DB, persistence.DB](),
 			pal.Provide[core.AccountRepository, accounts.Repository](),
 			pal.Provide[core.AccountUpdater, updating.AccountUpdater](),
 		)
