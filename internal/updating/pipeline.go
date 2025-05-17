@@ -83,31 +83,20 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}, nil
 			}),
 		).
-		Then(apply.Batch[pipelineItem](500)).
 		Then( // Fetch and set existing records
-			apply.MapC(4, func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
-				updater.Logger.Info("Processing batch", "batch_size", len(items))
-
-				dids := lo.Map(items, func(item pipelineItem, _ int) string {
-					item.Ack()
-					return item.event.Did
-				})
-
-				existing, err := updater.AccountRepo.ExistsByDID(ctx, dids...)
+			apply.MapC(16, func(ctx context.Context, item pipelineItem) (pipelineItem, error) {
+				existing, err := updater.AccountRepo.ExistsByDID(ctx, item.event.Did)
 				if err != nil {
-					return nil, err
+					return pipelineItem{}, err
 				}
 
-				return lo.Map(items, func(item pipelineItem, _ int) pipelineItem {
-					_, exists := existing[item.event.Did]
+				_, exists := existing[item.event.Did]
 
-					item.exists = exists
+				item.exists = exists
 
-					return item
-				}), nil
+				return item, nil
 			}),
 		).
-		Then(apply.Flatten[pipelineItem]()).
 		Then( // Filter out existing accounts.
 			apply.Filter(func(_ context.Context, item pipelineItem) (bool, error) {
 				if item.exists {
