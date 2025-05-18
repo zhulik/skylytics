@@ -234,6 +234,8 @@ github.com/zhulik/pal/inspect v1.1.2 h1:b2FtIwL57A41UmvlxU+6yN4ASHm2QvVfzsg4/hnA
 github.com/zhulik/pal/inspect v1.1.2/go.mod h1:uyYYw/tD6ndsy+L9iF6aizMmpd+28K6IlpWFv69INFw=
 github.com/zhulik/pips v0.7.0 h1:AkX07YFDjAbE6YG4MXtz1WTfg5GcNetqlb5arBfzJMQ=
 github.com/zhulik/pips v0.7.0/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
+github.com/zhulik/pips v0.7.1 h1:5b5kLRRy4DPUWuLGOPqALxT5/dG6CzO/zzAupqJ6zhg=
+github.com/zhulik/pips v0.7.1/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1 h1:aFJWCqJMNjENlcleuuOkGAPH82y0yULBScfXcIEdS24=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1/go.mod h1:sEGXWArGqc3tVa+ekntsN65DmVbVeW+7lTKTjZF3/Fo=
 go.opentelemetry.io/otel v1.21.0 h1:hzLeKBZEL7Okw2mGzZ0cc4k/A7Fta0uoPgaJCr8fsFc=

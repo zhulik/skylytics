@@ -71,7 +71,7 @@ func (p pipelineItem) Nak() {
 func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
 		Then( // Parse items
-			apply.MapC(4, func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
+			apply.Map(func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
 				event := &core.BlueskyEvent{}
 				err := json.Unmarshal(msg.Data(), event)
 				if err != nil {
@@ -88,17 +88,17 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				}, nil
 			}),
 		).
-		Then(apply.Batch[pipelineItem](250)).
+		Then(apply.Batch[pipelineItem](250, apply.WithFlushInterval(time.Second))).
 		Then( // Fetch and set existing records
-			apply.MapC(16, func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
+			apply.MapC(4, func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
 				updater.Logger.Info("fetching existing accounts", "count", len(items))
 				dids := lo.Map(items, func(item pipelineItem, _ int) string {
 					return item.event.Did
 				})
 
 				existing, err := updater.AccountRepo.ExistsByDID(ctx, dids...)
-
 				if err != nil {
+					// TODO: nack everything
 					return nil, err
 				}
 
@@ -119,7 +119,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 				return true, nil
 			}),
 		).
-		Then(apply.Batch[pipelineItem](25)).
+		Then(apply.Batch[pipelineItem](25, apply.WithFlushInterval(time.Second))).
 		Then( // Fetch profiles
 			apply.MapC(4, func(ctx context.Context, items []pipelineItem) ([]pipelineItem, error) {
 				dids := lo.Map(items, func(item pipelineItem, _ int) string {
@@ -128,6 +128,7 @@ func pipeline(updater *AccountUpdater) *pips.Pipeline[jetstream.Msg, any] {
 
 				profiles, err := fetchAndSerializeProfiles(ctx, updater.stormy, dids)
 				if err != nil {
+					// TODO: nack everything
 					return nil, err
 				}
 
