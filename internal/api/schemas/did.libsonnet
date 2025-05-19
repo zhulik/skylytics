@@ -1,0 +1,4 @@
+{
+  // TODO: validations
+  type: 'string',
+}

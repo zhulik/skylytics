@@ -5,6 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"skylytics/internal/api"
 	"syscall"
 	"time"
 
@@ -61,6 +62,11 @@ func main() {
 			log.Fatal(err)
 		}
 		return
+
+	case "api":
+		services = append(services,
+			pal.Provide[*api.Server, api.Server](),
+		)
 
 	case "migrate":
 		// TODO: extract migration runner.
