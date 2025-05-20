@@ -72,7 +72,11 @@ func subjectName(event *core.BlueskyEvent) string {
 
 	switch event.Kind {
 	case models.EventKindCommit:
-		suffix = fmt.Sprintf("%s.%s", event.Commit.Operation, event.Commit.Collection)
+		cid := event.Commit.CID
+		if cid == "" {
+			cid = "cid"
+		}
+		suffix = fmt.Sprintf("%s.%s.%s", cid, event.Commit.Operation, event.Commit.Collection)
 	case models.EventKindAccount:
 		if event.Account.Active {
 			suffix = "active"
