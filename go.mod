@@ -3,6 +3,7 @@ module skylytics
 go 1.24.2
 
 require (
+	github.com/Jeffail/gabs v1.4.0
 	github.com/bluesky-social/jetstream v0.0.0-20250411043205-f4da85b6e06b
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/go-chi/chi/v5 v5.2.1
