@@ -8,6 +8,7 @@ require (
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/nats-io/nats.go v1.41.1
+	github.com/oapi-codegen/runtime v1.1.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/lo v1.38.1
 	github.com/zhulik/pal v0.5.6
