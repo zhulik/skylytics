@@ -19,7 +19,6 @@ jobs:
           cache: true
 
       - uses: kobtea/setup-jsonnet-action@v2
-
       - name: Go generate
         run: go generate ./...
 
@@ -42,7 +41,6 @@ jobs:
           cache: true
 
       - uses: kobtea/setup-jsonnet-action@v2
-
       - name: Go generate
         run: go generate ./...
 
@@ -65,6 +63,10 @@ jobs:
           go-version-file: 'go.mod'
 
       - uses: ko-build/setup-ko@v0.6
+
+      - uses: kobtea/setup-jsonnet-action@v2
+      - name: Go generate
+        run: go generate ./...
 
       - name: Build and push image with ko
         env:
