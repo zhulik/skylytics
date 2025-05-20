@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"regexp"
 
 	"github.com/Jeffail/gabs"
 	"github.com/nats-io/nats.go"
@@ -21,6 +22,8 @@ import (
 )
 
 var (
+	htRE = regexp.MustCompile(`#\w+`)
+
 	eventsProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
 		Name: "skylytics_events_processed_total",
 		Help: "The total number of processed events",
@@ -30,6 +33,11 @@ var (
 		Name: "skylytics_commit_processed_total",
 		Help: "The total number of processed commits",
 	}, []string{"commit_type", "operation"})
+
+	hashtagProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "skylytics_commit_hashtags_total",
+		Help: "The total number of processed hashtags",
+	}, []string{"tag"})
 )
 
 type Forwarder struct {
@@ -53,7 +61,7 @@ func (f *Forwarder) Run(ctx context.Context) error {
 			apply.Each(func(ctx context.Context, p pips.P[*core.BlueskyEvent, *gabs.Container]) error {
 				event, record := p.Unpack()
 
-				msg, err := message(event, record)
+				_, err := message(event, record)
 				if err != nil {
 					f.Logger.Error("failed to parse event", "event", event)
 					return nil
@@ -149,12 +157,25 @@ func countEvent(_ context.Context, p pips.P[*core.BlueskyEvent, *gabs.Container]
 	operation := ""
 	status := ""
 
-	event := p.A()
+	event, record := p.Unpack()
 
 	switch event.Kind {
 	case models.EventKindCommit:
 		operation = event.Commit.Operation
 		commitProcessed.WithLabelValues(event.Commit.Collection, event.Commit.Operation).Inc()
+
+		if record != nil && event.Commit.Collection == "app.bsky.feed.post" {
+			text, ok := record.Path("text").Data().(string)
+			if ok {
+				tags := hashtags(text)
+
+				if len(tags) > 0 {
+					for _, tag := range tags {
+						hashtagProcessed.WithLabelValues(tag).Inc()
+					}
+				}
+			}
+		}
 	case models.EventKindAccount:
 		if event.Account.Status != nil {
 			status = *event.Account.Status
@@ -165,4 +186,8 @@ func countEvent(_ context.Context, p pips.P[*core.BlueskyEvent, *gabs.Container]
 	eventsProcessed.WithLabelValues(event.Kind, operation, status).Inc()
 
 	return nil
+}
+
+func hashtags(text string) []string {
+	return htRE.FindAllString(text, -1)
 }
