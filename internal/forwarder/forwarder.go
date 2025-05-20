@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -47,12 +46,13 @@ func (f *Forwarder) Run(ctx context.Context) error {
 			apply.Each(func(ctx context.Context, event *core.BlueskyEvent) error {
 				msg, err := message(event)
 				if err != nil {
-					return err
+					f.Logger.Error("failed to parse event", "event", event)
+					return nil
 				}
 
 				_, err = f.JS.PublishMsg(ctx, msg)
-				if errors.Is(err, nats.ErrMaxPayload) {
-					f.Logger.Warn("event payload too large", "event", event)
+				if err != nil {
+					f.Logger.Error("failed to publish the event", "event", event)
 					return nil
 				}
 				return err
