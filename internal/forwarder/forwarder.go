@@ -61,7 +61,7 @@ func (f *Forwarder) Run(ctx context.Context) error {
 			apply.Each(func(ctx context.Context, p pips.P[*core.BlueskyEvent, *gabs.Container]) error {
 				event, record := p.Unpack()
 
-				_, err := message(event, record)
+				msg, err := message(event, record)
 				if err != nil {
 					f.Logger.Error("failed to parse event", "event", event)
 					return nil
