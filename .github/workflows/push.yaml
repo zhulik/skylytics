@@ -18,6 +18,8 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
 
+      - uses: kobtea/setup-jsonnet-action@v2
+
       - name: Go generate
         run: go generate ./...
 
@@ -38,6 +40,11 @@ jobs:
         with:
           go-version-file: 'go.mod'
           cache: true
+
+      - uses: kobtea/setup-jsonnet-action@v2
+
+      - name: Go generate
+        run: go generate ./...
 
       - name: Run tests
         run: go test -race ./...
