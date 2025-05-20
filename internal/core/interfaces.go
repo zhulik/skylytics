@@ -20,7 +20,7 @@ type JetstreamClient interface {
 }
 
 type BlueskySubscriber interface {
-	ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipeline[*BlueskyEvent, any]) error
+	ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipeline[*BlueskyEvent, *BlueskyEvent]) error
 }
 
 type Forwarder interface{}

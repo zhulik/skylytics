@@ -42,7 +42,7 @@ func (s *Subscriber) Init(ctx context.Context) error {
 	return err
 }
 
-func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipeline[*core.BlueskyEvent, any]) error {
+func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipeline[*core.BlueskyEvent, *core.BlueskyEvent]) error {
 	ch := make(chan pips.D[*core.BlueskyEvent])
 	defer close(ch)
 
@@ -89,7 +89,7 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 			if err != nil {
 				return err
 			}
-			err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.(*core.BlueskyEvent).TimeUS))
+			err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
 			if err != nil {
 				return err
 			}
