@@ -18,6 +18,9 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
 
+      - name: Go generate
+        run: go generate ./...
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
