@@ -76,8 +76,7 @@ func subjectName(event *core.BlueskyEvent) string {
 		if cid == "" {
 			cid = "cid"
 		}
-		cid64 := base64.StdEncoding.EncodeToString([]byte(cid))
-		suffix = fmt.Sprintf("%s.%s.%s", cid64, event.Commit.Operation, event.Commit.Collection)
+		suffix = fmt.Sprintf("%s.%s.%s", cid, event.Commit.Operation, event.Commit.Collection)
 	case models.EventKindAccount:
 		if event.Account.Active {
 			suffix = "active"
