@@ -63,13 +63,13 @@ func (f *Forwarder) Run(ctx context.Context) error {
 
 				msg, err := message(event, record)
 				if err != nil {
-					f.Logger.Error("failed to parse event", "event", event)
+					f.Logger.Error("failed to parse event", "event", event, "error", err)
 					return nil
 				}
 
 				_, err = f.JS.PublishMsg(ctx, msg)
 				if err != nil {
-					f.Logger.Error("failed to publish the event", "event", event)
+					f.Logger.Error("failed to publish the event", "event", event, "error", err)
 					return nil
 				}
 				return nil
