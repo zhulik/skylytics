@@ -14,7 +14,7 @@ require (
 	github.com/oapi-codegen/runtime v1.1.1
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/lo v1.38.1
-	github.com/zhulik/pal v0.5.6
+	github.com/zhulik/pal v0.5.7
 	github.com/zhulik/pal/inspect v1.1.2
 	github.com/zhulik/pips v0.7.1
 	golang.org/x/sync v0.14.0
