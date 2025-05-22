@@ -5,10 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"skylytics/pkg/async"
 	"strconv"
 	"time"
-
-	"golang.org/x/sync/errgroup"
 
 	"skylytics/pkg/retry"
 
@@ -44,7 +43,6 @@ func (s *Subscriber) Init(ctx context.Context) error {
 
 func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipeline[*core.BlueskyEvent, *core.BlueskyEvent]) error {
 	ch := make(chan pips.D[*core.BlueskyEvent])
-	defer close(ch)
 
 	handler := sequential.NewScheduler("scheduler", s.Logger, func(_ context.Context, event *models.Event) error {
 		ch <- pips.NewD(event)
@@ -56,6 +54,7 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 			Compress:     true,
 			WebsocketURL: jetstreamURL,
 			ReadTimeout:  10 * time.Second,
+			MaxSize:      1000,
 		}, s.Logger, handler,
 	)
 
@@ -63,41 +62,57 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 		return err
 	}
 
-	wg := errgroup.Group{}
+	listenerJob := async.Job[any](func(ctx context.Context) (any, error) {
+		return nil, retry.WrapWithRetry(func() error {
+			for {
+				lastEventTimestampBytes, err := s.KV.Get(ctx, "last_event_timestamp")
+				if err != nil {
+					if !errors.Is(err, jetstream.ErrKeyNotFound) {
+						return err
+					}
+				}
 
-	wg.Go(retry.WrapWithRetry(func() error {
-		lastEventTimestampBytes, err := s.KV.Get(ctx, "last_event_timestamp")
-		if err != nil {
-			if !errors.Is(err, jetstream.ErrKeyNotFound) {
-				return err
+				lastEventTimestamp, err := DeserializeInt64(lastEventTimestampBytes)
+				if err != nil {
+					lastEventTimestamp = 0
+				}
+
+				err = client.ConnectAndRead(ctx, &lastEventTimestamp)
+				if err != nil {
+					return err
+				}
 			}
-		}
+		}, func(_ error, _ int) bool {
+			return true
+		}, 10)()
+	})
 
-		lastEventTimestamp, err := DeserializeInt64(lastEventTimestampBytes)
-		if err != nil {
-			lastEventTimestamp = 0
-		}
+	defer func() {
+		go func() {
+			listenerJob.StopWait() // nolint:errcheck
+			close(ch)
+		}()
+	}()
 
-		return client.ConnectAndRead(ctx, &lastEventTimestamp)
-	}, func(_ error, _ int) bool {
-		return true
-	}, 10))
-
-	wg.Go(func() error {
+	cursorUpdaterJob := async.Job[any](func(ctx context.Context) (any, error) {
 		for d := range pipeline.Run(ctx, ch) {
 			event, err := d.Unpack()
 			if err != nil {
-				return err
+				return nil, err
 			}
 			err = s.KV.Put(ctx, "last_event_timestamp", SerializeInt64(event.TimeUS))
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
-		return nil
+		return nil, nil
 	})
 
-	return wg.Wait()
+	defer cursorUpdaterJob.Stop()
+
+	err = async.FirstFailed(ctx, listenerJob, cursorUpdaterJob)
+
+	return err
 }
 
 func SerializeInt64(n int64) []byte {

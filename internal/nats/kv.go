@@ -66,7 +66,7 @@ func (c *KV) ExistingKeys(ctx context.Context, keys ...string) ([]string, error)
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, err
+			return nil, nil
 		case key, ok := <-l.Keys():
 			if !ok {
 				return foundKeys, nil

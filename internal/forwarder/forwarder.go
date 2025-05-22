@@ -5,9 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
 	"log/slog"
 	"regexp"
-	"time"
 
 	"github.com/Jeffail/gabs"
 	"github.com/nats-io/nats.go"
@@ -68,14 +68,16 @@ func (f *Forwarder) Run(ctx context.Context) error {
 					return nil
 				}
 
-				ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
-				defer cancel()
+				log.Println(msg.Subject)
 
-				_, err = f.JS.PublishMsg(ctx, msg)
-				if err != nil {
-					f.Logger.Error("failed to publish the event", "event", event, "error", err)
-					return nil
-				}
+				//ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+				//defer cancel()
+
+				//_, err = f.JS.PublishMsg(ctx, msg)
+				//if err != nil {
+				//	f.Logger.Error("failed to publish the event", "event", event, "error", err)
+				//	return nil
+				//}
 				return nil
 			}),
 		).
@@ -96,7 +98,6 @@ func message(event *core.BlueskyEvent, record *gabs.Container) (*nats.Msg, error
 	subject := subjectName(event, record)
 	msg := nats.NewMsg(subject)
 	msg.Data = payload
-	msg.Header.Set("did", event.Did)
 	msg.Header.Set(nats.MsgIdHdr, fmt.Sprintf("%s-%d", subject, event.TimeUS))
 
 	return msg, nil
@@ -106,9 +107,8 @@ func message(event *core.BlueskyEvent, record *gabs.Container) (*nats.Msg, error
 // Suffix:
 // - EventKindAccount: const "active" or "inactive"
 // - EventKindIdentity: const "identity"
-// - EventKindCommit: "<operation>.<collection>.<cid>.<parent_cid>.<root_cid>"
-// 	 if cid, parent_cid or root_cid is missing or is not applicable, "no-cid", "no-parent-cid" and "no-root-cid"
-//   are used respectively.
+// - EventKindCommit: "<operation>.<collection>.<cid>". If the commit is a reply, the cid is the root cid.
+// 	 If the commit is a like of report - cid is the subject cid. if cid or is not applicable, "no-cid" is used.
 
 // Example:
 // event.ZGlkOnBsYzp0endoZmxrNTI3ZW41b3V3eW9rdnd6ZnI=.commit.bafyreigo3ep3skdmshjtd25snglccjvkqcjjeupp363q2l5npneb5zk2ka.bafyreifvouk5b3ctrj2wue5aufne4s3pobjsf45bmbt2tpaju26jgl4szq.bafyreifvouk5b3ctrj2wue5aufne4s3pobjsf45bmbt2tpaju26jgl4szq.create.app.bsky.feed.post
@@ -140,27 +140,20 @@ func commitSubjectSuffix(commit *models.Commit, record *gabs.Container) string {
 		cid = "no-cid"
 	}
 
-	parentCID := "no-parent-cid"
-	rootCID := "no-root-cid"
-
 	switch commit.Collection {
 	case "app.bsky.feed.post":
-		parent, ok := record.Path("reply.parent.cid").Data().(string)
-		if ok {
-			parentCID = parent
-		}
 		root, ok := record.Path("reply.root.cid").Data().(string)
 		if ok {
-			rootCID = root
+			cid = root
 		}
-		return fmt.Sprintf("%s.%s.%s.%s.%s", commit.Operation, commit.Collection, cid, parentCID, rootCID)
+		return fmt.Sprintf("%s.%s.%s", commit.Operation, commit.Collection, cid)
 	case "app.bsky.feed.like", "app.bsky.feed.repost":
-		parent, ok := record.Path("subject.cid").Data().(string)
+		subject, ok := record.Path("subject.cid").Data().(string)
 		if ok {
-			parentCID = parent
+			cid = subject
 		}
 	}
-	return fmt.Sprintf("%s.%s.%s.%s.%s", commit.Operation, commit.Collection, cid, parentCID, rootCID)
+	return fmt.Sprintf("%s.%s.%s", commit.Operation, commit.Collection, cid)
 }
 
 func countEvent(_ context.Context, p pips.P[*core.BlueskyEvent, *gabs.Container]) error {

@@ -2,7 +2,10 @@ package async
 
 import (
 	"context"
+	"reflect"
 	"sync/atomic"
+
+	"github.com/samber/lo"
 
 	"github.com/zhulik/pips"
 )
@@ -24,7 +27,6 @@ func Job[T any](job func(ctx context.Context) (T, error)) *JobHandle[T] {
 		defer cancel()
 
 		res, err := job(ctx)
-
 		d := pips.NewD(res, err)
 		handle.result.Store(&d)
 		handle.done <- d
@@ -59,4 +61,33 @@ func (j *JobHandle[T]) Error() error {
 	}
 
 	return (*p).Error()
+}
+
+func FirstFailed[T any](ctx context.Context, handles ...*JobHandle[T]) error {
+	cases := lo.Map(handles, func(item *JobHandle[T], _ int) reflect.SelectCase {
+		return reflect.SelectCase{
+			Chan: reflect.ValueOf(item.done),
+			Dir:  reflect.SelectRecv,
+		}
+	})
+
+	cases = append(cases, reflect.SelectCase{
+		Chan: reflect.ValueOf(ctx.Done()),
+		Dir:  reflect.SelectRecv,
+	})
+	for {
+		chosen, _, ok := reflect.Select(cases)
+		if !ok {
+			return nil
+		}
+		if chosen == len(cases)-1 {
+			// context is canceled
+			return nil
+		}
+
+		err := handles[chosen].Error()
+		if err != nil {
+			return err
+		}
+	}
 }
