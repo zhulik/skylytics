@@ -69,14 +69,11 @@ func main() {
 		)
 
 	case "migrate":
-		// TODO: extract migration runner.
-		// db := do.MustInvoke[core.DB](injector)
-		// err := db.Migrate()
-		// if err != nil {
-		// 	log.Fatal(err)
-		// }
-		// log.Println("Database migrated")
-		// return
+		services = append(
+			services,
+			pal.Provide[core.DB, persistence.DB](),
+			pal.Provide[core.Migrator, persistence.Migrator](),
+		)
 
 	default:
 		log.Fatalf("unknown command: %s", command)

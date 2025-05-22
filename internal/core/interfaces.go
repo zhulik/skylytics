@@ -42,6 +42,7 @@ type EventsArchiver interface {
 }
 
 type MetricsCollector interface{}
+type Migrator interface{}
 
 type DB interface {
 	Model(any) *gorm.DB
