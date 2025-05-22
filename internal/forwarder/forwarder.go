@@ -2,7 +2,6 @@ package forwarder
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -101,7 +100,7 @@ func message(event *core.BlueskyEvent, record *gabs.Container) (*nats.Msg, error
 	return msg, nil
 }
 
-// Format: event.<event_kind>.<suffix>.<base64(did)>
+// Format: event.<event_kind>.<suffix>
 // Suffix:
 // - EventKindAccount: const "active" or "inactive"
 // - EventKindIdentity: const "identity"
@@ -111,8 +110,6 @@ func message(event *core.BlueskyEvent, record *gabs.Container) (*nats.Msg, error
 // Example:
 // event.ZGlkOnBsYzp0endoZmxrNTI3ZW41b3V3eW9rdnd6ZnI=.commit.bafyreigo3ep3skdmshjtd25snglccjvkqcjjeupp363q2l5npneb5zk2ka.bafyreifvouk5b3ctrj2wue5aufne4s3pobjsf45bmbt2tpaju26jgl4szq.bafyreifvouk5b3ctrj2wue5aufne4s3pobjsf45bmbt2tpaju26jgl4szq.create.app.bsky.feed.post
 func subjectName(event *core.BlueskyEvent, record *gabs.Container) string {
-	did64 := base64.StdEncoding.EncodeToString([]byte(event.Did))
-
 	suffix := ""
 
 	switch event.Kind {
@@ -129,7 +126,7 @@ func subjectName(event *core.BlueskyEvent, record *gabs.Container) string {
 		suffix = "identity"
 	}
 
-	return fmt.Sprintf("event.%s.%s.%s", event.Kind, suffix, did64)
+	return fmt.Sprintf("event.%s.%s", event.Kind, suffix)
 }
 
 func commitSubjectSuffix(commit *models.Commit, record *gabs.Container) string {
