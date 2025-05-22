@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
+	"time"
 
 	"github.com/Jeffail/gabs"
 	"github.com/nats-io/nats.go"
@@ -67,6 +68,9 @@ func (f *Forwarder) Run(ctx context.Context) error {
 					return nil
 				}
 
+				ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+				defer cancel()
+
 				_, err = f.JS.PublishMsg(ctx, msg)
 				if err != nil {
 					f.Logger.Error("failed to publish the event", "event", event, "error", err)
@@ -98,11 +102,11 @@ func message(event *core.BlueskyEvent, record *gabs.Container) (*nats.Msg, error
 	return msg, nil
 }
 
-// Format: event.<base64(did)>.<event_kind>.<suffix>
+// Format: event.<event_kind>.<suffix>.<base64(did)>
 // Suffix:
 // - EventKindAccount: const "active" or "inactive"
 // - EventKindIdentity: const "identity"
-// - EventKindCommit: "commit.<cid>.<parent_cid>.<root_cid>.<operation>.<collection>"
+// - EventKindCommit: "<operation>.<collection>.<cid>.<parent_cid>.<root_cid>"
 // 	 if cid, parent_cid or root_cid is missing or is not applicable, "no-cid", "no-parent-cid" and "no-root-cid"
 //   are used respectively.
 
@@ -127,7 +131,7 @@ func subjectName(event *core.BlueskyEvent, record *gabs.Container) string {
 		suffix = "identity"
 	}
 
-	return fmt.Sprintf("event.%s.%s.%s", did64, event.Kind, suffix)
+	return fmt.Sprintf("event.%s.%s.%s", event.Kind, suffix, did64)
 }
 
 func commitSubjectSuffix(commit *models.Commit, record *gabs.Container) string {
@@ -139,7 +143,8 @@ func commitSubjectSuffix(commit *models.Commit, record *gabs.Container) string {
 	parentCID := "no-parent-cid"
 	rootCID := "no-root-cid"
 
-	if commit.Collection == "app.bsky.feed.post" && record != nil {
+	switch commit.Collection {
+	case "app.bsky.feed.post":
 		parent, ok := record.Path("reply.parent.cid").Data().(string)
 		if ok {
 			parentCID = parent
@@ -148,9 +153,14 @@ func commitSubjectSuffix(commit *models.Commit, record *gabs.Container) string {
 		if ok {
 			rootCID = root
 		}
+		return fmt.Sprintf("%s.%s.%s.%s.%s", commit.Operation, commit.Collection, cid, parentCID, rootCID)
+	case "app.bsky.feed.like", "app.bsky.feed.repost":
+		parent, ok := record.Path("subject.cid").Data().(string)
+		if ok {
+			parentCID = parent
+		}
 	}
-
-	return fmt.Sprintf("%s.%s.%s.%s.%s", cid, parentCID, rootCID, commit.Operation, commit.Collection)
+	return fmt.Sprintf("%s.%s.%s.%s.%s", commit.Operation, commit.Collection, cid, parentCID, rootCID)
 }
 
 func countEvent(_ context.Context, p pips.P[*core.BlueskyEvent, *gabs.Container]) error {
