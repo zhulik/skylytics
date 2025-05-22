@@ -48,12 +48,6 @@ func (db *DB) Shutdown(_ context.Context) error {
 }
 
 func (db *DB) Migrate() error {
-	return db.Transaction(func(tx *gorm.DB) error {
-		err := tx.AutoMigrate()
-		if err != nil {
-			return err
-		}
-
-		return nil
-	})
+	// TODO: use migrate and versioned migrations.
+	return nil
 }

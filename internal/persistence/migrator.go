@@ -11,7 +11,7 @@ type Migrator struct {
 	DB     core.DB
 }
 
-func (m *Migrator) Init(ctx context.Context) error {
+func (m *Migrator) Init(_ context.Context) error {
 	m.Logger = m.Logger.With("component", "migrator")
 	return nil
 }

@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"time"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"gorm.io/gorm"
@@ -24,15 +25,6 @@ type BlueskySubscriber interface {
 }
 
 type Forwarder interface{}
-
-type EventRepository interface {
-	Insert(context.Context, ...EventModel) error
-}
-
-type AccountRepository interface {
-	Insert(context.Context, *AccountModel) error
-	ExistsByDID(context.Context, ...string) (map[string]bool, error)
-}
 
 type AccountUpdater interface {
 }
@@ -67,4 +59,11 @@ type KeyValueClient interface {
 
 	// ExistingKeys returns a list of keys that already exist in the bucket.
 	ExistingKeys(context.Context, ...string) ([]string, error)
+}
+
+type PostRepository interface {
+	Get(ctx context.Context, cid string) (Post, error)
+	AddStats(ctx context.Context, cid string, likes, reposts, replies int64) error
+	Cleanup(ctx context.Context, d time.Duration) error
+	TopN(ctx context.Context, n int) ([]Post, error)
 }

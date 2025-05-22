@@ -2,26 +2,27 @@ package core
 
 import (
 	"time"
-
-	"gorm.io/gorm"
 )
 
-// EventModel represents a raw bluesky jetstream event.
-type EventModel struct {
+// PostStats stores commit statistics
+type PostStats struct {
+	CID string `gorm:"primaryKey"`
+
+	Likes   int64
+	Reposts int64
+	Replies int64
+
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt gorm.DeletedAt
-
-	Event BlueskyEvent
 }
 
-func (EventModel) TableName() string {
-	return "events"
+type Post struct {
+	Text  *string
+	Langs []string
+	Reply Reply
 }
 
-// AccountModel represents a raw bluesky account event.
-type AccountModel struct {
-	DID string
-
-	Account []byte
+type Reply struct {
+	Parent string
+	Root   string
 }

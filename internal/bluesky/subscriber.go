@@ -54,7 +54,6 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 			Compress:     true,
 			WebsocketURL: jetstreamURL,
 			ReadTimeout:  10 * time.Second,
-			MaxSize:      1000,
 		}, s.Logger, handler,
 	)
 

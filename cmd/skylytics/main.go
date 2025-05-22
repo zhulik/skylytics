@@ -15,8 +15,6 @@ import (
 	"skylytics/internal/metrics"
 	inats "skylytics/internal/nats"
 	"skylytics/internal/persistence"
-	"skylytics/internal/persistence/accounts"
-	"skylytics/internal/updating"
 
 	"github.com/zhulik/pal"
 	"github.com/zhulik/pal/inspect"
@@ -37,12 +35,6 @@ func main() {
 		services = append(services,
 			pal.Provide[core.BlueskySubscriber, bluesky.Subscriber](),
 			pal.Provide[core.Forwarder, forwarder.Forwarder](),
-		)
-
-	case "account-updater":
-		services = append(services,
-			pal.Provide[core.AccountRepository, accounts.Repository](),
-			pal.Provide[core.AccountUpdater, updating.AccountUpdater](),
 		)
 
 	case "metrics-server":
