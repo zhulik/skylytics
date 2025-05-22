@@ -5,9 +5,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"regexp"
+	"time"
 
 	"github.com/Jeffail/gabs"
 	"github.com/nats-io/nats.go"
@@ -68,16 +68,14 @@ func (f *Forwarder) Run(ctx context.Context) error {
 					return nil
 				}
 
-				log.Println(msg.Subject)
+				ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
+				defer cancel()
 
-				//ctx, cancel := context.WithTimeout(ctx, 500*time.Millisecond)
-				//defer cancel()
-
-				//_, err = f.JS.PublishMsg(ctx, msg)
-				//if err != nil {
-				//	f.Logger.Error("failed to publish the event", "event", event, "error", err)
-				//	return nil
-				//}
+				_, err = f.JS.PublishMsg(ctx, msg)
+				if err != nil {
+					f.Logger.Error("failed to publish the event", "event", event, "error", err)
+					return nil
+				}
 				return nil
 			}),
 		).
