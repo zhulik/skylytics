@@ -118,7 +118,7 @@ func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 			})).
 		Then(apply.Batch[pipelineItem](100)).
 		Then(
-			apply.EachC(4, func(ctx context.Context, items []pipelineItem) error {
+			apply.Each(func(ctx context.Context, items []pipelineItem) error {
 				interactions := lo.Compact(
 					lo.Map(items, func(item pipelineItem, _ int) *core.PostInteraction {
 						return item.interaction
@@ -136,7 +136,7 @@ func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 				return nil
 			}),
 		).
-		Then(apply.Flatten[any]()).
+		Then(apply.Flatten[pipelineItem]()).
 		Then(
 			apply.Each(func(_ context.Context, item pipelineItem) error {
 				interactionsProcessed.WithLabelValues(item.event.Commit.Collection).Inc()
