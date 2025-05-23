@@ -58,83 +58,85 @@ func (i *pipelineItem) Nak() {
 }
 
 func (p *PostStatsCollector) Run(ctx context.Context) error {
-	return p.JS.ConsumeToPipeline(ctx, p.Config.NatsStream, p.Config.NatsConsumer,
-		pips.New[jetstream.Msg, any]().
-			Then(
-				apply.Map[jetstream.Msg, pipelineItem](func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
-					event := &models.Event{}
-					err := json.Unmarshal(msg.Data(), event)
-					if err != nil {
-						return pipelineItem{}, err
-					}
+	return p.JS.ConsumeToPipeline(ctx, p.Config.NatsStream, p.Config.NatsConsumer, p.pipeline())
+}
 
-					record, err := gabs.ParseJSON(event.Commit.Record)
-					if err != nil {
-						return pipelineItem{}, err
-					}
+func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
+	return pips.New[jetstream.Msg, any]().
+		Then(
+			apply.Map[jetstream.Msg, pipelineItem](func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
+				event := &models.Event{}
+				err := json.Unmarshal(msg.Data(), event)
+				if err != nil {
+					return pipelineItem{}, err
+				}
 
-					return pipelineItem{
-						msg:    msg,
-						event:  event,
-						record: record,
-					}, nil
-				})).
-			Then(
-				apply.Map[pipelineItem, pipelineItem](func(_ context.Context, item pipelineItem) (pipelineItem, error) {
-					switch item.event.Commit.Operation {
-					case "create":
-						var iType string
-						switch item.event.Commit.Collection {
-						case "app.bsky.feed.like":
-							iType = "like"
-						case "app.bsky.feed.repost":
-							iType = "repost"
-						default:
-							panic(fmt.Sprintf("unknown operation %s", item.event.Commit.Operation))
-						}
+				record, err := gabs.ParseJSON(event.Commit.Record)
+				if err != nil {
+					return pipelineItem{}, err
+				}
 
-						interaction := core.PostInteraction{
-							CID:       item.record.Path("subject.cid").Data().(string),
-							DID:       item.event.Did,
-							Type:      iType,
-							Timestamp: time.UnixMicro(item.event.TimeUS),
-						}
-
-						item.interaction = &interaction
-						return item, nil
-
-					// case "delete":
+				return pipelineItem{
+					msg:    msg,
+					event:  event,
+					record: record,
+				}, nil
+			})).
+		Then(
+			apply.Map[pipelineItem, pipelineItem](func(_ context.Context, item pipelineItem) (pipelineItem, error) {
+				switch item.event.Commit.Operation {
+				case "create":
+					var iType string
+					switch item.event.Commit.Collection {
+					case "app.bsky.feed.like":
+						iType = "like"
+					case "app.bsky.feed.repost":
+						iType = "repost"
 					default:
 						panic(fmt.Sprintf("unknown operation %s", item.event.Commit.Operation))
 					}
-				})).
-			Then(apply.Batch[pipelineItem](100)).
-			Then(
-				apply.Each(func(ctx context.Context, items []pipelineItem) error {
-					interactions := lo.Compact(
-						lo.Map[pipelineItem, *core.PostInteraction](items, func(item pipelineItem, _ int) *core.PostInteraction {
-							return item.interaction
-						}),
-					)
-					err := p.PostRepo.AddInteraction(ctx, interactions...)
 
-					if err != nil {
-						p.Logger.Warn("failed to add interactions", "error", err)
-						lo.ForEach(items, func(item pipelineItem, _ int) {
-							item.Nak()
-						})
+					interaction := core.PostInteraction{
+						CID:       item.record.Path("subject.cid").Data().(string),
+						DID:       item.event.Did,
+						Type:      iType,
+						Timestamp: time.UnixMicro(item.event.TimeUS),
 					}
 
-					return nil
-				}),
-			).
-			Then(apply.Flatten[pipelineItem]()).
-			Then(
-				apply.Each(func(_ context.Context, item pipelineItem) error {
-					interactionsProcessed.WithLabelValues(item.event.Commit.Collection).Inc()
-					item.Ack()
-					return nil
-				}),
-			),
-	)
+					item.interaction = &interaction
+					return item, nil
+
+				// case "delete":
+				default:
+					panic(fmt.Sprintf("unknown operation %s", item.event.Commit.Operation))
+				}
+			})).
+		Then(apply.Batch[pipelineItem](100)).
+		Then(
+			apply.Each(func(ctx context.Context, items []pipelineItem) error {
+				interactions := lo.Compact(
+					lo.Map(items, func(item pipelineItem, _ int) *core.PostInteraction {
+						return item.interaction
+					}),
+				)
+				err := p.PostRepo.AddInteraction(ctx, interactions...)
+
+				if err != nil {
+					p.Logger.Warn("failed to add interactions", "error", err)
+					lo.ForEach(items, func(item pipelineItem, _ int) {
+						item.Nak()
+					})
+				}
+
+				return nil
+			}),
+		).
+		Then(apply.Flatten[pipelineItem]()).
+		Then(
+			apply.Each(func(_ context.Context, item pipelineItem) error {
+				interactionsProcessed.WithLabelValues(item.event.Commit.Collection).Inc()
+				item.Ack()
+				return nil
+			}),
+		)
 }
