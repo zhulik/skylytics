@@ -92,16 +92,29 @@ func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 				case "create":
 					var iType string
 					var cid string
+					var ok bool
 					switch item.event.Commit.Collection {
 					case "app.bsky.feed.like":
 						iType = "like"
-						cid = item.record.Path("subject.cid").Data().(string)
+						cid, ok = item.record.Path("subject.cid").Data().(string)
+						if !ok {
+							cid = "error"
+							p.Logger.Warn("failed to parse cid from like", "record", item.record.String())
+						}
 					case "app.bsky.feed.repost":
 						iType = "repost"
-						cid = item.record.Path("subject.cid").Data().(string)
+						cid, ok = item.record.Path("subject.cid").Data().(string)
+						if !ok {
+							cid = "error"
+							p.Logger.Warn("failed to parse cid from repost", "record", item.record.String())
+						}
 					case "app.bsky.feed.post":
 						iType = "reply"
-						cid = item.record.Path("reply.root").Data().(string)
+						cid, ok = item.record.Path("reply.root").Data().(string)
+						if !ok {
+							cid = "error"
+							p.Logger.Warn("failed to parse cid from repost", "record", item.record.String())
+						}
 					default:
 						panic(fmt.Sprintf("unknown collection %s", item.event.Commit.Collection))
 					}
