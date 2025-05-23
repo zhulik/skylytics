@@ -97,7 +97,7 @@ func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 					case "app.bsky.feed.repost":
 						iType = "repost"
 					default:
-						panic(fmt.Sprintf("unknown operation %s", item.event.Commit.Operation))
+						panic(fmt.Sprintf("unknown collection %s", item.event.Commit.Collection))
 					}
 
 					interaction := core.PostInteraction{
@@ -110,7 +110,8 @@ func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 					item.interaction = &interaction
 					return item, nil
 
-				// case "delete":
+				case "delete":
+					return item, nil
 				default:
 					panic(fmt.Sprintf("unknown operation %s", item.event.Commit.Operation))
 				}
