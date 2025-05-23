@@ -12,9 +12,18 @@ import (
 	"github.com/Jeffail/gabs"
 	"github.com/bluesky-social/jetstream/pkg/models"
 	"github.com/nats-io/nats.go/jetstream"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
+)
+
+var (
+	interactionsProcessed = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "skylytics_post_interactions_processed_total",
+		Help: "The total number of processed post interactions",
+	}, []string{"collection"})
 )
 
 type PostStatsCollector struct {
@@ -42,7 +51,11 @@ func (p *PostStatsCollector) Run(ctx context.Context) error {
 						return err
 					}
 
-					return p.processCommit(ctx, event)
+					err = p.processCommit(ctx, event)
+					if err != nil {
+						return err
+					}
+					interactionsProcessed.WithLabelValues(event.Commit.Collection).Inc()
 				}),
 			).
 			Then(
