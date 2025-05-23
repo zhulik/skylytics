@@ -56,6 +56,7 @@ func (p *PostStatsCollector) Run(ctx context.Context) error {
 						return err
 					}
 					interactionsProcessed.WithLabelValues(event.Commit.Collection).Inc()
+					return nil
 				}),
 			).
 			Then(
