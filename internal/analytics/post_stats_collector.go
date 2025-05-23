@@ -96,6 +96,8 @@ func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 						iType = "like"
 					case "app.bsky.feed.repost":
 						iType = "repost"
+					case "app.bsky.feed.reply":
+						iType = "reply"
 					default:
 						panic(fmt.Sprintf("unknown collection %s", item.event.Commit.Collection))
 					}

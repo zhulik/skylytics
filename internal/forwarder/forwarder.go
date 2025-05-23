@@ -138,10 +138,12 @@ func commitSubjectSuffix(commit *models.Commit, record *gabs.Container) string {
 	switch commit.Collection {
 	case "app.bsky.feed.post":
 		root, ok := record.Path("reply.root.cid").Data().(string)
+		collection := commit.Collection
 		if ok {
 			cid = root
+			collection = "app.bsky.feed.reply"
 		}
-		return fmt.Sprintf("%s.%s.%s", commit.Operation, commit.Collection, cid)
+		return fmt.Sprintf("%s.%s.%s", commit.Operation, collection, cid)
 	case "app.bsky.feed.like", "app.bsky.feed.repost":
 		subject, ok := record.Path("subject.cid").Data().(string)
 		if ok {
