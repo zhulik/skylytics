@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"log/slog"
+
 	"skylytics/internal/core"
 )
 
@@ -16,7 +17,7 @@ func (m *Migrator) Init(_ context.Context) error {
 	return nil
 }
 
-func (m *Migrator) Run(context.Context) error {
+func (m *Migrator) Run(_ context.Context) error {
 	m.Logger.Info("Starting database migration")
 	err := m.DB.Migrate()
 	if err != nil {

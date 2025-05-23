@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"skylytics/pkg/async"
 	"strconv"
 	"time"
+
+	"skylytics/pkg/async"
 
 	"skylytics/pkg/retry"
 
@@ -23,6 +24,10 @@ import (
 
 const (
 	jetstreamURL = "wss://jetstream2.us-east.bsky.network/subscribe"
+)
+
+var (
+	ErrStuckSubscriber = errors.New("subscriber is stuck")
 )
 
 type Subscriber struct {
@@ -44,7 +49,11 @@ func (s *Subscriber) Init(ctx context.Context) error {
 func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipeline[*core.BlueskyEvent, *core.BlueskyEvent]) error {
 	ch := make(chan pips.D[*core.BlueskyEvent])
 
+	watchdogTimer := time.NewTimer(3 * time.Second)
+	defer watchdogTimer.Stop()
+
 	handler := sequential.NewScheduler("scheduler", s.Logger, func(_ context.Context, event *models.Event) error {
+		watchdogTimer.Reset(3 * time.Second)
 		ch <- pips.NewD(event)
 		return nil
 	})
@@ -60,6 +69,20 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 	if err != nil {
 		return err
 	}
+
+	watchdogJob := async.Job[any](func(ctx context.Context) (any, error) {
+		for {
+			select {
+			case <-ctx.Done():
+				return nil, nil
+			case <-watchdogTimer.C:
+				s.Logger.Warn("Stuck subscriber detected")
+				return nil, ErrStuckSubscriber
+			}
+		}
+	})
+
+	defer watchdogJob.Stop()
 
 	listenerJob := async.Job[any](func(ctx context.Context) (any, error) {
 		return nil, retry.WrapWithRetry(func() error {
@@ -109,7 +132,7 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 
 	defer cursorUpdaterJob.Stop()
 
-	err = async.FirstFailed(ctx, listenerJob, cursorUpdaterJob)
+	err = async.FirstFailed(ctx, listenerJob, cursorUpdaterJob, watchdogJob)
 
 	return err
 }
