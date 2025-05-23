@@ -52,7 +52,7 @@ func main() {
 
 	case "repl":
 		err := pal.New(
-			// pal.ProvideRunner(inspect.RemoteConsole),
+		// pal.ProvideRunner(inspect.RemoteConsole),
 		).
 			InitTimeout(2*time.Second).
 			HealthCheckTimeout(2*time.Second).
