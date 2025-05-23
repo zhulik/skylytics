@@ -10,6 +10,7 @@ import (
 
 	"skylytics/internal/analytics"
 	"skylytics/internal/api"
+	"skylytics/internal/persistence/posts"
 
 	"skylytics/internal/bluesky"
 	"skylytics/internal/core"
@@ -71,6 +72,9 @@ func main() {
 	case "post-stats-collector":
 		services = append(services,
 			pal.Provide[core.MetricsServer, metrics.HTTPServer](),
+			pal.Provide[core.DB, persistence.DB](),
+			pal.Provide[core.PostRepository, posts.Repository](),
+
 			pal.Provide[*analytics.PostStatsCollector, analytics.PostStatsCollector](),
 		)
 
