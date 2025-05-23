@@ -71,9 +71,13 @@ func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 					return pipelineItem{}, err
 				}
 
-				record, err := gabs.ParseJSON(event.Commit.Record)
-				if err != nil {
-					return pipelineItem{}, err
+				var record *gabs.Container
+
+				if len(event.Commit.Record) > 0 {
+					record, err = gabs.ParseJSON(event.Commit.Record)
+					if err != nil {
+						return pipelineItem{}, err
+					}
 				}
 
 				return pipelineItem{
