@@ -5,9 +5,11 @@ import (
 	"log"
 	"log/slog"
 	"os"
-	"skylytics/internal/api"
 	"syscall"
 	"time"
+
+	"skylytics/internal/analytics"
+	"skylytics/internal/api"
 
 	"skylytics/internal/bluesky"
 	"skylytics/internal/core"
@@ -24,21 +26,26 @@ func main() {
 	services := []pal.ServiceDef{
 		pal.ProvideConst[*slog.Logger](slog.New(slog.NewTextHandler(os.Stdout, nil))),
 		pal.Provide[core.JetstreamClient, inats.Client](),
-		pal.Provide[core.MetricsServer, metrics.HTTPServer](),
 		pal.Provide[*core.Config, core.Config](),
 	}
+
+	d := any(&persistence.DB{}).(core.DB)
+
+	log.Println(d)
 
 	command := os.Args[1]
 	switch command {
 	case "subscriber":
 		services = append(services, inspect.Provide()...)
 		services = append(services,
+			pal.Provide[core.MetricsServer, metrics.HTTPServer](),
 			pal.Provide[core.BlueskySubscriber, bluesky.Subscriber](),
 			pal.Provide[core.Forwarder, forwarder.Forwarder](),
 		)
 
 	case "metrics-server":
 		services = append(services,
+			pal.Provide[core.MetricsServer, metrics.HTTPServer](),
 			pal.Provide[core.DB, persistence.DB](),
 			pal.Provide[core.MetricsCollector, metrics.Collector]())
 
@@ -57,14 +64,30 @@ func main() {
 
 	case "api":
 		services = append(services,
+			pal.Provide[core.MetricsServer, metrics.HTTPServer](),
 			pal.Provide[*api.Server, api.Server](),
 		)
 
-	case "migrate":
+	case "post-stats-collector":
+		services = append(services,
+			pal.Provide[core.MetricsServer, metrics.HTTPServer](),
+			pal.Provide[*analytics.PostStatsCollector, analytics.PostStatsCollector](),
+		)
+
+	case "migrate-up":
 		services = append(
 			services,
 			pal.Provide[core.DB, persistence.DB](),
 			pal.Provide[core.Migrator, persistence.Migrator](),
+			pal.Provide[*persistence.MigrationUpRunner, persistence.MigrationUpRunner](),
+		)
+
+	case "migrate-down":
+		services = append(
+			services,
+			pal.Provide[core.DB, persistence.DB](),
+			pal.Provide[core.Migrator, persistence.Migrator](),
+			pal.Provide[*persistence.MigrationDownRunner, persistence.MigrationDownRunner](),
 		)
 
 	default:

@@ -4,16 +4,14 @@ import (
 	"time"
 )
 
-// PostStats stores commit statistics
-type PostStats struct {
-	CID string `gorm:"primaryKey"`
+// PostInteraction stores an interaction with a posts.
+type PostInteraction struct {
+	ID uint `gorm:"primarykey"`
 
-	Likes   int64
-	Reposts int64
-	Replies int64
-
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CID       string    `gorm:"column:cid"`
+	DID       string    `gorm:"column:did"`
+	Type      string    `gorm:"column:type"`
+	Timestamp time.Time `gorm:"column:timestamp"`
 }
 
 type Post struct {

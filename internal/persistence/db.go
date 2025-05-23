@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"context"
+	"database/sql"
 
 	"gorm.io/gorm/logger"
 
@@ -12,14 +13,17 @@ import (
 )
 
 type DB struct {
+	db     *gorm.DB
 	Config *core.Config
+}
 
-	*gorm.DB
+func (db *DB) Model(a any) *gorm.DB {
+	return db.db.Model(a)
 }
 
 func (db *DB) EstimatedCount(tableName string) (int64, error) {
 	var count int64
-	return count, db.Raw(
+	return count, db.db.Raw(
 		`SELECT reltuples::bigint AS count 
 				FROM pg_class 
 				WHERE relname = ?`, tableName,
@@ -34,20 +38,19 @@ func (db *DB) Init(_ context.Context) error {
 		return err
 	}
 
-	db.DB = gormDB
+	db.db = gormDB
 
 	return nil
 }
 
+func (db *DB) DB() (*sql.DB, error) {
+	return db.db.DB()
+}
+
 func (db *DB) Shutdown(_ context.Context) error {
-	sqlDB, err := db.DB.DB()
+	sqlDB, err := db.db.DB()
 	if err != nil {
 		return nil
 	}
 	return sqlDB.Close()
-}
-
-func (db *DB) Migrate() error {
-	// TODO: use migrate and versioned migrations.
-	return nil
 }

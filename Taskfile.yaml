@@ -1,4 +1,9 @@
 version: '3'
+env:
+  POSTGRES_HOST: localhost
+  POSTGRES_USER: skylytics
+  POSTGRES_DB: skylytics
+  POSTGRES_PASSWORD: skylytics
 tasks:
   default:
     desc: Run tests and linting
@@ -51,3 +56,11 @@ tasks:
           {{ range splitLines .files }}
             jsonnetfmt {{ . }} -o {{ . }}
           {{ end }}
+
+  "migrate:up":
+    cmds:
+      - go run cmd/skylytics/main.go migrate-up
+
+  "migrate:down":
+    cmds:
+      - go run cmd/skylytics/main.go migrate-down

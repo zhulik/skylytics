@@ -3,7 +3,6 @@ package posts
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	"skylytics/internal/core"
 )
@@ -24,13 +23,8 @@ func (r *Repository) Get(_ context.Context, _ string) (core.Post, error) {
 	return core.Post{}, nil
 }
 
-func (r *Repository) AddStats(_ context.Context, _ string, _ int64, _ int64, _ int64) error {
-	return nil
-}
-
-// Cleanup deletes records older than d.
-func (r *Repository) Cleanup(_ context.Context, _ time.Duration) error {
-	return nil
+func (r *Repository) AddInteraction(ctx context.Context, interaction core.PostInteraction) error {
+	return r.DB.Model(&core.PostInteraction{}).WithContext(ctx).Create(&interaction).Error
 }
 
 func (r *Repository) TopN(_ context.Context, _ int) ([]core.Post, error) {

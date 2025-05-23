@@ -2,7 +2,7 @@ package core
 
 import (
 	"context"
-	"time"
+	"database/sql"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"gorm.io/gorm"
@@ -34,13 +34,16 @@ type EventsArchiver interface {
 }
 
 type MetricsCollector interface{}
-type Migrator interface{}
+type Migrator interface {
+	Up(ctx context.Context) error
+	Down(ctx context.Context) error
+	Migrate(ctx context.Context, version uint) error
+}
 
 type DB interface {
 	Model(any) *gorm.DB
+	DB() (*sql.DB, error)
 	EstimatedCount(string) (int64, error)
-
-	Migrate() error
 }
 
 // KeyValueClient defines the interface for interacting with a JetStream key-value store
@@ -63,7 +66,6 @@ type KeyValueClient interface {
 
 type PostRepository interface {
 	Get(ctx context.Context, cid string) (Post, error)
-	AddStats(ctx context.Context, cid string, likes, reposts, replies int64) error
-	Cleanup(ctx context.Context, d time.Duration) error
+	AddInteraction(ctx context.Context, interaction PostInteraction) error
 	TopN(ctx context.Context, n int) ([]Post, error)
 }
