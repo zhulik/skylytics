@@ -118,6 +118,8 @@ func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 
 				case "delete":
 					return item, nil
+				case "update":
+					return item, nil
 				default:
 					panic(fmt.Sprintf("unknown operation %s", item.event.Commit.Operation))
 				}
