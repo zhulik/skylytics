@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:17
+    image: timescale/timescaledb:2.18.0-pg17
 
     ports:
       - "5432:5432"
@@ -11,7 +11,7 @@ services:
       POSTGRES_PASSWORD: skylytics
 
     volumes:
-      - postgresql:/var/lib/postgresql/data
+      - postgresql:/home/postgres/pgdata/data
 
   nats:
     image: nats

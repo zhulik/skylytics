@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/nats-io/nats.go/jetstream"
 	"gorm.io/gorm"
@@ -25,30 +26,17 @@ type BlueskySubscriber interface {
 
 type Forwarder interface{}
 
-type EventRepository interface {
-	Insert(context.Context, ...EventModel) error
-}
-
-type AccountRepository interface {
-	Insert(context.Context, *AccountModel) error
-	ExistsByDID(context.Context, ...string) (map[string]bool, error)
-}
-
-type AccountUpdater interface {
-}
-
-type EventsArchiver interface {
-	Archive(ctx context.Context, msg ...jetstream.Msg) error
-}
-
 type MetricsCollector interface{}
-type Migrator interface{}
+type Migrator interface {
+	Up(ctx context.Context) error
+	Down(ctx context.Context) error
+	Migrate(ctx context.Context, version uint) error
+}
 
 type DB interface {
 	Model(any) *gorm.DB
+	DB() (*sql.DB, error)
 	EstimatedCount(string) (int64, error)
-
-	Migrate() error
 }
 
 // KeyValueClient defines the interface for interacting with a JetStream key-value store
@@ -67,4 +55,10 @@ type KeyValueClient interface {
 
 	// ExistingKeys returns a list of keys that already exist in the bucket.
 	ExistingKeys(context.Context, ...string) ([]string, error)
+}
+
+type PostRepository interface {
+	Get(ctx context.Context, cid string) (Post, error)
+	AddInteraction(ctx context.Context, interaction PostInteraction) error
+	TopN(ctx context.Context, n int) ([]Post, error)
 }
