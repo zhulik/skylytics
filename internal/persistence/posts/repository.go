@@ -23,8 +23,8 @@ func (r *Repository) Get(_ context.Context, _ string) (core.Post, error) {
 	return core.Post{}, nil
 }
 
-func (r *Repository) AddInteraction(ctx context.Context, interaction core.PostInteraction) error {
-	return r.DB.Model(&core.PostInteraction{}).WithContext(ctx).Create(&interaction).Error
+func (r *Repository) AddInteraction(ctx context.Context, interactions ...*core.PostInteraction) error {
+	return r.DB.Model(&core.PostInteraction{}).WithContext(ctx).Create(interactions).Error
 }
 
 func (r *Repository) TopN(_ context.Context, _ int) ([]core.Post, error) {

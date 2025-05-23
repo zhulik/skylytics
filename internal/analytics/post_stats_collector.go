@@ -14,6 +14,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/samber/lo"
 
 	"github.com/zhulik/pips"
 	"github.com/zhulik/pips/apply"
@@ -40,64 +41,100 @@ func (p *PostStatsCollector) Init(_ context.Context) error {
 	return nil
 }
 
+type pipelineItem struct {
+	msg    jetstream.Msg
+	event  *models.Event
+	record *gabs.Container
+
+	interaction *core.PostInteraction
+}
+
+func (i *pipelineItem) Ack() {
+	i.msg.Ack() // nolint:errcheck
+}
+
+func (i *pipelineItem) Nak() {
+	i.msg.Nak() // nolint:errcheck
+}
+
 func (p *PostStatsCollector) Run(ctx context.Context) error {
 	return p.JS.ConsumeToPipeline(ctx, p.Config.NatsStream, p.Config.NatsConsumer,
 		pips.New[jetstream.Msg, any]().
 			Then(
-				apply.Each(func(_ context.Context, msg jetstream.Msg) error {
+				apply.Map[jetstream.Msg, pipelineItem](func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
 					event := &models.Event{}
 					err := json.Unmarshal(msg.Data(), event)
 					if err != nil {
-						return err
+						return pipelineItem{}, err
 					}
 
-					err = p.processCommit(ctx, event)
+					record, err := gabs.ParseJSON(event.Commit.Record)
 					if err != nil {
-						return err
+						return pipelineItem{}, err
 					}
-					interactionsProcessed.WithLabelValues(event.Commit.Collection).Inc()
+
+					return pipelineItem{
+						msg:    msg,
+						event:  event,
+						record: record,
+					}, nil
+				})).
+			Then(
+				apply.Map[pipelineItem, pipelineItem](func(_ context.Context, item pipelineItem) (pipelineItem, error) {
+					switch item.event.Commit.Operation {
+					case "create":
+						var iType string
+						switch item.event.Commit.Collection {
+						case "app.bsky.feed.like":
+							iType = "like"
+						case "app.bsky.feed.repost":
+							iType = "repost"
+						default:
+							panic(fmt.Sprintf("unknown operation %s", item.event.Commit.Operation))
+						}
+
+						interaction := core.PostInteraction{
+							CID:       item.record.Path("subject.cid").Data().(string),
+							DID:       item.event.Did,
+							Type:      iType,
+							Timestamp: time.UnixMicro(item.event.TimeUS),
+						}
+
+						item.interaction = &interaction
+						return item, nil
+
+					// case "delete":
+					default:
+						panic(fmt.Sprintf("unknown operation %s", item.event.Commit.Operation))
+					}
+				})).
+			Then(apply.Batch[pipelineItem](100)).
+			Then(
+				apply.Each(func(ctx context.Context, items []pipelineItem) error {
+					interactions := lo.Compact(
+						lo.Map[pipelineItem, *core.PostInteraction](items, func(item pipelineItem, _ int) *core.PostInteraction {
+							return item.interaction
+						}),
+					)
+					err := p.PostRepo.AddInteraction(ctx, interactions...)
+
+					if err != nil {
+						p.Logger.Warn("failed to add interactions", "error", err)
+						lo.ForEach(items, func(item pipelineItem, _ int) {
+							item.Nak()
+						})
+					}
+
 					return nil
 				}),
 			).
+			Then(apply.Flatten[pipelineItem]()).
 			Then(
-				apply.Each(func(_ context.Context, msg jetstream.Msg) error {
-					msg.Ack() // nolint:errcheck
+				apply.Each(func(_ context.Context, item pipelineItem) error {
+					interactionsProcessed.WithLabelValues(item.event.Commit.Collection).Inc()
+					item.Ack()
 					return nil
 				}),
 			),
 	)
-}
-
-func (p *PostStatsCollector) processCommit(ctx context.Context, event *models.Event) error {
-	switch event.Commit.Operation {
-	case "create":
-		container, err := gabs.ParseJSON(event.Commit.Record)
-		if err != nil {
-			return err
-		}
-
-		var iType string
-		switch event.Commit.Collection {
-		case "app.bsky.feed.like":
-			iType = "like"
-		case "app.bsky.feed.repost":
-			iType = "repost"
-		default:
-			panic(fmt.Sprintf("unknown operation %s", event.Commit.Operation))
-		}
-
-		interaction := core.PostInteraction{
-			CID:       container.Path("subject.cid").Data().(string),
-			DID:       event.Did,
-			Type:      iType,
-			Timestamp: time.UnixMicro(event.TimeUS),
-		}
-		return p.PostRepo.AddInteraction(ctx, interaction)
-
-	case "delete":
-	default:
-		panic(fmt.Sprintf("unknown operation %s", event.Commit.Operation))
-	}
-
-	return nil
 }

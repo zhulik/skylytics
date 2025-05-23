@@ -59,6 +59,6 @@ type KeyValueClient interface {
 
 type PostRepository interface {
 	Get(ctx context.Context, cid string) (Post, error)
-	AddInteraction(ctx context.Context, interaction PostInteraction) error
+	AddInteraction(ctx context.Context, interaction ...*PostInteraction) error
 	TopN(ctx context.Context, n int) ([]Post, error)
 }
