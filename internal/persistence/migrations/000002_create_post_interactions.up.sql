@@ -10,7 +10,7 @@ CREATE TABLE post_interactions (
 );
 
 SELECT create_hypertable('post_interactions', 'timestamp');
--- SELECT add_retention_policy('post_interactions', INTERVAL '24 hours'); // TODO: manual
+SELECT add_retention_policy('post_interactions', INTERVAL '24 hours');
 
 CREATE INDEX idx_post_interactions_type ON post_interactions (type);
 CREATE INDEX idx_post_interactions_post ON post_interactions (cid);
