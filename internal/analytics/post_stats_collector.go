@@ -64,7 +64,7 @@ func (p *PostStatsCollector) Run(ctx context.Context) error {
 func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 	return pips.New[jetstream.Msg, any]().
 		Then(
-			apply.Map[jetstream.Msg, pipelineItem](func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
+			apply.Map(func(_ context.Context, msg jetstream.Msg) (pipelineItem, error) {
 				event := &models.Event{}
 				err := json.Unmarshal(msg.Data(), event)
 				if err != nil {
@@ -87,7 +87,7 @@ func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 				}, nil
 			})).
 		Then(
-			apply.Map[pipelineItem, pipelineItem](func(_ context.Context, item pipelineItem) (pipelineItem, error) {
+			apply.Map(func(_ context.Context, item pipelineItem) (pipelineItem, error) {
 				switch item.event.Commit.Operation {
 				case "create":
 					var iType string
