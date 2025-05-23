@@ -136,7 +136,7 @@ func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 				return nil
 			}),
 		).
-		Then(apply.Flatten[pipelineItem]()).
+		Then(apply.Flatten[any]()).
 		Then(
 			apply.Each(func(_ context.Context, item pipelineItem) error {
 				interactionsProcessed.WithLabelValues(item.event.Commit.Collection).Inc()
