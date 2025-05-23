@@ -20,7 +20,7 @@ import (
 	"skylytics/internal/persistence"
 
 	"github.com/zhulik/pal"
-	"github.com/zhulik/pal/inspect"
+	// "github.com/zhulik/pal/inspect"
 )
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 	command := os.Args[1]
 	switch command {
 	case "subscriber":
-		services = append(services, inspect.Provide()...)
+		// services = append(services, inspect.Provide()...)
 		services = append(services,
 			pal.Provide[core.MetricsServer, metrics.HTTPServer](),
 			pal.Provide[core.BlueskySubscriber, bluesky.Subscriber](),
@@ -52,7 +52,7 @@ func main() {
 
 	case "repl":
 		err := pal.New(
-			pal.ProvideRunner(inspect.RemoteConsole),
+			// pal.ProvideRunner(inspect.RemoteConsole),
 		).
 			InitTimeout(2*time.Second).
 			HealthCheckTimeout(2*time.Second).
