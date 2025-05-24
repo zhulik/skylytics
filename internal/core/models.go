@@ -15,9 +15,9 @@ type PostInteraction struct {
 }
 
 type Post struct {
-	Text  *string
-	Langs []string
-	Reply Reply
+	Text  string   `json:"text,omitempty"`
+	Langs []string `json:"langs,omitempty"`
+	Reply *Reply   `json:"reply,omitempty"`
 }
 
 type Reply struct {

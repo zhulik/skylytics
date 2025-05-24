@@ -2,15 +2,21 @@ package posts
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log/slog"
-
 	"skylytics/internal/core"
+	"skylytics/internal/persistence"
+
+	"github.com/bluesky-social/jetstream/pkg/models"
+	"github.com/nats-io/nats.go/jetstream"
 )
 
 type Repository struct {
 	Logger *slog.Logger
 	DB     core.DB
 	JS     core.JetstreamClient
+	Config *core.Config
 }
 
 func (r *Repository) Init(_ context.Context) error {
@@ -18,9 +24,43 @@ func (r *Repository) Init(_ context.Context) error {
 	return nil
 }
 
-func (r *Repository) Get(_ context.Context, _ string) (core.Post, error) {
-	// TODO: using JS fetch all events related the CID and reconstruct the state of the post.
-	return core.Post{}, nil
+func (r *Repository) Get(ctx context.Context, cid string) (*core.Post, error) {
+	subject := fmt.Sprintf("event.commit.*.app.bsky.feed.post.%s", cid)
+
+	r.Logger.Info("Fetching event", "subject", subject)
+	cons, err := r.JS.OrderedConsumer(ctx, r.Config.NatsStream, jetstream.OrderedConsumerConfig{
+		FilterSubjects: []string{subject},
+		DeliverPolicy:  jetstream.DeliverAllPolicy,
+	})
+	if err != nil {
+		return nil, err
+	}
+	batch, err := cons.FetchNoWait(1000)
+	if err != nil {
+		return nil, err
+	}
+	if batch.Error() != nil {
+		return nil, batch.Error()
+	}
+
+	pr := PostReconstructor{}
+
+	for msg := range batch.Messages() {
+		event := &models.Event{}
+		err := json.Unmarshal(msg.Data(), event)
+		if err != nil {
+			return nil, err
+		}
+		if err := pr.AddEvent(event); err != nil {
+			return nil, err
+		}
+	}
+
+	if pr.Post == nil {
+		return nil, persistence.ErrNotFound
+	}
+
+	return pr.Post, nil
 }
 
 func (r *Repository) AddInteraction(ctx context.Context, interactions ...*core.PostInteraction) error {

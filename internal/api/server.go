@@ -22,7 +22,8 @@ const loggerContextKey = contextKey("logger")
 type Server struct {
 	server *http.Server
 
-	Logger *slog.Logger
+	Backend ServerInterface
+	Logger  *slog.Logger
 }
 
 type statusWriter struct {
