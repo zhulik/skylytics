@@ -99,6 +99,12 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 					lastEventTimestamp = 0
 				}
 
+				cursor := time.UnixMicro(lastEventTimestamp)
+				if time.Since(cursor) > time.Hour {
+					s.Logger.Info("Resetting cursor to 0 as it's stale.")
+					lastEventTimestamp = 0
+				}
+
 				err = client.ConnectAndRead(ctx, &lastEventTimestamp)
 				if err != nil {
 					return err
