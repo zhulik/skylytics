@@ -5,6 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"os"
+	"skylytics/pkg/stormy"
 	"syscall"
 	"time"
 
@@ -27,6 +28,9 @@ func main() {
 	services := []pal.ServiceDef{
 		pal.ProvideConst[*slog.Logger](slog.New(slog.NewTextHandler(os.Stdout, nil))),
 		pal.Provide[core.JetstreamClient, inats.Client](),
+		pal.ProvideFn[*stormy.Client](func(_ context.Context) (*stormy.Client, error) {
+			return stormy.NewClient(nil), nil
+		}),
 		pal.Provide[*core.Config, core.Config](),
 	}
 

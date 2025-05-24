@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"skylytics/internal/core"
 	"skylytics/internal/persistence"
+	"skylytics/pkg/stormy"
 
 	"github.com/bluesky-social/jetstream/pkg/models"
 	"github.com/nats-io/nats.go/jetstream"
@@ -16,6 +17,7 @@ type Repository struct {
 	Logger *slog.Logger
 	DB     core.DB
 	JS     core.JetstreamClient
+	Stormy *stormy.Client
 	Config *core.Config
 }
 
@@ -57,7 +59,18 @@ func (r *Repository) Get(ctx context.Context, cid string) (*core.Post, error) {
 	}
 
 	if pr.Post == nil {
-		return nil, persistence.ErrNotFound
+		uri := fmt.Sprintf("at://%s/%s/%s")
+		posts, err := r.Stormy.GetPosts(ctx, uri)
+		if err != nil {
+			return nil, err
+		}
+		if len(posts) == 0 {
+			return nil, persistence.ErrNotFound
+		}
+		return &core.Post{
+			DID:  "",
+			Text: "",
+		}, nil
 	}
 
 	return pr.Post, nil
