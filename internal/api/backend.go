@@ -10,6 +10,13 @@ type Backend struct {
 	Logger *slog.Logger
 }
 
+func (b *Backend) GetV1Openapi(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+
+	w.WriteHeader(200)
+	w.Write(openAPISpec) // nolint:errcheck
+}
+
 func (b *Backend) Init(context.Context) error {
 	b.Logger = b.Logger.With("component", "api.Backend")
 	return nil
