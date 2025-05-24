@@ -8,7 +8,7 @@ import (
 type PostInteraction struct {
 	ID uint `gorm:"primarykey"`
 
-	CID       string    `gorm:"column:cid"`
+	URI       string    `gorm:"column:cid"`
 	DID       string    `gorm:"column:did"`
 	Type      string    `gorm:"column:type"`
 	Timestamp time.Time `gorm:"column:timestamp"`

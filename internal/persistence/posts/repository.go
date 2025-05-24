@@ -2,6 +2,7 @@ package posts
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -26,10 +27,10 @@ func (r *Repository) Init(_ context.Context) error {
 	return nil
 }
 
-func (r *Repository) Get(ctx context.Context, cid string) (*core.Post, error) {
-	subject := fmt.Sprintf("event.commit.*.app.bsky.feed.post.%s", cid)
+func (r *Repository) Get(ctx context.Context, uri string) (*core.Post, error) {
+	subject := fmt.Sprintf("event.commit.*.app.bsky.feed.post.%s", base64.RawURLEncoding.EncodeToString([]byte(uri)))
 
-	r.Logger.Info("Fetching event", "subject", subject)
+	r.Logger.Info("Fetching events", "subject", subject)
 	cons, err := r.JS.OrderedConsumer(ctx, r.Config.NatsStream, jetstream.OrderedConsumerConfig{
 		FilterSubjects: []string{subject},
 		DeliverPolicy:  jetstream.DeliverAllPolicy,
@@ -59,7 +60,6 @@ func (r *Repository) Get(ctx context.Context, cid string) (*core.Post, error) {
 	}
 
 	if pr.Post == nil {
-		uri := fmt.Sprintf("at://%s/%s/%s")
 		posts, err := r.Stormy.GetPosts(ctx, uri)
 		if err != nil {
 			return nil, err

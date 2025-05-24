@@ -91,23 +91,23 @@ func (p *PostStatsCollector) pipeline() *pips.Pipeline[jetstream.Msg, any] {
 				switch item.event.Commit.Operation {
 				case "create":
 					var iType string
-					var cid string
+					var uri string
 					switch item.event.Commit.Collection {
 					case "app.bsky.feed.like":
 						iType = "like"
-						cid = item.record.Path("subject.cid").Data().(string)
+						uri = item.record.Path("subject.uri").Data().(string)
 					case "app.bsky.feed.repost":
 						iType = "repost"
-						cid = item.record.Path("subject.cid").Data().(string)
+						uri = item.record.Path("subject.uri").Data().(string)
 					case "app.bsky.feed.post":
 						iType = "reply"
-						cid = item.record.Path("reply.root.cid").Data().(string)
+						uri = item.record.Path("reply.root.uri").Data().(string)
 					default:
 						panic(fmt.Sprintf("unknown collection %s", item.event.Commit.Collection))
 					}
 
 					interaction := core.PostInteraction{
-						CID:       cid,
+						URI:       uri,
 						DID:       item.event.Did,
 						Type:      iType,
 						Timestamp: time.UnixMicro(item.event.TimeUS),

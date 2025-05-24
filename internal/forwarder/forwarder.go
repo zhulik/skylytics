@@ -2,6 +2,7 @@ package forwarder
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -114,7 +115,7 @@ func subjectName(event *core.BlueskyEvent, record *gabs.Container) string {
 
 	switch event.Kind {
 	case models.EventKindCommit:
-		suffix = commitSubjectSuffix(event.Commit, record)
+		suffix = commitSubjectSuffix(event, record)
 	case models.EventKindAccount:
 		if event.Account.Active {
 			suffix = "active"
@@ -129,28 +130,31 @@ func subjectName(event *core.BlueskyEvent, record *gabs.Container) string {
 	return fmt.Sprintf("event.%s.%s", event.Kind, suffix)
 }
 
-func commitSubjectSuffix(commit *models.Commit, record *gabs.Container) string {
-	cid := commit.CID
-	if cid == "" {
-		cid = "no-cid"
+func commitSubjectSuffix(event *models.Event, record *gabs.Container) string {
+	uri := fmt.Sprintf("at://%s/%s/%s", event.Did, event.Commit.Collection, event.Commit.RKey)
+	if uri == "" {
+		uri = "no-uri"
 	}
 
-	switch commit.Collection {
+	switch event.Commit.Collection {
 	case "app.bsky.feed.post":
-		root, ok := record.Path("reply.root.cid").Data().(string)
-		collection := commit.Collection
+		root, ok := record.Path("reply.root.uri").Data().(string)
+		collection := event.Commit.Collection
 		if ok {
-			cid = root
+			uri = root
 			collection = "app.bsky.feed.reply"
 		}
-		return fmt.Sprintf("%s.%s.%s", commit.Operation, collection, cid)
+		return fmt.Sprintf("%s.%s.%s", event.Commit.Operation, collection, uri)
 	case "app.bsky.feed.like", "app.bsky.feed.repost":
-		subject, ok := record.Path("subject.cid").Data().(string)
+		subject, ok := record.Path("subject.uri").Data().(string)
 		if ok {
-			cid = subject
+			uri = subject
 		}
 	}
-	return fmt.Sprintf("%s.%s.%s", commit.Operation, commit.Collection, cid)
+
+	uri = base64.RawURLEncoding.EncodeToString([]byte(uri))
+
+	return fmt.Sprintf("%s.%s.%s", event.Commit.Operation, event.Commit.Collection, uri)
 }
 
 func countEvent(_ context.Context, p pips.P[*core.BlueskyEvent, *gabs.Container]) error {
