@@ -15,6 +15,7 @@ type PostInteraction struct {
 }
 
 type Post struct {
+	DID   string   `json:"did,omitempty"`
 	Text  string   `json:"text,omitempty"`
 	Langs []string `json:"langs,omitempty"`
 	Reply *Reply   `json:"reply,omitempty"`

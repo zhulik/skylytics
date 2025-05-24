@@ -68,7 +68,7 @@ func main() {
 			pal.Provide[core.MetricsServer, metrics.HTTPServer](),
 			pal.Provide[core.DB, persistence.DB](),
 			pal.Provide[core.PostRepository, posts.Repository](),
-			pal.Provide[api.ServerInterface, api.Backend](),
+			pal.Provide[api.StrictServerInterface, api.Backend](),
 			pal.Provide[*api.Server, api.Server](),
 		)
 

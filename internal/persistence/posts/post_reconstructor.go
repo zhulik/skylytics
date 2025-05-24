@@ -14,7 +14,9 @@ type PostReconstructor struct {
 
 func (r *PostReconstructor) AddEvent(event *models.Event) error {
 	if r.Post == nil {
-		r.Post = &core.Post{}
+		r.Post = &core.Post{
+			DID: event.Did,
+		}
 	}
 
 	switch event.Commit.Operation {

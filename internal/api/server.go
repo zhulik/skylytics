@@ -114,7 +114,7 @@ func (s *Server) Init(ctx context.Context) error {
 		return err
 	}
 
-	h := HandlerFromMux(backend, r)
+	h := HandlerFromMux(NewStrictHandler(backend, []StrictMiddlewareFunc{}), r)
 
 	s.server = &http.Server{
 		Handler:           h,
