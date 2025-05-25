@@ -3,18 +3,17 @@ package api
 import (
 	"context"
 	"errors"
+
 	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	middleware "github.com/oapi-codegen/nethttp-middleware"
+	"github.com/go-chi/chi/v5/middleware"
+	oapiMiddleware "github.com/oapi-codegen/nethttp-middleware"
+	slogchi "github.com/samber/slog-chi"
 	"github.com/zhulik/pal"
 )
-
-type contextKey string
-
-const loggerContextKey = contextKey("logger")
 
 //go:generate jsonnet openapi.jsonnet -o openapi.json
 //go:generate go tool oapi-codegen -config oapi-codegen.yaml openapi.json
@@ -24,16 +23,6 @@ type Server struct {
 
 	Backend ServerInterface
 	Logger  *slog.Logger
-}
-
-type statusWriter struct {
-	http.ResponseWriter
-	status int
-}
-
-func (w *statusWriter) WriteHeader(status int) {
-	w.status = status
-	w.ResponseWriter.WriteHeader(status)
 }
 
 func (s *Server) Run(ctx context.Context) error {
@@ -56,55 +45,16 @@ func (s *Server) Init(ctx context.Context) error {
 
 	r := chi.NewMux()
 
-	logger := func(ctx context.Context) *slog.Logger {
-		return ctx.Value(loggerContextKey).(*slog.Logger)
-	}
+	//logger := func(ctx context.Context) *slog.Logger {
+	//	return ctx.Value(loggerContextKey).(*slog.Logger)
+	//}
 
 	r.Use(
-		middleware.OapiRequestValidatorWithOptions(spec, nil),
+		slogchi.New(s.Logger),
+		middleware.Recoverer,
+		middleware.RequestID,
 
-		// json content type
-		func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				next.ServeHTTP(w, r)
-			})
-		},
-
-		// Logging
-		func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				logger := s.Logger.With("method", r.Method, "path", r.URL.Path)
-				ctx := context.WithValue(r.Context(), loggerContextKey, logger)
-				next.ServeHTTP(w, r.WithContext(ctx))
-			})
-		},
-
-		// Logging
-		func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				start := time.Now()
-				sw := &statusWriter{ResponseWriter: w}
-
-				next.ServeHTTP(sw, r)
-
-				duration := time.Since(start)
-				logger(r.Context()).Info("request", "duration", duration, "status", sw.status)
-			})
-		},
-
-		// Recovering panics and logging
-		func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				defer func() {
-					if err := recover(); err != nil {
-						logger(r.Context()).Error("panic recovered", "error", err)
-						http.Error(w, `{"message": "Internal Server Error"}`, http.StatusInternalServerError)
-					}
-				}()
-				next.ServeHTTP(w, r)
-			})
-		},
+		oapiMiddleware.OapiRequestValidatorWithOptions(spec, nil),
 	)
 
 	p := pal.FromContext(ctx)
