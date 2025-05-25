@@ -9,6 +9,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/golang-cz/devslog"
+	"github.com/mattn/go-isatty"
+
 	"skylytics/internal/analytics"
 	"skylytics/internal/api"
 	"skylytics/internal/persistence/posts"
@@ -25,7 +28,16 @@ import (
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	w := os.Stdout
+
+	var handler slog.Handler
+	if isatty.IsTerminal(w.Fd()) {
+		handler = devslog.NewHandler(w, nil)
+	} else {
+		handler = slog.NewJSONHandler(w, nil)
+	}
+
+	logger := slog.New(handler)
 	slog.SetDefault(logger)
 
 	services := []pal.ServiceDef{

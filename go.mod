@@ -7,6 +7,7 @@ require (
 	github.com/bluesky-social/jetstream v0.0.0-20250411043205-f4da85b6e06b
 	github.com/getkin/kin-openapi v0.132.0
 	github.com/go-chi/chi/v5 v5.2.1
+	github.com/golang-cz/devslog v0.0.13
 	github.com/golang-migrate/migrate/v4 v4.18.3
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0

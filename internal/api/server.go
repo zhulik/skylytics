@@ -12,7 +12,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	oapiMiddleware "github.com/oapi-codegen/nethttp-middleware"
 	slogchi "github.com/samber/slog-chi"
-	"github.com/zhulik/pal"
 )
 
 //go:generate jsonnet openapi.jsonnet -o openapi.json
@@ -21,7 +20,7 @@ import (
 type Server struct {
 	server *http.Server
 
-	Backend ServerInterface
+	Backend StrictServerInterface
 	Logger  *slog.Logger
 }
 
@@ -40,15 +39,10 @@ func (s *Server) Run(ctx context.Context) error {
 	return nil
 }
 
-func (s *Server) Init(ctx context.Context) error {
+func (s *Server) Init(_ context.Context) error {
 	s.Logger = s.Logger.With("component", "api.Server")
 
 	r := chi.NewMux()
-
-	//logger := func(ctx context.Context) *slog.Logger {
-	//	return ctx.Value(loggerContextKey).(*slog.Logger)
-	//}
-
 	r.Use(
 		slogchi.New(s.Logger),
 		middleware.Recoverer,
@@ -57,14 +51,7 @@ func (s *Server) Init(ctx context.Context) error {
 		oapiMiddleware.OapiRequestValidatorWithOptions(spec, nil),
 	)
 
-	p := pal.FromContext(ctx)
-
-	backend, err := pal.Build[Backend](ctx, p)
-	if err != nil {
-		return err
-	}
-
-	h := HandlerFromMux(NewStrictHandler(backend, []StrictMiddlewareFunc{}), r)
+	h := HandlerFromMux(NewStrictHandler(s.Backend, []StrictMiddlewareFunc{}), r)
 
 	s.server = &http.Server{
 		Handler:           h,
