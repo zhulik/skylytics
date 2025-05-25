@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"github.com/zhulik/pal"
+
 	"log/slog"
 	"net/http"
 	"time"
@@ -22,6 +24,13 @@ type Server struct {
 
 	Backend StrictServerInterface
 	Logger  *slog.Logger
+}
+
+func Provide() pal.ServiceDef {
+	return pal.ProvideList(
+		pal.Provide[StrictServerInterface, Backend](),
+		pal.Provide[*Server, Server](),
+	)
 }
 
 func (s *Server) Run(ctx context.Context) error {

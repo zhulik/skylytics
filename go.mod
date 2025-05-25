@@ -17,7 +17,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/lo v1.38.1
 	github.com/samber/slog-chi v1.15.0
-	github.com/zhulik/pal v0.5.7
+	github.com/zhulik/pal v0.5.9
 	github.com/zhulik/pips v0.7.5
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.9

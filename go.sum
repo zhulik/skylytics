@@ -735,6 +735,8 @@ github.com/zhulik/jetstream v0.0.0-20250513110542-1c4a70c108b0 h1:zT3QTEksTT8DuF
 github.com/zhulik/jetstream v0.0.0-20250513110542-1c4a70c108b0/go.mod h1:WiYEeyJSdUwqoaZ71KJSpTblemUCpwJfh5oVXplK6T4=
 github.com/zhulik/pal v0.5.7 h1:f4WZ1J7nithTOtsSaa3BvZ766X+E4rr0LTF4M7vsjn0=
 github.com/zhulik/pal v0.5.7/go.mod h1:Qf568k7cPfdhW2O5p3YKQuD15+bO8vo0bZf4zLALk90=
+github.com/zhulik/pal v0.5.9 h1:sPkBJmyL82c5vRQ7AwX7PgOdXBKnxz7tqP2XvwiclFY=
+github.com/zhulik/pal v0.5.9/go.mod h1:Qf568k7cPfdhW2O5p3YKQuD15+bO8vo0bZf4zLALk90=
 github.com/zhulik/pips v0.7.5 h1:bkeYZ7j1Tr93Zjb71F5MKGCyjbzMj02uJZvIy41DCMg=
 github.com/zhulik/pips v0.7.5/go.mod h1:cJTnYwKMirBAcexR7wsLO/wGwWfq5VBoyfyMgtXlc6Q=
 gitlab.com/nyarla/go-crypt v0.0.0-20160106005555-d9a5dc2b789b h1:7gd+rd8P3bqcn/96gOZa3F5dpJr/vEiDQYlNb/y2uNs=
