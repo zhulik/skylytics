@@ -25,18 +25,17 @@ import (
 )
 
 func main() {
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	services := []pal.ServiceDef{
-		pal.ProvideConst[*slog.Logger](slog.New(slog.NewTextHandler(os.Stdout, nil))),
+		pal.ProvideConst[*slog.Logger](logger),
 		pal.Provide[core.JetstreamClient, inats.Client](),
 		pal.ProvideFn[*stormy.Client](func(_ context.Context) (*stormy.Client, error) {
 			return stormy.NewClient(nil), nil
 		}),
 		pal.Provide[*core.Config, core.Config](),
 	}
-
-	d := any(&persistence.DB{}).(core.DB)
-
-	log.Println(d)
 
 	command := os.Args[1]
 	switch command {
@@ -56,7 +55,7 @@ func main() {
 
 	case "repl":
 		err := pal.New(
-		// pal.ProvideRunner(inspect.RemoteConsole),
+			// pal.ProvideRunner(inspect.RemoteConsole),
 		).
 			InitTimeout(2*time.Second).
 			HealthCheckTimeout(2*time.Second).

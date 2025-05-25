@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"skylytics/internal/core"
 )
@@ -23,17 +24,14 @@ func (b *Backend) GetV1Openapi(_ context.Context, _ GetV1OpenapiRequestObject) (
 	return GetV1Openapi200JSONResponse(s), nil
 }
 
-func (b *Backend) GetV1Posts(_ context.Context, _ GetV1PostsRequestObject) (GetV1PostsResponseObject, error) {
-	return nil, nil
-}
-
-func (b *Backend) GetV1PostsId(ctx context.Context, request GetV1PostsIdRequestObject) (GetV1PostsIdResponseObject, error) { // nolint:revive
-	post, err := b.PostsRepo.Get(ctx, request.Id)
+func (b *Backend) GetV1UsersDidAppBskyFeedPostRkey(ctx context.Context, request GetV1UsersDidAppBskyFeedPostRkeyRequestObject) (GetV1UsersDidAppBskyFeedPostRkeyResponseObject, error) {
+	uri := fmt.Sprintf("at://%s/app.bsky.feed.post/%s", request.Did, request.Rkey)
+	post, err := b.PostsRepo.Get(ctx, uri)
 	if err != nil {
 		return nil, err
 	}
 
-	return GetV1PostsId200JSONResponse(Post{
+	return GetV1UsersDidAppBskyFeedPostRkey200JSONResponse(Post{
 		Did:  &post.DID,
 		Text: &post.Text,
 	}), nil

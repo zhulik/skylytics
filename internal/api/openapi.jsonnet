@@ -15,9 +15,9 @@ local schemas = {
 oapi.definition(
   paths=[
     oapi.GET(['v1', 'openapi'], 'This openapi definition', 'This openapi definition', schemas.Object, tags=['openapi']),
-    oapi.GET(['v1', 'posts'], 'List posts', 'Retrieve posts', schemas.Posts, tags=['posts']),
-    oapi.GET(['v1', 'posts', '{id}'], 'Get post', 'Retrieve post', schemas.Post, tags=['posts'], parameters=[
-      { name: 'id', 'in': 'path', required: true, schema: oapi.schemas.string },
+    oapi.GET(['v1', 'users', '{did}', 'app.bsky.feed.post', '{rkey}'], 'Get post', 'Retrieve post', schemas.Post, tags=['posts'], parameters=[
+      { name: 'did', 'in': 'path', required: true, schema: oapi.schemas.string },
+      { name: 'rkey', 'in': 'path', required: true, schema: oapi.schemas.string },
     ]),
   ],
 

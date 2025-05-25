@@ -60,6 +60,8 @@ func (r *Repository) Get(ctx context.Context, uri string) (*core.Post, error) {
 	}
 
 	if pr.Post == nil {
+		r.Logger.Info("Post could not be found locally, falling back to bluesky API", "uri", uri)
+
 		posts, err := r.Stormy.GetPosts(ctx, uri)
 		if err != nil {
 			return nil, err

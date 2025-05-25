@@ -6,11 +6,13 @@ import (
 )
 
 const (
-	getPosts = "/xrpc/app.bsky.actor.getProfiles"
+	getPosts = "/xrpc/app.bsky.feed.getPosts"
 )
 
-// https://docs.bsky.app/docs/api/app-bsky-actor-get-profile
+// https://docs.bsky.app/docs/api/app-bsky-actor-get-posts
 type Post struct {
+	URI string `json:"uri"`
+	CID string `json:"cid"`
 }
 
 // https://docs.bsky.app/docs/api/app-bsky-feed-get-posts
@@ -26,9 +28,12 @@ func (c *Client) GetPosts(ctx context.Context, uris ...string) ([]*Post, error) 
 		}).
 		SetResult(&Posts{}).
 		Get(getPosts)
-
 	if err != nil {
 		return nil, err
 	}
-	return res.Result().(*Posts).Posts, nil
+
+	posts := res.Result().(*Posts).Posts
+	//log.Printf("%+v", posts[0])
+
+	return posts, nil
 }
