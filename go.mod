@@ -17,7 +17,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/samber/lo v1.38.1
 	github.com/samber/slog-chi v1.15.0
-	github.com/zhulik/pal v0.5.9
+	github.com/zhulik/pal v0.5.10
 	github.com/zhulik/pips v0.7.5
 	gorm.io/driver/postgres v1.5.7
 	gorm.io/gorm v1.25.9
@@ -43,6 +43,7 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/ClickHouse/clickhouse-go v1.4.3 // indirect
 	github.com/Masterminds/semver/v3 v3.2.1 // indirect
+	github.com/alphadose/haxmap v1.4.1 // indirect
 	github.com/andybalholm/brotli v1.0.5 // indirect
 	github.com/apache/arrow/go/v10 v10.0.1 // indirect
 	github.com/apache/thrift v0.16.0 // indirect
@@ -221,7 +222,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.26.0 // indirect
 	golang.org/x/crypto v0.38.0 // indirect
-	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8 // indirect
+	golang.org/x/exp v0.0.0-20250506013437-ce4c2cf36ca6 // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.40.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
@@ -230,7 +231,7 @@ require (
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.32.0 // indirect
+	golang.org/x/tools v0.33.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/api v0.169.0 // indirect
 	google.golang.org/genproto v0.0.0-20240213162025-012b6fc9bca9 // indirect
