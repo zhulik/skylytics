@@ -3,6 +3,7 @@ package forwarder
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -72,6 +73,9 @@ func (f *Forwarder) Run(ctx context.Context) error {
 
 				_, err = f.JS.PublishMsg(ctx, msg)
 				if err != nil {
+					if errors.Is(err, context.Canceled) {
+						return nil
+					}
 					f.Logger.Error("failed to publish the event", "event", event, "error", err)
 					return nil
 				}
