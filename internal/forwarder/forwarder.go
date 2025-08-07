@@ -114,7 +114,7 @@ func subjectName(event *core.BlueskyEvent) string {
 
 	switch event.Kind {
 	case models.EventKindCommit:
-		suffix = "commit"
+		suffix = fmt.Sprintf("%s.%s", event.Commit.Operation, event.Commit.Collection)
 	case models.EventKindAccount:
 		if event.Account.Active {
 			suffix = "active"
@@ -126,7 +126,7 @@ func subjectName(event *core.BlueskyEvent) string {
 		suffix = "identity"
 	}
 
-	return fmt.Sprintf("event.%s.%s.%s.%s", event.Kind, event.Commit.Operation, event.Commit.Collection, suffix)
+	return fmt.Sprintf("event.%s.%s", event.Kind, suffix)
 }
 
 func countEvent(_ context.Context, p pips.P[*core.BlueskyEvent, *gabs.Container]) error {
