@@ -36,8 +36,3 @@ func (b *Backend) GetV1UsersDidAppBskyFeedPostRkey(ctx context.Context, request 
 		Text: &post.Text,
 	}), nil
 }
-
-func (b *Backend) Init(context.Context) error {
-	b.Logger = b.Logger.With("component", "api.Backend")
-	return nil
-}

@@ -40,8 +40,6 @@ type Subscriber struct {
 func (s *Subscriber) Init(ctx context.Context) error {
 	var err error
 
-	s.Logger = s.Logger.With("component", "bluesky.Subscriber")
-
 	s.KV, err = s.JS.KV(ctx, s.Config.NatsStateKVBucket)
 	return err
 }
@@ -70,7 +68,7 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 		return err
 	}
 
-	watchdogJob := async.Job[any](func(ctx context.Context) (any, error) {
+	watchdogJob := async.Job(func(ctx context.Context) (any, error) {
 		for {
 			select {
 			case <-ctx.Done():
@@ -84,7 +82,7 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 
 	defer watchdogJob.Stop()
 
-	listenerJob := async.Job[any](func(ctx context.Context) (any, error) {
+	listenerJob := async.Job(func(ctx context.Context) (any, error) {
 		return nil, retry.WrapWithRetry(func() error {
 			for {
 				lastEventTimestampBytes, err := s.KV.Get(ctx, "last_event_timestamp")
@@ -122,7 +120,7 @@ func (s *Subscriber) ConsumeToPipeline(ctx context.Context, pipeline *pips.Pipel
 		}()
 	}()
 
-	cursorUpdaterJob := async.Job[any](func(ctx context.Context) (any, error) {
+	cursorUpdaterJob := async.Job(func(ctx context.Context) (any, error) {
 		for d := range pipeline.Run(ctx, ch) {
 			event, err := d.Unpack()
 			if err != nil {

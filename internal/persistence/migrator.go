@@ -21,8 +21,6 @@ type Migrator struct {
 }
 
 func (m *Migrator) Init(_ context.Context) error {
-	m.Logger = m.Logger.With("component", "migrator")
-
 	db, err := m.DB.DB()
 	if err != nil {
 		return err

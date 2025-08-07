@@ -22,11 +22,6 @@ type Repository struct {
 	Config *core.Config
 }
 
-func (r *Repository) Init(_ context.Context) error {
-	r.Logger = r.Logger.With("component", "posts.Repository")
-	return nil
-}
-
 func (r *Repository) Get(ctx context.Context, uri string) (*core.Post, error) {
 	subject := fmt.Sprintf("event.commit.*.app.bsky.feed.post.%s", base64.RawURLEncoding.EncodeToString([]byte(uri)))
 

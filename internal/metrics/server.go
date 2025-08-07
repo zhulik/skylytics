@@ -20,8 +20,6 @@ type HTTPServer struct {
 }
 
 func (s *HTTPServer) Init(ctx context.Context) error {
-	s.Logger = s.Logger.With("component", "metrics.HTTPServer")
-
 	s.Server = &http.Server{
 		Addr:              ":8080",
 		ReadHeaderTimeout: time.Second,

@@ -28,8 +28,8 @@ type Server struct {
 
 func Provide() pal.ServiceDef {
 	return pal.ProvideList(
-		pal.Provide[StrictServerInterface, Backend](),
-		pal.Provide[*Server, Server](),
+		pal.Provide[StrictServerInterface](&Backend{}),
+		pal.Provide(&Server{}),
 	)
 }
 
@@ -49,8 +49,6 @@ func (s *Server) Run(ctx context.Context) error {
 }
 
 func (s *Server) Init(_ context.Context) error {
-	s.Logger = s.Logger.With("component", "api.Server")
-
 	r := chi.NewMux()
 	r.Use(
 		slogchi.New(s.Logger),

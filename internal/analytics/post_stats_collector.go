@@ -36,11 +36,6 @@ type PostStatsCollector struct {
 	Config *core.Config
 }
 
-func (p *PostStatsCollector) Init(_ context.Context) error {
-	p.Logger = p.Logger.With("component", "analytics.PostStatsCollector")
-	return nil
-}
-
 type pipelineItem struct {
 	msg    jetstream.Msg
 	event  *models.Event

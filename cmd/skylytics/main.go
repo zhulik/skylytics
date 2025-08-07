@@ -41,12 +41,11 @@ func main() {
 	slog.SetDefault(logger)
 
 	services := []pal.ServiceDef{
-		pal.ProvideConst[*slog.Logger](logger),
-		pal.Provide[core.JetstreamClient, inats.Client](),
-		pal.ProvideFn[*stormy.Client](func(_ context.Context) (*stormy.Client, error) {
+		pal.Provide[core.JetstreamClient](&inats.Client{}),
+		pal.ProvideFn(func(_ context.Context) (*stormy.Client, error) {
 			return stormy.NewClient(nil), nil
 		}),
-		pal.Provide[*core.Config, core.Config](),
+		pal.Provide(&core.Config{}),
 	}
 
 	command := os.Args[1]
@@ -54,21 +53,22 @@ func main() {
 	case "subscriber":
 		// services = append(services, inspect.Provide()...)
 		services = append(services,
-			pal.Provide[core.MetricsServer, metrics.HTTPServer](),
-			pal.Provide[core.BlueskySubscriber, bluesky.Subscriber](),
-			pal.Provide[core.Forwarder, forwarder.Forwarder](),
+			pal.Provide[core.MetricsServer](&metrics.HTTPServer{}),
+			pal.Provide[core.BlueskySubscriber](&bluesky.Subscriber{}),
+			pal.Provide[core.Forwarder](&forwarder.Forwarder{}),
 		)
 
 	case "metrics-server":
 		services = append(services,
-			pal.Provide[core.MetricsServer, metrics.HTTPServer](),
-			pal.Provide[core.DB, persistence.DB](),
-			pal.Provide[core.MetricsCollector, metrics.Collector]())
+			pal.Provide[core.MetricsServer](&metrics.HTTPServer{}),
+			pal.Provide[core.DB](&persistence.DB{}),
+			pal.Provide[core.MetricsCollector](&metrics.Collector{}))
 
 	case "repl":
 		err := pal.New(
 		// pal.ProvideRunner(inspect.RemoteConsole),
 		).
+			InjectSlog().
 			InitTimeout(2*time.Second).
 			HealthCheckTimeout(2*time.Second).
 			ShutdownTimeout(13*time.Second).
@@ -80,36 +80,36 @@ func main() {
 
 	case "api":
 		services = append(services,
-			pal.Provide[core.MetricsServer, metrics.HTTPServer](),
-			pal.Provide[core.DB, persistence.DB](),
-			pal.Provide[core.PostRepository, posts.Repository](),
+			pal.Provide[core.MetricsServer](&metrics.HTTPServer{}),
+			pal.Provide[core.DB](&persistence.DB{}),
+			pal.Provide[core.PostRepository](&posts.Repository{}),
 
 			api.Provide(),
 		)
 
 	case "post-stats-collector":
 		services = append(services,
-			pal.Provide[core.MetricsServer, metrics.HTTPServer](),
-			pal.Provide[core.DB, persistence.DB](),
-			pal.Provide[core.PostRepository, posts.Repository](),
+			pal.Provide[core.MetricsServer](&metrics.HTTPServer{}),
+			pal.Provide[core.DB](&persistence.DB{}),
+			pal.Provide[core.PostRepository](&posts.Repository{}),
 
-			pal.Provide[*analytics.PostStatsCollector, analytics.PostStatsCollector](),
+			pal.Provide(&analytics.PostStatsCollector{}),
 		)
 
 	case "migrate-up":
 		services = append(
 			services,
-			pal.Provide[core.DB, persistence.DB](),
-			pal.Provide[core.Migrator, persistence.Migrator](),
-			pal.Provide[*persistence.MigrationUpRunner, persistence.MigrationUpRunner](),
+			pal.Provide[core.DB](&persistence.DB{}),
+			pal.Provide[core.Migrator](&persistence.Migrator{}),
+			pal.Provide(&persistence.MigrationUpRunner{}),
 		)
 
 	case "migrate-down":
 		services = append(
 			services,
-			pal.Provide[core.DB, persistence.DB](),
-			pal.Provide[core.Migrator, persistence.Migrator](),
-			pal.Provide[*persistence.MigrationDownRunner, persistence.MigrationDownRunner](),
+			pal.Provide[core.DB](&persistence.DB{}),
+			pal.Provide[core.Migrator](&persistence.Migrator{}),
+			pal.Provide(&persistence.MigrationDownRunner{}),
 		)
 
 	default:
@@ -117,6 +117,7 @@ func main() {
 	}
 
 	err := pal.New(services...).
+		InjectSlog().
 		InitTimeout(2*time.Second).
 		HealthCheckTimeout(1*time.Second).
 		ShutdownTimeout(10*time.Second).
