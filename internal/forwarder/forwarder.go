@@ -2,7 +2,6 @@ package forwarder
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -60,9 +59,9 @@ func (f *Forwarder) Run(ctx context.Context) error {
 		Then(apply.Each(countEvent)).
 		Then(
 			apply.Each(func(ctx context.Context, p pips.P[*core.BlueskyEvent, *gabs.Container]) error {
-				event, record := p.Unpack()
+				event, _ := p.Unpack()
 
-				msg, err := message(event, record)
+				msg, err := message(event)
 				if err != nil {
 					f.Logger.Error("failed to parse event", "event", event, "error", err)
 					return nil
@@ -87,13 +86,13 @@ func (f *Forwarder) Run(ctx context.Context) error {
 	)
 }
 
-func message(event *core.BlueskyEvent, record *gabs.Container) (*nats.Msg, error) {
+func message(event *core.BlueskyEvent) (*nats.Msg, error) {
 	payload, err := json.Marshal(event)
 	if err != nil {
 		return nil, err
 	}
 
-	subject := subjectName(event, record)
+	subject := subjectName(event)
 	msg := nats.NewMsg(subject)
 	msg.Data = payload
 	msg.Header.Set(nats.MsgIdHdr, fmt.Sprintf("%s-%d", subject, event.TimeUS))
@@ -109,13 +108,13 @@ func message(event *core.BlueskyEvent, record *gabs.Container) (*nats.Msg, error
 // 	 If the commit is a like of report - cid is the subject cid. if cid or is not applicable, "no-cid" is used.
 
 // Example:
-// event.ZGlkOnBsYzp0endoZmxrNTI3ZW41b3V3eW9rdnd6ZnI=.commit.bafyreigo3ep3skdmshjtd25snglccjvkqcjjeupp363q2l5npneb5zk2ka.bafyreifvouk5b3ctrj2wue5aufne4s3pobjsf45bmbt2tpaju26jgl4szq.bafyreifvouk5b3ctrj2wue5aufne4s3pobjsf45bmbt2tpaju26jgl4szq.create.app.bsky.feed.post
-func subjectName(event *core.BlueskyEvent, record *gabs.Container) string {
+// event.commit.create.app.bsky.feed.post.commit
+func subjectName(event *core.BlueskyEvent) string {
 	suffix := ""
 
 	switch event.Kind {
 	case models.EventKindCommit:
-		suffix = commitSubjectSuffix(event, record)
+		suffix = "commit"
 	case models.EventKindAccount:
 		if event.Account.Active {
 			suffix = "active"
@@ -127,34 +126,7 @@ func subjectName(event *core.BlueskyEvent, record *gabs.Container) string {
 		suffix = "identity"
 	}
 
-	return fmt.Sprintf("event.%s.%s", event.Kind, suffix)
-}
-
-func commitSubjectSuffix(event *models.Event, record *gabs.Container) string {
-	uri := fmt.Sprintf("at://%s/%s/%s", event.Did, event.Commit.Collection, event.Commit.RKey)
-	if uri == "" {
-		uri = "no-uri"
-	}
-
-	switch event.Commit.Collection {
-	case "app.bsky.feed.post":
-		root, ok := record.Path("reply.root.uri").Data().(string)
-		collection := event.Commit.Collection
-		if ok {
-			uri = root
-			collection = "app.bsky.feed.reply"
-		}
-		return fmt.Sprintf("%s.%s.%s", event.Commit.Operation, collection, uri)
-	case "app.bsky.feed.like", "app.bsky.feed.repost":
-		subject, ok := record.Path("subject.uri").Data().(string)
-		if ok {
-			uri = subject
-		}
-	}
-
-	uri = base64.RawURLEncoding.EncodeToString([]byte(uri))
-
-	return fmt.Sprintf("%s.%s.%s", event.Commit.Operation, event.Commit.Collection, uri)
+	return fmt.Sprintf("event.%s.%s.%s.%s", event.Kind, event.Commit.Operation, event.Commit.Collection, suffix)
 }
 
 func countEvent(_ context.Context, p pips.P[*core.BlueskyEvent, *gabs.Container]) error {
