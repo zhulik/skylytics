@@ -4,6 +4,11 @@ env:
   POSTGRES_USER: skylytics
   POSTGRES_DB: skylytics
   POSTGRES_PASSWORD: skylytics
+  PSQL_DSN:
+    sh: echo "postgres://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:5432/$POSTGRES_DB?sslmode=disable"
+  DATABASE_URL:
+    sh: echo $PSQL_DSN
+
 tasks:
   default:
     desc: Run tests and linting
@@ -57,10 +62,9 @@ tasks:
             jsonnetfmt {{ . }} -o {{ . }}
           {{ end }}
 
-  "migrate:up":
-    cmds:
-      - go run cmd/skylytics/main.go migrate-up
+  "db:migrate":
+    cmd: dbmate migrate
 
-  "migrate:down":
-    cmds:
-      - go run cmd/skylytics/main.go migrate-down
+  "db:rollback":
+    cmd: dbmate rollback
+

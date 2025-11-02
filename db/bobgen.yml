@@ -1,0 +1,13 @@
+plugins_preset: "none"
+psql:
+  driver: github.com/lib/pq
+
+plugins:
+  enums:
+    disabled: false
+    pkgname: "enums"
+    destination: "enums"
+  models:
+    disabled: false
+    pkgname: "models"
+    destination: "models"

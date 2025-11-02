@@ -1,4 +1,0 @@
-{
-  // TODO: validations
-  type: 'string',
-}

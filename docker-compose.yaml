@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: timescale/timescaledb:2.18.0-pg17
+    image: postgres:17-alpine
 
     ports:
       - "5432:5432"
@@ -9,16 +9,3 @@ services:
       POSTGRES_USER: skylytics
       POSTGRES_DB: skylytics
       POSTGRES_PASSWORD: skylytics
-
-    volumes:
-      - postgresql:/home/postgres/pgdata/data
-
-  nats:
-    image: nats
-    command: ["-js"]
-    ports:
-      - "4222:4222"
-
-volumes:
-  postgresql:
-    driver: local
