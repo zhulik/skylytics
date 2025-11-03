@@ -1,5 +1,3 @@
-\restrict mw4igI5Y9lR2th626OZH0BPvLgOMLb9Bpw3ZbRfrY0WBAy9UfT8eoIOOtzaSQHu
-
 -- Dumped from database version 17.6
 -- Dumped by pg_dump version 17.6
 
@@ -179,9 +177,6 @@ CREATE INDEX idx_events_rkey ON public.events USING btree (rkey);
 --
 -- PostgreSQL database dump complete
 --
-
-\unrestrict mw4igI5Y9lR2th626OZH0BPvLgOMLb9Bpw3ZbRfrY0WBAy9UfT8eoIOOtzaSQHu
-
 
 --
 -- Dbmate schema migrations

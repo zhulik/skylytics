@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
 	"skylytics/db/enums"
 	dbmodels "skylytics/db/models"
@@ -16,6 +17,7 @@ import (
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql/dialect"
 	"github.com/stephenafamo/bob/dialect/psql/im"
+	"github.com/stephenafamo/bob/types"
 )
 
 type saver struct {
@@ -49,7 +51,7 @@ func (s *saver) Run(ctx context.Context) error {
 				setter.Operation = omitnull.From(enums.CommitOperation(event.Commit.Operation))
 				setter.Collection = omitnull.From(event.Commit.Collection)
 				setter.Rkey = omitnull.From(event.Commit.RKey)
-				// setter.Record = omitnull.From(event.Commit.Record)
+				setter.Record = omitnull.From(types.JSON[json.RawMessage]{Val: event.Commit.Record})
 				setter.Cid = omitnull.From(event.Commit.CID)
 			}
 
