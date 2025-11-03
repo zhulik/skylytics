@@ -8,7 +8,7 @@ import (
 
 type Config struct {
 	// Posgresql
-	DATABASE_URL string `envconfig:"DATABASE_URL"`
+	DatabaseURL string `envconfig:"DATABASE_URL"`
 }
 
 func (c *Config) Init(_ context.Context) error {

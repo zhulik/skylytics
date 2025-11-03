@@ -85,7 +85,7 @@ func (s *saver) Run(ctx context.Context) error {
 
 		mods = append(mods, im.OnConflict().DoNothing())
 
-		_, err = dbmodels.Events.Insert(mods...).ExecQuery.Exec(ctx, s.DB)
+		_, err = dbmodels.Events.Insert(mods...).Exec(ctx, s.DB)
 		if err != nil {
 			s.Logger.Error("failed to insert events", "error", err)
 		}
