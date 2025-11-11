@@ -6,9 +6,9 @@ require (
 	github.com/aarondl/opt v0.0.0-20250607033636-982744e1bd65
 	github.com/bluesky-social/jetstream v0.0.0-20250411043205-f4da85b6e06b
 	github.com/golang-cz/devslog v0.0.13
+	github.com/jackc/pgx/v5 v5.7.5
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/lib/pq v1.10.9
 	github.com/mattn/go-isatty v0.0.20
 	github.com/samber/lo v1.52.0
 	github.com/samber/ro v0.2.0
@@ -143,7 +143,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgtype v1.14.0 // indirect
 	github.com/jackc/pgx/v4 v4.18.2 // indirect
-	github.com/jackc/pgx/v5 v5.7.5 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jbenet/goprocess v0.1.4 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -162,6 +161,7 @@ require (
 	github.com/knadh/koanf/v2 v2.2.1 // indirect
 	github.com/ktrysmt/go-bitbucket v0.6.4 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect

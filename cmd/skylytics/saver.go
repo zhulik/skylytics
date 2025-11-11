@@ -2,15 +2,15 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"log/slog"
 	"skylytics/db/enums"
 	dbmodels "skylytics/db/models"
 	"skylytics/internal/core"
 	"time"
 
-	"github.com/aarondl/opt/omit"
-	"github.com/aarondl/opt/omitnull"
 	"github.com/bluesky-social/jetstream/pkg/models"
 	"github.com/samber/lo"
 	"github.com/samber/ro"
@@ -42,54 +42,64 @@ func (s *saver) Run(ctx context.Context) error {
 	sub := obs.Subscribe(ro.OnNext(func(events []*models.Event) {
 		mods := lo.Map(events, func(event *models.Event, _ int) bob.Mod[*dialect.InsertQuery] {
 			setter := &dbmodels.EventSetter{
-				Did:    omit.From(event.Did),
-				TimeUs: omit.From(time.Unix(0, event.TimeUS)),
-				Kind:   omit.From(enums.EventKind(event.Kind)),
+				Did:    &event.Did,
+				TimeUs: lo.ToPtr(time.Unix(0, event.TimeUS)),
+				Kind:   lo.ToPtr(enums.EventKind(event.Kind)),
 			}
 
 			if event.Commit != nil {
-				setter.Operation = omitnull.From(enums.CommitOperation(event.Commit.Operation))
-				setter.Collection = omitnull.From(event.Commit.Collection)
-				setter.Rkey = omitnull.From(event.Commit.RKey)
-				setter.Record = omitnull.From(types.JSON[json.RawMessage]{Val: event.Commit.Record})
-				setter.Cid = omitnull.From(event.Commit.CID)
+				setter.Operation = &sql.Null[enums.CommitOperation]{Valid: true, V: enums.CommitOperation(event.Commit.Operation)}
+				setter.Collection = &sql.Null[string]{Valid: true, V: event.Commit.Collection}
+				setter.Rkey = &sql.Null[string]{Valid: true, V: event.Commit.RKey}
+				setter.Record = &sql.Null[types.JSON[json.RawMessage]]{Valid: true, V: types.JSON[json.RawMessage]{Val: event.Commit.Record}}
+				setter.Cid = &sql.Null[string]{Valid: true, V: event.Commit.CID}
 			}
 
 			if event.Account != nil {
-				setter.AccountActive = omitnull.From(event.Account.Active)
-				setter.AccountDid = omitnull.From(event.Account.Did)
-				setter.AccountSeq = omitnull.From(event.Account.Seq)
-				setter.AccountStatus = omitnull.FromPtr(event.Account.Status)
+				setter.AccountActive = &sql.Null[bool]{Valid: true, V: event.Account.Active}
+				setter.AccountDid = &sql.Null[string]{Valid: true, V: event.Account.Did}
+				setter.AccountSeq = &sql.Null[int64]{Valid: true, V: event.Account.Seq}
+				if event.Account.Status != nil {
+					setter.AccountStatus = &sql.Null[string]{Valid: true, V: *event.Account.Status}
+				}
 
-				time, err := time.Parse(time.RFC3339, event.Account.Time)
+				accountTime, err := time.Parse(time.RFC3339, event.Account.Time)
 				if err != nil {
 					s.Logger.Error("failed to parse account time", "error", err)
 				}
 
-				setter.AccountTime = omitnull.From(time)
+				setter.AccountTime = &sql.Null[time.Time]{Valid: true, V: accountTime}
 			}
 
 			if event.Identity != nil {
-				setter.IdentityDid = omitnull.From(event.Identity.Did)
-				setter.IdentityHandle = omitnull.FromPtr(event.Identity.Handle)
-				setter.IdentitySeq = omitnull.From(event.Identity.Seq)
+				setter.IdentityDid = &sql.Null[string]{Valid: true, V: event.Identity.Did}
+				if event.Identity.Handle != nil {
+					setter.IdentityHandle = &sql.Null[string]{Valid: true, V: *event.Identity.Handle}
+				}
+				setter.IdentitySeq = &sql.Null[int64]{Valid: true, V: event.Identity.Seq}
 
-				time, err := time.Parse(time.RFC3339, event.Identity.Time)
+				identityTime, err := time.Parse(time.RFC3339, event.Identity.Time)
 				if err != nil {
 					s.Logger.Error("failed to parse identity time", "error", err)
 				}
 
-				setter.IdentityTime = omitnull.From(time)
+				setter.IdentityTime = &sql.Null[time.Time]{Valid: true, V: identityTime}
 			}
 
 			return setter
 		})
 
+		if len(mods) == 0 {
+			return
+		}
+
 		mods = append(mods, im.OnConflict().DoNothing())
 
 		_, err = dbmodels.Events.Insert(mods...).Exec(ctx, s.DB)
 		if err != nil {
-			s.Logger.Error("failed to insert events", "error", err)
+			if !errors.Is(err, context.Canceled) {
+				s.Logger.Error("failed to insert events", "error", err)
+			}
 		}
 	}))
 	defer sub.Unsubscribe()

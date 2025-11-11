@@ -1,6 +1,7 @@
 plugins_preset: "none"
+type_system: "database/sql"
 psql:
-  driver: github.com/lib/pq
+  driver: github.com/jackc/pgx/v5/stdlib
 
 plugins:
   enums:

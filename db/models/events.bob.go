@@ -5,13 +5,11 @@ package models
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"io"
 	"time"
 
-	"github.com/aarondl/opt/null"
-	"github.com/aarondl/opt/omit"
-	"github.com/aarondl/opt/omitnull"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/dialect"
@@ -28,21 +26,21 @@ type Event struct {
 	Did            string                                `db:"did,pk" `
 	TimeUs         time.Time                             `db:"time_us,pk" `
 	Kind           enums.EventKind                       `db:"kind" `
-	Rev            null.Val[string]                      `db:"rev" `
-	Operation      null.Val[enums.CommitOperation]       `db:"operation" `
-	Collection     null.Val[string]                      `db:"collection" `
-	Rkey           null.Val[string]                      `db:"rkey" `
-	Record         null.Val[types.JSON[json.RawMessage]] `db:"record" `
-	Cid            null.Val[string]                      `db:"cid" `
-	AccountActive  null.Val[bool]                        `db:"account_active" `
-	AccountDid     null.Val[string]                      `db:"account_did" `
-	AccountSeq     null.Val[int64]                       `db:"account_seq" `
-	AccountStatus  null.Val[string]                      `db:"account_status" `
-	AccountTime    null.Val[time.Time]                   `db:"account_time" `
-	IdentityDid    null.Val[string]                      `db:"identity_did" `
-	IdentityHandle null.Val[string]                      `db:"identity_handle" `
-	IdentitySeq    null.Val[int64]                       `db:"identity_seq" `
-	IdentityTime   null.Val[time.Time]                   `db:"identity_time" `
+	Rev            sql.Null[string]                      `db:"rev" `
+	Operation      sql.Null[enums.CommitOperation]       `db:"operation" `
+	Collection     sql.Null[string]                      `db:"collection" `
+	Rkey           sql.Null[string]                      `db:"rkey" `
+	Record         sql.Null[types.JSON[json.RawMessage]] `db:"record" `
+	Cid            sql.Null[string]                      `db:"cid" `
+	AccountActive  sql.Null[bool]                        `db:"account_active" `
+	AccountDid     sql.Null[string]                      `db:"account_did" `
+	AccountSeq     sql.Null[int64]                       `db:"account_seq" `
+	AccountStatus  sql.Null[string]                      `db:"account_status" `
+	AccountTime    sql.Null[time.Time]                   `db:"account_time" `
+	IdentityDid    sql.Null[string]                      `db:"identity_did" `
+	IdentityHandle sql.Null[string]                      `db:"identity_handle" `
+	IdentitySeq    sql.Null[int64]                       `db:"identity_seq" `
+	IdentityTime   sql.Null[time.Time]                   `db:"identity_time" `
 }
 
 // EventSlice is an alias for a slice of pointers to Event.
@@ -117,139 +115,244 @@ func (eventColumns) AliasedAs(alias string) eventColumns {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type EventSetter struct {
-	Did            omit.Val[string]                          `db:"did,pk" `
-	TimeUs         omit.Val[time.Time]                       `db:"time_us,pk" `
-	Kind           omit.Val[enums.EventKind]                 `db:"kind" `
-	Rev            omitnull.Val[string]                      `db:"rev" `
-	Operation      omitnull.Val[enums.CommitOperation]       `db:"operation" `
-	Collection     omitnull.Val[string]                      `db:"collection" `
-	Rkey           omitnull.Val[string]                      `db:"rkey" `
-	Record         omitnull.Val[types.JSON[json.RawMessage]] `db:"record" `
-	Cid            omitnull.Val[string]                      `db:"cid" `
-	AccountActive  omitnull.Val[bool]                        `db:"account_active" `
-	AccountDid     omitnull.Val[string]                      `db:"account_did" `
-	AccountSeq     omitnull.Val[int64]                       `db:"account_seq" `
-	AccountStatus  omitnull.Val[string]                      `db:"account_status" `
-	AccountTime    omitnull.Val[time.Time]                   `db:"account_time" `
-	IdentityDid    omitnull.Val[string]                      `db:"identity_did" `
-	IdentityHandle omitnull.Val[string]                      `db:"identity_handle" `
-	IdentitySeq    omitnull.Val[int64]                       `db:"identity_seq" `
-	IdentityTime   omitnull.Val[time.Time]                   `db:"identity_time" `
+	Did            *string                                `db:"did,pk" `
+	TimeUs         *time.Time                             `db:"time_us,pk" `
+	Kind           *enums.EventKind                       `db:"kind" `
+	Rev            *sql.Null[string]                      `db:"rev" `
+	Operation      *sql.Null[enums.CommitOperation]       `db:"operation" `
+	Collection     *sql.Null[string]                      `db:"collection" `
+	Rkey           *sql.Null[string]                      `db:"rkey" `
+	Record         *sql.Null[types.JSON[json.RawMessage]] `db:"record" `
+	Cid            *sql.Null[string]                      `db:"cid" `
+	AccountActive  *sql.Null[bool]                        `db:"account_active" `
+	AccountDid     *sql.Null[string]                      `db:"account_did" `
+	AccountSeq     *sql.Null[int64]                       `db:"account_seq" `
+	AccountStatus  *sql.Null[string]                      `db:"account_status" `
+	AccountTime    *sql.Null[time.Time]                   `db:"account_time" `
+	IdentityDid    *sql.Null[string]                      `db:"identity_did" `
+	IdentityHandle *sql.Null[string]                      `db:"identity_handle" `
+	IdentitySeq    *sql.Null[int64]                       `db:"identity_seq" `
+	IdentityTime   *sql.Null[time.Time]                   `db:"identity_time" `
 }
 
 func (s EventSetter) SetColumns() []string {
 	vals := make([]string, 0, 18)
-	if s.Did.IsValue() {
+	if s.Did != nil {
 		vals = append(vals, "did")
 	}
-	if s.TimeUs.IsValue() {
+	if s.TimeUs != nil {
 		vals = append(vals, "time_us")
 	}
-	if s.Kind.IsValue() {
+	if s.Kind != nil {
 		vals = append(vals, "kind")
 	}
-	if !s.Rev.IsUnset() {
+	if s.Rev != nil {
 		vals = append(vals, "rev")
 	}
-	if !s.Operation.IsUnset() {
+	if s.Operation != nil {
 		vals = append(vals, "operation")
 	}
-	if !s.Collection.IsUnset() {
+	if s.Collection != nil {
 		vals = append(vals, "collection")
 	}
-	if !s.Rkey.IsUnset() {
+	if s.Rkey != nil {
 		vals = append(vals, "rkey")
 	}
-	if !s.Record.IsUnset() {
+	if s.Record != nil {
 		vals = append(vals, "record")
 	}
-	if !s.Cid.IsUnset() {
+	if s.Cid != nil {
 		vals = append(vals, "cid")
 	}
-	if !s.AccountActive.IsUnset() {
+	if s.AccountActive != nil {
 		vals = append(vals, "account_active")
 	}
-	if !s.AccountDid.IsUnset() {
+	if s.AccountDid != nil {
 		vals = append(vals, "account_did")
 	}
-	if !s.AccountSeq.IsUnset() {
+	if s.AccountSeq != nil {
 		vals = append(vals, "account_seq")
 	}
-	if !s.AccountStatus.IsUnset() {
+	if s.AccountStatus != nil {
 		vals = append(vals, "account_status")
 	}
-	if !s.AccountTime.IsUnset() {
+	if s.AccountTime != nil {
 		vals = append(vals, "account_time")
 	}
-	if !s.IdentityDid.IsUnset() {
+	if s.IdentityDid != nil {
 		vals = append(vals, "identity_did")
 	}
-	if !s.IdentityHandle.IsUnset() {
+	if s.IdentityHandle != nil {
 		vals = append(vals, "identity_handle")
 	}
-	if !s.IdentitySeq.IsUnset() {
+	if s.IdentitySeq != nil {
 		vals = append(vals, "identity_seq")
 	}
-	if !s.IdentityTime.IsUnset() {
+	if s.IdentityTime != nil {
 		vals = append(vals, "identity_time")
 	}
 	return vals
 }
 
 func (s EventSetter) Overwrite(t *Event) {
-	if s.Did.IsValue() {
-		t.Did = s.Did.MustGet()
+	if s.Did != nil {
+		t.Did = func() string {
+			if s.Did == nil {
+				return *new(string)
+			}
+			return *s.Did
+		}()
 	}
-	if s.TimeUs.IsValue() {
-		t.TimeUs = s.TimeUs.MustGet()
+	if s.TimeUs != nil {
+		t.TimeUs = func() time.Time {
+			if s.TimeUs == nil {
+				return *new(time.Time)
+			}
+			return *s.TimeUs
+		}()
 	}
-	if s.Kind.IsValue() {
-		t.Kind = s.Kind.MustGet()
+	if s.Kind != nil {
+		t.Kind = func() enums.EventKind {
+			if s.Kind == nil {
+				return *new(enums.EventKind)
+			}
+			return *s.Kind
+		}()
 	}
-	if !s.Rev.IsUnset() {
-		t.Rev = s.Rev.MustGetNull()
+	if s.Rev != nil {
+		t.Rev = func() sql.Null[string] {
+			if s.Rev == nil {
+				return *new(sql.Null[string])
+			}
+			v := s.Rev
+			return *v
+		}()
 	}
-	if !s.Operation.IsUnset() {
-		t.Operation = s.Operation.MustGetNull()
+	if s.Operation != nil {
+		t.Operation = func() sql.Null[enums.CommitOperation] {
+			if s.Operation == nil {
+				return *new(sql.Null[enums.CommitOperation])
+			}
+			v := s.Operation
+			return *v
+		}()
 	}
-	if !s.Collection.IsUnset() {
-		t.Collection = s.Collection.MustGetNull()
+	if s.Collection != nil {
+		t.Collection = func() sql.Null[string] {
+			if s.Collection == nil {
+				return *new(sql.Null[string])
+			}
+			v := s.Collection
+			return *v
+		}()
 	}
-	if !s.Rkey.IsUnset() {
-		t.Rkey = s.Rkey.MustGetNull()
+	if s.Rkey != nil {
+		t.Rkey = func() sql.Null[string] {
+			if s.Rkey == nil {
+				return *new(sql.Null[string])
+			}
+			v := s.Rkey
+			return *v
+		}()
 	}
-	if !s.Record.IsUnset() {
-		t.Record = s.Record.MustGetNull()
+	if s.Record != nil {
+		t.Record = func() sql.Null[types.JSON[json.RawMessage]] {
+			if s.Record == nil {
+				return *new(sql.Null[types.JSON[json.RawMessage]])
+			}
+			v := s.Record
+			return *v
+		}()
 	}
-	if !s.Cid.IsUnset() {
-		t.Cid = s.Cid.MustGetNull()
+	if s.Cid != nil {
+		t.Cid = func() sql.Null[string] {
+			if s.Cid == nil {
+				return *new(sql.Null[string])
+			}
+			v := s.Cid
+			return *v
+		}()
 	}
-	if !s.AccountActive.IsUnset() {
-		t.AccountActive = s.AccountActive.MustGetNull()
+	if s.AccountActive != nil {
+		t.AccountActive = func() sql.Null[bool] {
+			if s.AccountActive == nil {
+				return *new(sql.Null[bool])
+			}
+			v := s.AccountActive
+			return *v
+		}()
 	}
-	if !s.AccountDid.IsUnset() {
-		t.AccountDid = s.AccountDid.MustGetNull()
+	if s.AccountDid != nil {
+		t.AccountDid = func() sql.Null[string] {
+			if s.AccountDid == nil {
+				return *new(sql.Null[string])
+			}
+			v := s.AccountDid
+			return *v
+		}()
 	}
-	if !s.AccountSeq.IsUnset() {
-		t.AccountSeq = s.AccountSeq.MustGetNull()
+	if s.AccountSeq != nil {
+		t.AccountSeq = func() sql.Null[int64] {
+			if s.AccountSeq == nil {
+				return *new(sql.Null[int64])
+			}
+			v := s.AccountSeq
+			return *v
+		}()
 	}
-	if !s.AccountStatus.IsUnset() {
-		t.AccountStatus = s.AccountStatus.MustGetNull()
+	if s.AccountStatus != nil {
+		t.AccountStatus = func() sql.Null[string] {
+			if s.AccountStatus == nil {
+				return *new(sql.Null[string])
+			}
+			v := s.AccountStatus
+			return *v
+		}()
 	}
-	if !s.AccountTime.IsUnset() {
-		t.AccountTime = s.AccountTime.MustGetNull()
+	if s.AccountTime != nil {
+		t.AccountTime = func() sql.Null[time.Time] {
+			if s.AccountTime == nil {
+				return *new(sql.Null[time.Time])
+			}
+			v := s.AccountTime
+			return *v
+		}()
 	}
-	if !s.IdentityDid.IsUnset() {
-		t.IdentityDid = s.IdentityDid.MustGetNull()
+	if s.IdentityDid != nil {
+		t.IdentityDid = func() sql.Null[string] {
+			if s.IdentityDid == nil {
+				return *new(sql.Null[string])
+			}
+			v := s.IdentityDid
+			return *v
+		}()
 	}
-	if !s.IdentityHandle.IsUnset() {
-		t.IdentityHandle = s.IdentityHandle.MustGetNull()
+	if s.IdentityHandle != nil {
+		t.IdentityHandle = func() sql.Null[string] {
+			if s.IdentityHandle == nil {
+				return *new(sql.Null[string])
+			}
+			v := s.IdentityHandle
+			return *v
+		}()
 	}
-	if !s.IdentitySeq.IsUnset() {
-		t.IdentitySeq = s.IdentitySeq.MustGetNull()
+	if s.IdentitySeq != nil {
+		t.IdentitySeq = func() sql.Null[int64] {
+			if s.IdentitySeq == nil {
+				return *new(sql.Null[int64])
+			}
+			v := s.IdentitySeq
+			return *v
+		}()
 	}
-	if !s.IdentityTime.IsUnset() {
-		t.IdentityTime = s.IdentityTime.MustGetNull()
+	if s.IdentityTime != nil {
+		t.IdentityTime = func() sql.Null[time.Time] {
+			if s.IdentityTime == nil {
+				return *new(sql.Null[time.Time])
+			}
+			v := s.IdentityTime
+			return *v
+		}()
 	}
 }
 
@@ -260,110 +363,215 @@ func (s *EventSetter) Apply(q *dialect.InsertQuery) {
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
 		vals := make([]bob.Expression, 18)
-		if s.Did.IsValue() {
-			vals[0] = psql.Arg(s.Did.MustGet())
+		if s.Did != nil {
+			vals[0] = psql.Arg(func() string {
+				if s.Did == nil {
+					return *new(string)
+				}
+				return *s.Did
+			}())
 		} else {
 			vals[0] = psql.Raw("DEFAULT")
 		}
 
-		if s.TimeUs.IsValue() {
-			vals[1] = psql.Arg(s.TimeUs.MustGet())
+		if s.TimeUs != nil {
+			vals[1] = psql.Arg(func() time.Time {
+				if s.TimeUs == nil {
+					return *new(time.Time)
+				}
+				return *s.TimeUs
+			}())
 		} else {
 			vals[1] = psql.Raw("DEFAULT")
 		}
 
-		if s.Kind.IsValue() {
-			vals[2] = psql.Arg(s.Kind.MustGet())
+		if s.Kind != nil {
+			vals[2] = psql.Arg(func() enums.EventKind {
+				if s.Kind == nil {
+					return *new(enums.EventKind)
+				}
+				return *s.Kind
+			}())
 		} else {
 			vals[2] = psql.Raw("DEFAULT")
 		}
 
-		if !s.Rev.IsUnset() {
-			vals[3] = psql.Arg(s.Rev.MustGetNull())
+		if s.Rev != nil {
+			vals[3] = psql.Arg(func() sql.Null[string] {
+				if s.Rev == nil {
+					return *new(sql.Null[string])
+				}
+				v := s.Rev
+				return *v
+			}())
 		} else {
 			vals[3] = psql.Raw("DEFAULT")
 		}
 
-		if !s.Operation.IsUnset() {
-			vals[4] = psql.Arg(s.Operation.MustGetNull())
+		if s.Operation != nil {
+			vals[4] = psql.Arg(func() sql.Null[enums.CommitOperation] {
+				if s.Operation == nil {
+					return *new(sql.Null[enums.CommitOperation])
+				}
+				v := s.Operation
+				return *v
+			}())
 		} else {
 			vals[4] = psql.Raw("DEFAULT")
 		}
 
-		if !s.Collection.IsUnset() {
-			vals[5] = psql.Arg(s.Collection.MustGetNull())
+		if s.Collection != nil {
+			vals[5] = psql.Arg(func() sql.Null[string] {
+				if s.Collection == nil {
+					return *new(sql.Null[string])
+				}
+				v := s.Collection
+				return *v
+			}())
 		} else {
 			vals[5] = psql.Raw("DEFAULT")
 		}
 
-		if !s.Rkey.IsUnset() {
-			vals[6] = psql.Arg(s.Rkey.MustGetNull())
+		if s.Rkey != nil {
+			vals[6] = psql.Arg(func() sql.Null[string] {
+				if s.Rkey == nil {
+					return *new(sql.Null[string])
+				}
+				v := s.Rkey
+				return *v
+			}())
 		} else {
 			vals[6] = psql.Raw("DEFAULT")
 		}
 
-		if !s.Record.IsUnset() {
-			vals[7] = psql.Arg(s.Record.MustGetNull())
+		if s.Record != nil {
+			vals[7] = psql.Arg(func() sql.Null[types.JSON[json.RawMessage]] {
+				if s.Record == nil {
+					return *new(sql.Null[types.JSON[json.RawMessage]])
+				}
+				v := s.Record
+				return *v
+			}())
 		} else {
 			vals[7] = psql.Raw("DEFAULT")
 		}
 
-		if !s.Cid.IsUnset() {
-			vals[8] = psql.Arg(s.Cid.MustGetNull())
+		if s.Cid != nil {
+			vals[8] = psql.Arg(func() sql.Null[string] {
+				if s.Cid == nil {
+					return *new(sql.Null[string])
+				}
+				v := s.Cid
+				return *v
+			}())
 		} else {
 			vals[8] = psql.Raw("DEFAULT")
 		}
 
-		if !s.AccountActive.IsUnset() {
-			vals[9] = psql.Arg(s.AccountActive.MustGetNull())
+		if s.AccountActive != nil {
+			vals[9] = psql.Arg(func() sql.Null[bool] {
+				if s.AccountActive == nil {
+					return *new(sql.Null[bool])
+				}
+				v := s.AccountActive
+				return *v
+			}())
 		} else {
 			vals[9] = psql.Raw("DEFAULT")
 		}
 
-		if !s.AccountDid.IsUnset() {
-			vals[10] = psql.Arg(s.AccountDid.MustGetNull())
+		if s.AccountDid != nil {
+			vals[10] = psql.Arg(func() sql.Null[string] {
+				if s.AccountDid == nil {
+					return *new(sql.Null[string])
+				}
+				v := s.AccountDid
+				return *v
+			}())
 		} else {
 			vals[10] = psql.Raw("DEFAULT")
 		}
 
-		if !s.AccountSeq.IsUnset() {
-			vals[11] = psql.Arg(s.AccountSeq.MustGetNull())
+		if s.AccountSeq != nil {
+			vals[11] = psql.Arg(func() sql.Null[int64] {
+				if s.AccountSeq == nil {
+					return *new(sql.Null[int64])
+				}
+				v := s.AccountSeq
+				return *v
+			}())
 		} else {
 			vals[11] = psql.Raw("DEFAULT")
 		}
 
-		if !s.AccountStatus.IsUnset() {
-			vals[12] = psql.Arg(s.AccountStatus.MustGetNull())
+		if s.AccountStatus != nil {
+			vals[12] = psql.Arg(func() sql.Null[string] {
+				if s.AccountStatus == nil {
+					return *new(sql.Null[string])
+				}
+				v := s.AccountStatus
+				return *v
+			}())
 		} else {
 			vals[12] = psql.Raw("DEFAULT")
 		}
 
-		if !s.AccountTime.IsUnset() {
-			vals[13] = psql.Arg(s.AccountTime.MustGetNull())
+		if s.AccountTime != nil {
+			vals[13] = psql.Arg(func() sql.Null[time.Time] {
+				if s.AccountTime == nil {
+					return *new(sql.Null[time.Time])
+				}
+				v := s.AccountTime
+				return *v
+			}())
 		} else {
 			vals[13] = psql.Raw("DEFAULT")
 		}
 
-		if !s.IdentityDid.IsUnset() {
-			vals[14] = psql.Arg(s.IdentityDid.MustGetNull())
+		if s.IdentityDid != nil {
+			vals[14] = psql.Arg(func() sql.Null[string] {
+				if s.IdentityDid == nil {
+					return *new(sql.Null[string])
+				}
+				v := s.IdentityDid
+				return *v
+			}())
 		} else {
 			vals[14] = psql.Raw("DEFAULT")
 		}
 
-		if !s.IdentityHandle.IsUnset() {
-			vals[15] = psql.Arg(s.IdentityHandle.MustGetNull())
+		if s.IdentityHandle != nil {
+			vals[15] = psql.Arg(func() sql.Null[string] {
+				if s.IdentityHandle == nil {
+					return *new(sql.Null[string])
+				}
+				v := s.IdentityHandle
+				return *v
+			}())
 		} else {
 			vals[15] = psql.Raw("DEFAULT")
 		}
 
-		if !s.IdentitySeq.IsUnset() {
-			vals[16] = psql.Arg(s.IdentitySeq.MustGetNull())
+		if s.IdentitySeq != nil {
+			vals[16] = psql.Arg(func() sql.Null[int64] {
+				if s.IdentitySeq == nil {
+					return *new(sql.Null[int64])
+				}
+				v := s.IdentitySeq
+				return *v
+			}())
 		} else {
 			vals[16] = psql.Raw("DEFAULT")
 		}
 
-		if !s.IdentityTime.IsUnset() {
-			vals[17] = psql.Arg(s.IdentityTime.MustGetNull())
+		if s.IdentityTime != nil {
+			vals[17] = psql.Arg(func() sql.Null[time.Time] {
+				if s.IdentityTime == nil {
+					return *new(sql.Null[time.Time])
+				}
+				v := s.IdentityTime
+				return *v
+			}())
 		} else {
 			vals[17] = psql.Raw("DEFAULT")
 		}
@@ -379,126 +587,126 @@ func (s EventSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 func (s EventSetter) Expressions(prefix ...string) []bob.Expression {
 	exprs := make([]bob.Expression, 0, 18)
 
-	if s.Did.IsValue() {
+	if s.Did != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "did")...),
 			psql.Arg(s.Did),
 		}})
 	}
 
-	if s.TimeUs.IsValue() {
+	if s.TimeUs != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "time_us")...),
 			psql.Arg(s.TimeUs),
 		}})
 	}
 
-	if s.Kind.IsValue() {
+	if s.Kind != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "kind")...),
 			psql.Arg(s.Kind),
 		}})
 	}
 
-	if !s.Rev.IsUnset() {
+	if s.Rev != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "rev")...),
 			psql.Arg(s.Rev),
 		}})
 	}
 
-	if !s.Operation.IsUnset() {
+	if s.Operation != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "operation")...),
 			psql.Arg(s.Operation),
 		}})
 	}
 
-	if !s.Collection.IsUnset() {
+	if s.Collection != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "collection")...),
 			psql.Arg(s.Collection),
 		}})
 	}
 
-	if !s.Rkey.IsUnset() {
+	if s.Rkey != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "rkey")...),
 			psql.Arg(s.Rkey),
 		}})
 	}
 
-	if !s.Record.IsUnset() {
+	if s.Record != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "record")...),
 			psql.Arg(s.Record),
 		}})
 	}
 
-	if !s.Cid.IsUnset() {
+	if s.Cid != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "cid")...),
 			psql.Arg(s.Cid),
 		}})
 	}
 
-	if !s.AccountActive.IsUnset() {
+	if s.AccountActive != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "account_active")...),
 			psql.Arg(s.AccountActive),
 		}})
 	}
 
-	if !s.AccountDid.IsUnset() {
+	if s.AccountDid != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "account_did")...),
 			psql.Arg(s.AccountDid),
 		}})
 	}
 
-	if !s.AccountSeq.IsUnset() {
+	if s.AccountSeq != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "account_seq")...),
 			psql.Arg(s.AccountSeq),
 		}})
 	}
 
-	if !s.AccountStatus.IsUnset() {
+	if s.AccountStatus != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "account_status")...),
 			psql.Arg(s.AccountStatus),
 		}})
 	}
 
-	if !s.AccountTime.IsUnset() {
+	if s.AccountTime != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "account_time")...),
 			psql.Arg(s.AccountTime),
 		}})
 	}
 
-	if !s.IdentityDid.IsUnset() {
+	if s.IdentityDid != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "identity_did")...),
 			psql.Arg(s.IdentityDid),
 		}})
 	}
 
-	if !s.IdentityHandle.IsUnset() {
+	if s.IdentityHandle != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "identity_handle")...),
 			psql.Arg(s.IdentityHandle),
 		}})
 	}
 
-	if !s.IdentitySeq.IsUnset() {
+	if s.IdentitySeq != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "identity_seq")...),
 			psql.Arg(s.IdentitySeq),
 		}})
 	}
 
-	if !s.IdentityTime.IsUnset() {
+	if s.IdentityTime != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "identity_time")...),
 			psql.Arg(s.IdentityTime),

@@ -6,7 +6,7 @@ import (
 
 	"github.com/stephenafamo/bob"
 
-	_ "github.com/lib/pq" // driver
+	_ "github.com/jackc/pgx/v5/stdlib" // driver
 )
 
 type DB struct {
@@ -15,7 +15,7 @@ type DB struct {
 }
 
 func (d *DB) Init(_ context.Context) error {
-	db, err := bob.Open("postgres", d.Config.DatabaseURL)
+	db, err := bob.Open("pgx", d.Config.DatabaseURL)
 	d.DB = db
 
 	return err

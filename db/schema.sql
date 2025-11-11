@@ -1,5 +1,7 @@
+\restrict 4cEpTICe2cmOCUq1ibZx3FclwDlanTXvtXTfBOXSg98VpV6HjnKdPzw6X1sjNse
+
 -- Dumped from database version 17.6
--- Dumped by pg_dump version 17.6
+-- Dumped by pg_dump version 18.0
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -177,6 +179,9 @@ CREATE INDEX idx_events_rkey ON public.events USING btree (rkey);
 --
 -- PostgreSQL database dump complete
 --
+
+\unrestrict 4cEpTICe2cmOCUq1ibZx3FclwDlanTXvtXTfBOXSg98VpV6HjnKdPzw6X1sjNse
+
 
 --
 -- Dbmate schema migrations

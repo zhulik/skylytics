@@ -7,7 +7,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/aarondl/opt/omit"
 	"github.com/stephenafamo/bob"
 	"github.com/stephenafamo/bob/dialect/psql"
 	"github.com/stephenafamo/bob/dialect/psql/dialect"
@@ -60,20 +59,25 @@ func (schemaMigrationColumns) AliasedAs(alias string) schemaMigrationColumns {
 // All values are optional, and do not have to be set
 // Generated columns are not included
 type SchemaMigrationSetter struct {
-	Version omit.Val[string] `db:"version,pk" `
+	Version *string `db:"version,pk" `
 }
 
 func (s SchemaMigrationSetter) SetColumns() []string {
 	vals := make([]string, 0, 1)
-	if s.Version.IsValue() {
+	if s.Version != nil {
 		vals = append(vals, "version")
 	}
 	return vals
 }
 
 func (s SchemaMigrationSetter) Overwrite(t *SchemaMigration) {
-	if s.Version.IsValue() {
-		t.Version = s.Version.MustGet()
+	if s.Version != nil {
+		t.Version = func() string {
+			if s.Version == nil {
+				return *new(string)
+			}
+			return *s.Version
+		}()
 	}
 }
 
@@ -84,8 +88,13 @@ func (s *SchemaMigrationSetter) Apply(q *dialect.InsertQuery) {
 
 	q.AppendValues(bob.ExpressionFunc(func(ctx context.Context, w io.Writer, d bob.Dialect, start int) ([]any, error) {
 		vals := make([]bob.Expression, 1)
-		if s.Version.IsValue() {
-			vals[0] = psql.Arg(s.Version.MustGet())
+		if s.Version != nil {
+			vals[0] = psql.Arg(func() string {
+				if s.Version == nil {
+					return *new(string)
+				}
+				return *s.Version
+			}())
 		} else {
 			vals[0] = psql.Raw("DEFAULT")
 		}
@@ -101,7 +110,7 @@ func (s SchemaMigrationSetter) UpdateMod() bob.Mod[*dialect.UpdateQuery] {
 func (s SchemaMigrationSetter) Expressions(prefix ...string) []bob.Expression {
 	exprs := make([]bob.Expression, 0, 1)
 
-	if s.Version.IsValue() {
+	if s.Version != nil {
 		exprs = append(exprs, expr.Join{Sep: " = ", Exprs: []bob.Expression{
 			psql.Quote(append(prefix, "version")...),
 			psql.Arg(s.Version),
