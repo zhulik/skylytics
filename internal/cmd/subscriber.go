@@ -17,6 +17,7 @@ import (
 	"github.com/bluesky-social/jetstream/pkg/models"
 
 	libnats "github.com/nats-io/nats.go"
+	"github.com/nats-io/nats.go/jetstream"
 	"github.com/urfave/cli/v3"
 	"github.com/zhulik/pal"
 )
@@ -62,7 +63,10 @@ func (s *subscriber) Run(ctx context.Context) error {
 func (s *subscriber) run(ctx context.Context) error {
 	cursor, err := s.NATS.KV.Get(ctx, "cursor")
 	if err != nil {
-		return err
+		if !errors.Is(err, jetstream.ErrKeyNotFound) {
+			return err
+		}
+		cursor = nil
 	}
 
 	cursorInt, err := strconv.ParseInt(string(cursor.Value()), 10, 64)
