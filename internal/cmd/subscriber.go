@@ -66,16 +66,20 @@ func (s *subscriber) run(ctx context.Context) error {
 		if !errors.Is(err, jetstream.ErrKeyNotFound) {
 			return err
 		}
-		cursor = nil
 	}
 
-	cursorInt, err := strconv.ParseInt(string(cursor.Value()), 10, 64)
-	if err != nil {
-		return err
+	var cursorInt *int64
+
+	if cursor != nil {
+		parsed, err := strconv.ParseInt(string(cursor.Value()), 10, 64)
+		if err != nil {
+			return err
+		}
+		cursorInt = &parsed
 	}
 
 	s.Logger.Info("subscribing to the Bluesky events")
-	ch, err := s.Subscriber.Consume(ctx, &cursorInt)
+	ch, err := s.Subscriber.Consume(ctx, cursorInt)
 	if err != nil {
 		return err
 	}
