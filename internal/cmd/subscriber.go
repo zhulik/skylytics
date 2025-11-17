@@ -25,8 +25,8 @@ var subscriberCmd = &cli.Command{
 	Name:  "subscriber",
 	Usage: "Subscribe to the Bluesky events, forward them to NATS JetStream",
 	Flags: []cli.Flag{
-		flags.NATS_URL,
-		flags.INIT_NATS,
+		flags.NATSUrl,
+		flags.InitNATS,
 	},
 	Action: func(ctx context.Context, c *cli.Command) error {
 		return run(ctx, c,

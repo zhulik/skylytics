@@ -27,7 +27,7 @@ var cmd = &cli.Command{
 		return ctx, nil
 	},
 	Flags: []cli.Flag{
-		flags.LOG_LEVEL,
+		flags.LogLevel,
 	},
 	Commands: []*cli.Command{
 		subscriberCmd,

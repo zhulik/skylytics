@@ -50,12 +50,12 @@ func (n *NATS) Init(ctx context.Context) error {
 	return nil
 }
 
-func (n *NATS) HealthCheck(ctx context.Context) error {
+func (n *NATS) HealthCheck(context.Context) error {
 	_, err := n.JS.Conn().RTT()
 	return err
 }
 
-func (n *NATS) Shutdown(ctx context.Context) error {
+func (n *NATS) Shutdown(context.Context) error {
 	return n.JS.Conn().Drain()
 }
 

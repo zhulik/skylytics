@@ -10,7 +10,7 @@ import (
 
 var validLogLevels = []string{"debug", "info", "warn", "error"}
 
-var NATS_URL = &cli.StringFlag{
+var NATSUrl = &cli.StringFlag{
 	Name:    "nats-url",
 	Aliases: []string{"n"},
 	Usage:   "The URL of the NATS server",
@@ -18,7 +18,7 @@ var NATS_URL = &cli.StringFlag{
 	Sources: cli.EnvVars("NATS_URL"),
 }
 
-var INIT_NATS = &cli.BoolFlag{
+var InitNATS = &cli.BoolFlag{
 	Name:        "nats-init",
 	Aliases:     []string{"i"},
 	Usage:       "Initialize the NATS server: create streams, consumers, etc.",
@@ -28,7 +28,7 @@ var INIT_NATS = &cli.BoolFlag{
 }
 
 // TODO: extract custom EnumFlag
-var LOG_LEVEL = &cli.StringFlag{
+var LogLevel = &cli.StringFlag{
 	Name:    "log-level",
 	Aliases: []string{"l"},
 	Usage:   "The level of the logs",
