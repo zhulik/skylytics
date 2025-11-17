@@ -9,3 +9,9 @@ services:
       POSTGRES_USER: skylytics
       POSTGRES_DB: skylytics
       POSTGRES_PASSWORD: skylytics
+
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+    command: --js

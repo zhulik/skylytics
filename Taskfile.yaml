@@ -68,3 +68,6 @@ tasks:
   "db:rollback":
     cmd: dbmate rollback
 
+  "run:subscriber":
+    cmd: go run ./cmd/skylytics subscriber
+

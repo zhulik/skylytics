@@ -7,12 +7,13 @@ require (
 	github.com/bluesky-social/jetstream v0.0.0-20250411043205-f4da85b6e06b
 	github.com/golang-cz/devslog v0.0.13
 	github.com/k0kubun/pp v3.0.1+incompatible
-	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.10.9
 	github.com/mattn/go-isatty v0.0.20
+	github.com/nats-io/nats.go v1.47.0
 	github.com/samber/lo v1.52.0
 	github.com/samber/ro v0.2.0
 	github.com/stephenafamo/bob v0.41.1
+	github.com/urfave/cli/v3 v3.6.1
 	github.com/zhulik/pal v0.10.0
 	resty.dev/v3 v3.0.0-beta.2
 )
@@ -185,6 +186,8 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mutecomm/go-sqlcipher/v4 v4.4.0 // indirect
 	github.com/nakagami/firebirdsql v0.0.0-20190310045651-3c02a58cfed8 // indirect
+	github.com/nats-io/nkeys v0.4.11 // indirect
+	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/neo4j/neo4j-go-driver v1.8.1-0.20200803113522-b626aa943eba // indirect
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1 // indirect

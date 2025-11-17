@@ -8,8 +8,6 @@ import (
 	"strconv"
 	"time"
 
-	"skylytics/internal/core"
-
 	bsky "github.com/bluesky-social/jetstream/pkg/client"
 	"github.com/bluesky-social/jetstream/pkg/client/schedulers/sequential"
 	"github.com/bluesky-social/jetstream/pkg/models"
@@ -22,7 +20,7 @@ const (
 
 type Subscriber struct {
 	Logger *slog.Logger
-	Config *core.Config
+	// Config *core.Config
 
 	ch chan *models.Event
 }
@@ -34,7 +32,7 @@ func (s *Subscriber) Init(_ context.Context) error {
 	return err
 }
 
-func (s *Subscriber) Consume(ctx context.Context) (chan *models.Event, error) {
+func (s *Subscriber) Consume(ctx context.Context, cursor *int64) (chan *models.Event, error) {
 	client, err := bsky.NewClient(
 		&bsky.ClientConfig{
 			Compress:     true,
@@ -52,7 +50,7 @@ func (s *Subscriber) Consume(ctx context.Context) (chan *models.Event, error) {
 	lo.Async0(func() {
 		defer close(s.ch)
 		for {
-			err := client.ConnectAndRead(ctx, nil)
+			err := client.ConnectAndRead(ctx, cursor)
 
 			if err != nil {
 				if errors.Is(err, context.Canceled) {
