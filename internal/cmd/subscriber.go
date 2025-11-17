@@ -32,6 +32,7 @@ var subscriberCmd = &cli.Command{
 	Action: func(ctx context.Context, c *cli.Command) error {
 		return run(ctx, c,
 			pal.Provide(&bluesky.Subscriber{}),
+			pal.Provide(&cursorStore{}),
 			pal.Provide(&subscriber{}),
 			nats.Provide(),
 		)
@@ -39,10 +40,11 @@ var subscriberCmd = &cli.Command{
 }
 
 type subscriber struct {
-	Logger     *slog.Logger
-	Config     *config.Config
-	Subscriber *bluesky.Subscriber
-	NATS       *nats.NATS
+	Logger      *slog.Logger
+	Config      *config.Config
+	Subscriber  *bluesky.Subscriber
+	NATS        *nats.NATS
+	CursorStore *cursorStore
 }
 
 func (s *subscriber) Run(ctx context.Context) error {
@@ -61,25 +63,13 @@ func (s *subscriber) Run(ctx context.Context) error {
 }
 
 func (s *subscriber) run(ctx context.Context) error {
-	cursor, err := s.NATS.KV.Get(ctx, "cursor")
+	cursor, err := s.CursorStore.Get(ctx)
 	if err != nil {
-		if !errors.Is(err, jetstream.ErrKeyNotFound) {
-			return err
-		}
-	}
-
-	var cursorInt *int64
-
-	if cursor != nil {
-		parsed, err := strconv.ParseInt(string(cursor.Value()), 10, 64)
-		if err != nil {
-			return err
-		}
-		cursorInt = &parsed
+		return err
 	}
 
 	s.Logger.Info("subscribing to the Bluesky events")
-	ch, err := s.Subscriber.Consume(ctx, cursorInt)
+	ch, err := s.Subscriber.Consume(ctx, cursor)
 	if err != nil {
 		return err
 	}
@@ -103,7 +93,7 @@ func (s *subscriber) run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
-		_, err = s.NATS.KV.Put(ctx, "cursor", []byte(fmt.Sprintf("%d", event.TimeUS)))
+		err = s.CursorStore.Set(ctx, event.TimeUS)
 		if err != nil {
 			return err
 		}
@@ -116,4 +106,28 @@ func (s *subscriber) run(ctx context.Context) error {
 
 func messageID(event *models.Event) string {
 	return fmt.Sprintf("%s-%d", event.Did, event.TimeUS)
+}
+
+type cursorStore struct {
+	NATS *nats.NATS
+}
+
+func (c *cursorStore) Get(ctx context.Context) (*int64, error) {
+	cursor, err := c.NATS.KV.Get(ctx, "cursor")
+	if err != nil {
+		if errors.Is(err, jetstream.ErrKeyNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	parsed, err := strconv.ParseInt(string(cursor.Value()), 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	return &parsed, nil
+}
+
+func (c *cursorStore) Set(ctx context.Context, cursor int64) error {
+	_, err := c.NATS.KV.Put(ctx, "cursor", []byte(fmt.Sprintf("%d", cursor)))
+	return err
 }
