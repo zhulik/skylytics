@@ -9,12 +9,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"skylytics/internal/analyzer"
 	"skylytics/internal/bluesky"
 	"skylytics/internal/cmd/flags"
 	"skylytics/internal/config"
 	"skylytics/internal/core"
-
-	"github.com/bluesky-social/jetstream/pkg/models"
 
 	libredis "github.com/redis/go-redis/v9"
 	"github.com/urfave/cli/v3"
@@ -30,16 +29,18 @@ var subscriberCmd = &cli.Command{
 	Action: func(ctx context.Context, c *cli.Command) error {
 		return run(ctx, c,
 			pal.Provide(&bluesky.Subscriber{}),
+			analyzer.Provide(),
 			pal.Provide(&subscriber{}),
 		)
 	},
 }
 
 type subscriber struct {
-	Logger     *slog.Logger
-	Config     *config.Config
-	Subscriber *bluesky.Subscriber
-	Metrics    core.MetricsCollector
+	Logger        *slog.Logger
+	Config        *config.Config
+	Subscriber    *bluesky.Subscriber
+	Metrics       core.MetricsCollector
+	EventAnalyzer core.EventAnalyzer
 
 	Redis core.Redis
 
@@ -90,7 +91,7 @@ func (s *subscriber) run(ctx context.Context) error {
 			return err
 		}
 
-		err = s.publishEvent(ctx, event)
+		err = s.EventAnalyzer.Analyze(ctx, event)
 		if err != nil {
 			return err
 		}
@@ -100,24 +101,6 @@ func (s *subscriber) run(ctx context.Context) error {
 			return err
 		}
 	}
-
-	return nil
-}
-
-func (s *subscriber) publishEvent(ctx context.Context, event *models.Event) error {
-	kind := event.Kind
-	operation := ""
-	collection := ""
-
-	switch kind {
-	case models.EventKindCommit:
-		operation = event.Commit.Operation
-		collection = event.Commit.Collection
-	case models.EventKindAccount:
-	case models.EventKindIdentity:
-	}
-
-	s.Metrics.IncJetstreamProcessedEventsTotal(ctx, kind, operation, collection)
 
 	return nil
 }
