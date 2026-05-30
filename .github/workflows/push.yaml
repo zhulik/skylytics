@@ -17,7 +17,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
           cache: true
-          
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
@@ -54,7 +54,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - uses: ko-build/setup-ko@v0.6
+      - uses: ko-build/setup-ko@v0.9
 
       - name: Build and push image with ko
         env:

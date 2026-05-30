@@ -13,7 +13,6 @@ tasks:
   default:
     desc: Run tests and linting
     cmds:
-      - task: fmt-jsonnet
       - task: generate
       - task: lint-fix
       - task: test
@@ -49,18 +48,6 @@ tasks:
     cmds:
       - golangci-lint run --fix
 
-  fmt-jsonnet:
-    vars:
-      files:
-        sh: "find . -type f \\( -name '*.jsonnet' -o -name '*.libsonnet' \\)"
-
-
-    desc: 'Formats all libsonnet and jsonnet files'
-    cmds:
-        - |
-          {{ range splitLines .files }}
-            jsonnetfmt {{ . }} -o {{ . }}
-          {{ end }}
 
   "db:migrate":
     cmd: dbmate migrate

@@ -6,6 +6,7 @@ import (
 	"os"
 	"skylytics/internal/cmd/flags"
 	"skylytics/internal/config"
+	"skylytics/internal/metrics"
 	"skylytics/pkg/clicfg"
 	"syscall"
 	"time"
@@ -46,7 +47,10 @@ func run(ctx context.Context, c *cli.Command, services ...pal.ServiceDef) error 
 	if err := clicfg.ParseFlags(c, &cfg); err != nil {
 		return err
 	}
-	services = append(services, pal.Provide(&cfg))
+	services = append(services,
+		pal.Provide(&cfg),
+		metrics.Provide(),
+	)
 
 	return pal.New(services...).
 		InjectSlog().

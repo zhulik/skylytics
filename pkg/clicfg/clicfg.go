@@ -16,7 +16,7 @@ var (
 func ParseFlags(c *cli.Command, s any) error {
 	// Get the reflect.Value of the struct (must be a pointer)
 	v := reflect.ValueOf(s)
-	if v.Kind() != reflect.Ptr {
+	if v.Kind() != reflect.Pointer {
 		return fmt.Errorf("%w: expected pointer to struct, got %T", ErrCannotParseFlags, s)
 	}
 
