@@ -22,4 +22,7 @@ type EventAnalyzer interface {
 type Redis interface {
 	Get(ctx context.Context, key string) *libredis.StringCmd
 	Set(ctx context.Context, key string, value interface{}, expiration time.Duration) *libredis.StatusCmd
+
+	ZIncrBy(ctx context.Context, key string, increment float64, member string) *libredis.FloatCmd
+	Expire(ctx context.Context, key string, expiration time.Duration) *libredis.BoolCmd
 }

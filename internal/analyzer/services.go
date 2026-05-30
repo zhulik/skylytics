@@ -7,5 +7,8 @@ import (
 )
 
 func Provide() pal.ServiceDef {
-	return pal.Provide[core.EventAnalyzer](&EventAnalyzer{})
+	return pal.ProvideList(
+		pal.Provide[core.EventAnalyzer](&EventAnalyzer{}),
+		pal.Provide(&LeaderboardRawBucketSaver{}),
+	)
 }
