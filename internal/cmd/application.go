@@ -57,5 +57,6 @@ func run(ctx context.Context, c *cli.Command, services ...pal.ServiceDef) error 
 		InitTimeout(2*time.Second).
 		HealthCheckTimeout(1*time.Second).
 		ShutdownTimeout(10*time.Second).
+		RunHealthCheckServer(":8080", "/healthz").
 		Run(ctx, syscall.SIGINT, syscall.SIGTERM)
 }
