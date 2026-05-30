@@ -26,12 +26,17 @@ func (c *Collector) IncJetstreamProcessedEventsTotal(_ context.Context, kind, op
 	jetstreamProcessedEventsTotal.WithLabelValues(kind, operation, collection).Inc()
 }
 
+func (c *Collector) IncJetstreamSubscriptionErrorsTotal(_ context.Context) {
+	jetstreamSubscriptionErrorsTotal.Inc()
+}
+
 func (c *Collector) Init(_ context.Context) error {
 	c.reg = prometheus.NewRegistry()
 	c.reg.MustRegister(
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 		jetstreamProcessedEventsTotal,
+		jetstreamSubscriptionErrorsTotal,
 	)
 
 	mux := http.NewServeMux()

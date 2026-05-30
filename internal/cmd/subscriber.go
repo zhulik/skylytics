@@ -60,6 +60,7 @@ func (s *subscriber) Run(ctx context.Context) error {
 			if errors.Is(err, context.Canceled) {
 				return nil
 			}
+			s.Metrics.IncJetstreamSubscriptionErrorsTotal(ctx)
 			s.Logger.Error("error running subscriber, retrying in 1 second", "error", err)
 			time.Sleep(1 * time.Second)
 			continue

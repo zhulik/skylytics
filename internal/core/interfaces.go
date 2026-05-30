@@ -12,6 +12,7 @@ type DB = bob.Transactor[bob.Tx]
 
 type MetricsCollector interface {
 	IncJetstreamProcessedEventsTotal(ctx context.Context, kind, operation, collection string)
+	IncJetstreamSubscriptionErrorsTotal(ctx context.Context)
 }
 
 type Redis interface {
