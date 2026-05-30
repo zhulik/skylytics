@@ -3,7 +3,6 @@ package analyzer
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 
 	"skylytics/internal/core"
@@ -28,12 +27,8 @@ func (a *EventAnalyzer) Analyze(ctx context.Context, event *models.Event) error 
 	case models.EventKindCommit:
 		operation = event.Commit.Operation
 		collection = event.Commit.Collection
-		if collection == feedPostCollection {
-			var post apibsky.FeedPost
-			if err := json.Unmarshal(event.Commit.Record, &post); err != nil {
-				return fmt.Errorf("unmarshal feed post: %w", err)
-			}
-			a.Logger.Info("analyzing event", "record", post)
+		if collection == feedPostCollection && operation == models.CommitOperationCreate {
+			a.analyzeFeedPost(ctx, event.Commit.Record)
 		}
 	case models.EventKindAccount:
 	case models.EventKindIdentity:
@@ -42,4 +37,11 @@ func (a *EventAnalyzer) Analyze(ctx context.Context, event *models.Event) error 
 	a.Metrics.IncJetstreamProcessedEventsTotal(ctx, kind, operation, collection)
 
 	return nil
+}
+
+func (a *EventAnalyzer) analyzeFeedPost(_ context.Context, record []byte) {
+	var post apibsky.FeedPost
+	if err := json.Unmarshal(record, &post); err != nil {
+		a.Logger.Error("error unmarshalling feed post", "error", err, "record", string(record))
+	}
 }

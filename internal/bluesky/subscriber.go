@@ -21,24 +21,18 @@ const (
 
 type Subscriber struct {
 	Logger *slog.Logger
-	// Config *core.Config
-
-	ch chan mo.Result[*models.Event]
-}
-
-func (s *Subscriber) Init(_ context.Context) error {
-	s.ch = make(chan mo.Result[*models.Event], 10)
-	return nil
 }
 
 func (s *Subscriber) Consume(ctx context.Context, cursor *int64) (chan mo.Result[*models.Event], error) {
+	ch := make(chan mo.Result[*models.Event], 10)
+
 	client, err := bsky.NewClient(
 		&bsky.ClientConfig{
 			Compress:     true,
 			WebsocketURL: jetstreamURL,
 			ReadTimeout:  10 * time.Second,
 		}, s.Logger, sequential.NewScheduler("scheduler", s.Logger, func(_ context.Context, event *models.Event) error {
-			s.ch <- mo.Ok(event)
+			ch <- mo.Ok(event)
 			return nil
 		}),
 	)
@@ -47,6 +41,8 @@ func (s *Subscriber) Consume(ctx context.Context, cursor *int64) (chan mo.Result
 	}
 
 	lo.Async0(func() {
+		defer close(ch)
+
 		for {
 			err := client.ConnectAndRead(ctx, cursor)
 
@@ -54,18 +50,13 @@ func (s *Subscriber) Consume(ctx context.Context, cursor *int64) (chan mo.Result
 				if errors.Is(err, context.Canceled) {
 					return
 				}
-				s.ch <- mo.Err[*models.Event](err)
+				ch <- mo.Err[*models.Event](err)
 				return
 			}
 		}
 	})
 
-	return s.ch, nil
-}
-
-func (s *Subscriber) Shutdown(_ context.Context) error {
-	close(s.ch)
-	return nil
+	return ch, nil
 }
 
 func SerializeInt64(n int64) []byte {
