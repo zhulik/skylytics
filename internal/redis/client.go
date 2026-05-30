@@ -18,7 +18,7 @@ type Client struct {
 
 func (c *Client) Init(ctx context.Context) error {
 	c.Client = libredis.NewFailoverClient(&libredis.FailoverOptions{
-		MasterName:    "master",
+		MasterName:    "mymaster",
 		SentinelAddrs: []string{c.Config.RedisAddr},
 	})
 

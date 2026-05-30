@@ -21,9 +21,9 @@ services:
         printf '%s\n' \
           'port 26379' \
           'dir /tmp' \
-          'sentinel monitor master redis 6379 1' \
+          'sentinel monitor mymaster redis 6379 1' \
           'sentinel resolve-hostnames yes' \
-          'sentinel down-after-milliseconds master 5000' \
-          'sentinel failover-timeout master 10000' \
+          'sentinel down-after-milliseconds mymaster 5000' \
+          'sentinel failover-timeout mymaster 10000' \
           > /tmp/sentinel.conf
         exec redis-sentinel /tmp/sentinel.conf
