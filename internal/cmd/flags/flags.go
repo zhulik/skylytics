@@ -12,8 +12,8 @@ var validLogLevels = []string{"debug", "info", "warn", "error"}
 var RedisAddr = &cli.StringFlag{
 	Name:    "redis-addr",
 	Aliases: []string{"r"},
-	Usage:   "The address of the Redis server",
-	Value:   "localhost:6379",
+	Usage:   "The address of the Redis Sentinel",
+	Value:   "localhost:26379",
 	Sources: cli.EnvVars("REDIS_ADDR"),
 }
 
