@@ -3,6 +3,7 @@ module skylytics
 go 1.26
 
 require (
+	github.com/bluesky-social/indigo v0.0.0-20260529183052-5368f55344e0
 	github.com/bluesky-social/jetstream v0.0.0-20250411043205-f4da85b6e06b
 	github.com/golang-cz/devslog v0.0.13
 	github.com/k0kubun/pp v3.0.1+incompatible
@@ -59,7 +60,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.27.11 // indirect
 	github.com/aws/smithy-go v1.13.3 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bluesky-social/indigo v0.0.0-20260120225912-12d69fa4d209 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
