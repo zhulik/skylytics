@@ -2,6 +2,7 @@ package redis
 
 import (
 	"context"
+	"log/slog"
 	"skylytics/internal/config"
 
 	libredis "github.com/redis/go-redis/v9"
@@ -9,6 +10,8 @@ import (
 
 type Client struct {
 	*libredis.Client
+
+	Logger *slog.Logger
 
 	Config *config.Config
 }
@@ -18,6 +21,8 @@ func (c *Client) Init(ctx context.Context) error {
 		MasterName:    "master",
 		SentinelAddrs: []string{c.Config.RedisAddr},
 	})
+
+	c.Logger.Info("connecting to Redis Sentinel", "addr", c.Config.RedisAddr)
 
 	return c.Ping(ctx).Err()
 }
