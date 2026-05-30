@@ -6,9 +6,9 @@ require (
 	github.com/bluesky-social/jetstream v0.0.0-20250411043205-f4da85b6e06b
 	github.com/golang-cz/devslog v0.0.13
 	github.com/k0kubun/pp v3.0.1+incompatible
-	github.com/lib/pq v1.10.9
 	github.com/mattn/go-isatty v0.0.20
-	github.com/nats-io/nats.go v1.47.0
+	github.com/prometheus/client_golang v1.22.0
+	github.com/redis/go-redis/v9 v9.3.0
 	github.com/samber/lo v1.52.0
 	github.com/stephenafamo/bob v0.41.1
 	github.com/urfave/cli/v3 v3.6.1
@@ -70,6 +70,7 @@ require (
 	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dprotaso/go-yit v0.0.0-20220510233725-9ba8df137936 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
@@ -145,6 +146,7 @@ require (
 	github.com/knadh/koanf/v2 v2.2.1 // indirect
 	github.com/ktrysmt/go-bitbucket v0.6.4 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
+	github.com/lib/pq v1.10.9 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
@@ -168,8 +170,6 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mutecomm/go-sqlcipher/v4 v4.4.0 // indirect
 	github.com/nakagami/firebirdsql v0.0.0-20190310045651-3c02a58cfed8 // indirect
-	github.com/nats-io/nkeys v0.4.11 // indirect
-	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/neo4j/neo4j-go-driver v1.8.1-0.20200803113522-b626aa943eba // indirect
 	github.com/oapi-codegen/oapi-codegen/v2 v2.4.1 // indirect
@@ -182,7 +182,6 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_golang v1.22.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect

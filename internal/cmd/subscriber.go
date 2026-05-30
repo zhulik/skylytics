@@ -3,7 +3,9 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
+	"strconv"
 	"time"
 
 	"skylytics/internal/bluesky"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/bluesky-social/jetstream/pkg/models"
 
+	libredis "github.com/redis/go-redis/v9"
 	"github.com/urfave/cli/v3"
 	"github.com/zhulik/pal"
 )
@@ -36,7 +39,8 @@ type subscriber struct {
 	Config     *config.Config
 	Subscriber *bluesky.Subscriber
 	Metrics    core.MetricsCollector
-	// CursorStore *cursorStore
+
+	Redis core.Redis
 }
 
 func (s *subscriber) Run(ctx context.Context) error {
@@ -55,25 +59,35 @@ func (s *subscriber) Run(ctx context.Context) error {
 }
 
 func (s *subscriber) run(ctx context.Context) error {
-	// cursor, err := s.CursorStore.Get(ctx)
-	// if err != nil {
-	// 	return err
-	// }
+	cursor, err := s.getCursor(ctx)
+	if err != nil {
+		return err
+	}
+	if cursor == nil {
+		s.Logger.Info("no cursor found in Redis, starting from the beginning")
+	}
 
-	s.Logger.Info("subscribing to the Bluesky events")
-	ch, err := s.Subscriber.Consume(ctx, nil)
+	s.Logger.Info("subscribing to the Bluesky events", "cursor", cursor)
+	ch, err := s.Subscriber.Consume(ctx, cursor)
 	if err != nil {
 		return err
 	}
 
 	for event := range ch {
-		s.publishEvent(ctx, event)
+		err := s.publishEvent(ctx, event)
+		if err != nil {
+			return err
+		}
+		err = s.setCursor(ctx, event.TimeUS)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (s *subscriber) publishEvent(ctx context.Context, event *models.Event) {
+func (s *subscriber) publishEvent(ctx context.Context, event *models.Event) error {
 	kind := event.Kind
 
 	tags := map[string]string{
@@ -92,4 +106,33 @@ func (s *subscriber) publishEvent(ctx context.Context, event *models.Event) {
 
 	s.Metrics.Increment(ctx, "jetstream_processed_events_total", tags)
 	// s.Logger.Debug("published event", "id", msgID, "cursor", event.TimeUS)
+
+	return nil
+}
+
+func (s *subscriber) getCursor(ctx context.Context) (*int64, error) {
+	cursor, err := s.Redis.Get(ctx, "cursor").Result()
+	if err != nil {
+		if errors.Is(err, libredis.Nil) {
+			return nil, nil
+
+		}
+
+		return nil, fmt.Errorf("error getting cursor from Redis: %w", err)
+	}
+
+	var cursorValueInt *int64
+	if cursor != "" {
+		c, err := strconv.ParseInt(cursor, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing cursor: %w", err)
+		}
+		cursorValueInt = &c
+	}
+
+	return cursorValueInt, nil
+}
+
+func (s *subscriber) setCursor(ctx context.Context, cursor int64) error {
+	return s.Redis.Set(ctx, "cursor", cursor, 0).Err()
 }

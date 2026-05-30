@@ -7,6 +7,7 @@ import (
 	"skylytics/internal/cmd/flags"
 	"skylytics/internal/config"
 	"skylytics/internal/metrics"
+	"skylytics/internal/redis"
 	"skylytics/pkg/clicfg"
 	"syscall"
 	"time"
@@ -50,6 +51,7 @@ func run(ctx context.Context, c *cli.Command, services ...pal.ServiceDef) error 
 	services = append(services,
 		pal.Provide(&cfg),
 		metrics.Provide(),
+		redis.Provide(),
 	)
 
 	return pal.New(services...).

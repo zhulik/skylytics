@@ -1,17 +1,5 @@
 services:
-  postgres:
-    image: postgres:17-alpine
-
+  redis:
+    image: redis:8.6.1
     ports:
-      - "5432:5432"
-
-    environment:
-      POSTGRES_USER: skylytics
-      POSTGRES_DB: skylytics
-      POSTGRES_PASSWORD: skylytics
-
-  nats:
-    image: nats:latest
-    ports:
-      - "4222:4222"
-    command: --js
+      - "6379:6379"
