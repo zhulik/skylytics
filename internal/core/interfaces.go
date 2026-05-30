@@ -10,10 +10,8 @@ import (
 
 type DB = bob.Transactor[bob.Tx]
 
-type MetricName string
-
 type MetricsCollector interface {
-	Increment(ctx context.Context, name MetricName, tags map[string]string)
+	IncJetstreamProcessedEventsTotal(ctx context.Context, kind, operation, collection string)
 }
 
 type Redis interface {

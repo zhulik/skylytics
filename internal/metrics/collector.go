@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"skylytics/internal/core"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -23,8 +22,8 @@ type Collector struct {
 	server *http.Server
 }
 
-func (c *Collector) Increment(_ context.Context, name core.MetricName, tags map[string]string) {
-	counters[name].With(tags).Inc()
+func (c *Collector) IncJetstreamProcessedEventsTotal(_ context.Context, kind, operation, collection string) {
+	jetstreamProcessedEventsTotal.WithLabelValues(kind, operation, collection).Inc()
 }
 
 func (c *Collector) Init(_ context.Context) error {
@@ -32,7 +31,7 @@ func (c *Collector) Init(_ context.Context) error {
 	c.reg.MustRegister(
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
-		counters[JetstreamProcessedEventsTotal],
+		jetstreamProcessedEventsTotal,
 	)
 
 	mux := http.NewServeMux()

@@ -105,22 +105,18 @@ func (s *subscriber) run(ctx context.Context) error {
 
 func (s *subscriber) publishEvent(ctx context.Context, event *models.Event) error {
 	kind := event.Kind
-
-	tags := map[string]string{
-		"operation":  "",
-		"collection": "",
-		"kind":       kind,
-	}
+	operation := ""
+	collection := ""
 
 	switch kind {
 	case models.EventKindCommit:
-		tags["operation"] = event.Commit.Operation
-		tags["collection"] = event.Commit.Collection
+		operation = event.Commit.Operation
+		collection = event.Commit.Collection
 	case models.EventKindAccount:
 	case models.EventKindIdentity:
 	}
 
-	s.Metrics.Increment(ctx, "jetstream_processed_events_total", tags)
+	s.Metrics.IncJetstreamProcessedEventsTotal(ctx, kind, operation, collection)
 
 	return nil
 }
