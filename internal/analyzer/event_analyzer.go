@@ -47,9 +47,21 @@ func (a *EventAnalyzer) analyzeCreatedCommit(ctx context.Context, event *models.
 	}
 }
 
-func (a *EventAnalyzer) analyzePostCreated(_ context.Context, record []byte) {
+func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 	var post apibsky.FeedPost
 	if err := json.Unmarshal(record, &post); err != nil {
 		a.Logger.Error("error unmarshalling feed post", "error", err, "record", string(record))
+	}
+
+	var imagesCount int
+
+	if post.Embed != nil && post.Embed.EmbedImages != nil {
+		imagesCount = len(post.Embed.EmbedImages.Images)
+	}
+
+	a.Metrics.IncBlueskyPostCreated(ctx, len(post.Langs), imagesCount)
+
+	for _, lang := range post.Langs {
+		a.Metrics.IncBlueskyPostCreatedInLanguage(ctx, lang)
 	}
 }

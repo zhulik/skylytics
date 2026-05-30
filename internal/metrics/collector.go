@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -30,6 +31,17 @@ func (c *Collector) IncJetstreamSubscriptionErrorsTotal(_ context.Context) {
 	jetstreamSubscriptionErrorsTotal.Inc()
 }
 
+func (c *Collector) IncBlueskyPostCreated(_ context.Context, languageCount, imageCount int) {
+	blueskyPostCreatedTotal.WithLabelValues(
+		strconv.Itoa(languageCount),
+		strconv.Itoa(imageCount),
+	).Inc()
+}
+
+func (c *Collector) IncBlueskyPostCreatedInLanguage(_ context.Context, language string) {
+	blueskyPostCreatedInLanguageTotal.WithLabelValues(language).Inc()
+}
+
 func (c *Collector) Init(_ context.Context) error {
 	c.reg = prometheus.NewRegistry()
 	c.reg.MustRegister(
@@ -37,6 +49,8 @@ func (c *Collector) Init(_ context.Context) error {
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 		jetstreamProcessedEventsTotal,
 		jetstreamSubscriptionErrorsTotal,
+		blueskyPostCreatedTotal,
+		blueskyPostCreatedInLanguageTotal,
 	)
 
 	mux := http.NewServeMux()
