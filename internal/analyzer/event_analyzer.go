@@ -11,7 +11,7 @@ import (
 	"github.com/bluesky-social/jetstream/pkg/models"
 )
 
-const feedPostCollection = "app.bsky.feed.post"
+const postCollection = "app.bsky.feed.post"
 
 type EventAnalyzer struct {
 	Logger  *slog.Logger
@@ -27,8 +27,9 @@ func (a *EventAnalyzer) Analyze(ctx context.Context, event *models.Event) error 
 	case models.EventKindCommit:
 		operation = event.Commit.Operation
 		collection = event.Commit.Collection
-		if collection == feedPostCollection && operation == models.CommitOperationCreate {
-			a.analyzeFeedPost(ctx, event.Commit.Record)
+
+		if operation == models.CommitOperationCreate {
+			a.analyzeCreatedCommit(ctx, event)
 		}
 	case models.EventKindAccount:
 	case models.EventKindIdentity:
@@ -39,7 +40,14 @@ func (a *EventAnalyzer) Analyze(ctx context.Context, event *models.Event) error 
 	return nil
 }
 
-func (a *EventAnalyzer) analyzeFeedPost(_ context.Context, record []byte) {
+func (a *EventAnalyzer) analyzeCreatedCommit(ctx context.Context, event *models.Event) {
+	switch event.Commit.Collection {
+	case postCollection:
+		a.analyzePostCreated(ctx, event.Commit.Record)
+	}
+}
+
+func (a *EventAnalyzer) analyzePostCreated(_ context.Context, record []byte) {
 	var post apibsky.FeedPost
 	if err := json.Unmarshal(record, &post); err != nil {
 		a.Logger.Error("error unmarshalling feed post", "error", err, "record", string(record))
