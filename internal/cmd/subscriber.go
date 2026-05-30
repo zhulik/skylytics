@@ -21,15 +21,12 @@ var subscriberCmd = &cli.Command{
 	Name:  "subscriber",
 	Usage: "Subscribe to the Bluesky events, forward them to NATS JetStream",
 	Flags: []cli.Flag{
-		flags.NATSUrl,
-		flags.InitNATS,
+		flags.RedisAddr,
 	},
 	Action: func(ctx context.Context, c *cli.Command) error {
 		return run(ctx, c,
 			pal.Provide(&bluesky.Subscriber{}),
-			// pal.Provide(&cursorStore{}),
 			pal.Provide(&subscriber{}),
-			// nats.Provide(),
 		)
 	},
 }
@@ -39,7 +36,6 @@ type subscriber struct {
 	Config     *config.Config
 	Subscriber *bluesky.Subscriber
 	Metrics    core.MetricsCollector
-	// NATS        *nats.NATS
 	// CursorStore *cursorStore
 }
 
@@ -71,29 +67,6 @@ func (s *subscriber) run(ctx context.Context) error {
 	}
 
 	for event := range ch {
-		// bytes, err := json.Marshal(event)
-		// if err != nil {
-		// 	return err
-		// }
-
-		// msgID := messageID(event)
-
-		// msg := &libnats.Msg{
-		// 	Subject: "skylytics.event",
-		// 	Data:    bytes,
-		// 	Header: libnats.Header{
-		// 		libnats.MsgIdHdr: []string{msgID},
-		// 	},
-		// }
-		// _, err = s.NATS.JS.PublishMsg(ctx, msg)
-		// if err != nil {
-		// 	return err
-		// }
-		// err = s.CursorStore.Set(ctx, event.TimeUS)
-		// if err != nil {
-		// 	return err
-		// }
-
 		s.publishEvent(ctx, event)
 	}
 
