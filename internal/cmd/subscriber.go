@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"strconv"
+	"sync/atomic"
 	"time"
 
 	"skylytics/internal/bluesky"
@@ -41,9 +42,18 @@ type subscriber struct {
 	Metrics    core.MetricsCollector
 
 	Redis core.Redis
+
+	processedEvents atomic.Uint64
 }
 
 func (s *subscriber) Run(ctx context.Context) error {
+	go func() {
+		for {
+			time.Sleep(5 * time.Second)
+			s.Logger.Info("processed events", "count", s.processedEvents.Load())
+		}
+	}()
+
 	for {
 		err := s.run(ctx)
 		if err != nil {
@@ -73,11 +83,17 @@ func (s *subscriber) run(ctx context.Context) error {
 		return err
 	}
 
-	for event := range ch {
-		err := s.publishEvent(ctx, event)
+	for eventRes := range ch {
+		event, err := eventRes.Get()
 		if err != nil {
 			return err
 		}
+
+		err = s.publishEvent(ctx, event)
+		if err != nil {
+			return err
+		}
+		s.processedEvents.Add(1)
 		err = s.setCursor(ctx, event.TimeUS)
 		if err != nil {
 			return err
@@ -105,7 +121,6 @@ func (s *subscriber) publishEvent(ctx context.Context, event *models.Event) erro
 	}
 
 	s.Metrics.Increment(ctx, "jetstream_processed_events_total", tags)
-	// s.Logger.Debug("published event", "id", msgID, "cursor", event.TimeUS)
 
 	return nil
 }
@@ -115,7 +130,6 @@ func (s *subscriber) getCursor(ctx context.Context) (*int64, error) {
 	if err != nil {
 		if errors.Is(err, libredis.Nil) {
 			return nil, nil
-
 		}
 
 		return nil, fmt.Errorf("error getting cursor from Redis: %w", err)

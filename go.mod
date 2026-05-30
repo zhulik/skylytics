@@ -10,6 +10,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0
 	github.com/redis/go-redis/v9 v9.3.0
 	github.com/samber/lo v1.52.0
+	github.com/samber/mo v1.16.0
 	github.com/stephenafamo/bob v0.41.1
 	github.com/urfave/cli/v3 v3.6.1
 	github.com/zhulik/pal v0.11.2
