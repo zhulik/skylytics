@@ -6,10 +6,7 @@ import (
 
 	"github.com/bluesky-social/jetstream/pkg/models"
 	libredis "github.com/redis/go-redis/v9"
-	"github.com/stephenafamo/bob"
 )
-
-type DB = bob.Transactor[bob.Tx]
 
 type MetricsCollector interface {
 	IncJetstreamProcessedEventsTotal(ctx context.Context, kind, operation, collection string)

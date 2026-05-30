@@ -11,7 +11,6 @@ require (
 	github.com/redis/go-redis/v9 v9.3.0
 	github.com/samber/lo v1.52.0
 	github.com/samber/mo v1.16.0
-	github.com/stephenafamo/bob v0.41.1
 	github.com/urfave/cli/v3 v3.6.1
 	github.com/zhulik/pal v0.11.2
 	resty.dev/v3 v3.0.0-beta.2
@@ -197,6 +196,7 @@ require (
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
 	github.com/speakeasy-api/openapi-overlay v0.9.0 // indirect
 	github.com/spf13/cast v1.7.0 // indirect
+	github.com/stephenafamo/bob v0.41.1 // indirect
 	github.com/stephenafamo/scan v0.7.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
