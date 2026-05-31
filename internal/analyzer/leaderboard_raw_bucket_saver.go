@@ -38,14 +38,14 @@ func (s *LeaderboardRawBucketSaver) ZincrExpire(ctx context.Context, key, postID
 	return s.Redis.Expire(ctx, key, 48*time.Hour).Err()
 }
 
-func minuteBucket(t time.Time) string {
+func fiveMinuteBucket(t time.Time) string {
 	return t.UTC().Truncate(5 * time.Minute).Format("2006-01-02T15:04")
 }
 
 func likesKey(t time.Time) string {
-	return "likes:" + minuteBucket(t)
+	return "likes:" + fiveMinuteBucket(t)
 }
 
 func repostsKey(t time.Time) string {
-	return "reposts:" + minuteBucket(t)
+	return "reposts:" + fiveMinuteBucket(t)
 }
