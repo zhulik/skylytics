@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"context"
+	"crypto/rand"
 	"log/slog"
+	"math/big"
 	"sync"
 	"time"
 
@@ -36,29 +38,31 @@ type metricsServer struct {
 }
 
 func (s *metricsServer) Run(ctx context.Context) error {
-	ticker := time.NewTicker(5 * time.Minute)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-			s.reportRawBucketCounts(ctx)
-		}
-	}
-}
-
-func (s *metricsServer) reportRawBucketCounts(ctx context.Context) {
 	var wg sync.WaitGroup
 
 	wg.Go(func() {
-		s.reportRawBucketCount(ctx, "likes:*", "like")
+		s.runRawBucketCountLoop(ctx, "likes:*", "like")
 	})
 	wg.Go(func() {
-		s.reportRawBucketCount(ctx, "reposts:*", "repost")
+		s.runRawBucketCountLoop(ctx, "reposts:*", "repost")
 	})
 	wg.Wait()
+
+	return nil
+}
+
+func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, pattern, content string) {
+	for {
+		timer := time.NewTimer(randomPause(3*time.Minute, 7*time.Minute))
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return
+		case <-timer.C:
+		}
+
+		s.reportRawBucketCount(ctx, pattern, content)
+	}
 }
 
 func (s *metricsServer) reportRawBucketCount(ctx context.Context, pattern, content string) {
@@ -67,5 +71,16 @@ func (s *metricsServer) reportRawBucketCount(ctx context.Context, pattern, conte
 		s.Logger.Error("failed to count raw buckets", "content", content, "error", err)
 		return
 	}
+
 	s.Metrics.SetRawBucketsTotal(ctx, content, float64(count))
+	s.Logger.Info("counted raw buckets", "content", content, "count", count)
+}
+
+func randomPause(minPause, maxPause time.Duration) time.Duration {
+	span := big.NewInt(int64(maxPause - minPause + 1))
+	n, err := rand.Int(rand.Reader, span)
+	if err != nil {
+		return minPause
+	}
+	return minPause + time.Duration(n.Int64())
 }
