@@ -27,7 +27,9 @@ func (c *Collector) Init(_ context.Context) error {
 	c.reg = prometheus.NewRegistry()
 	c.reg.MustRegister(
 		collectors.NewGoCollector(),
-		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{
+			Namespace: "skylytics",
+		}),
 
 		jetstreamProcessedEventsTotal,
 		jetstreamSubscriptionErrorsTotal,
@@ -80,8 +82,8 @@ func (c *Collector) IncJetstreamProcessedEventsTotal(_ context.Context, kind, op
 	jetstreamProcessedEventsTotal.WithLabelValues(kind, operation, collection).Inc()
 }
 
-func (c *Collector) IncJetstreamSubscriptionErrorsTotal(_ context.Context) {
-	jetstreamSubscriptionErrorsTotal.Inc()
+func (c *Collector) IncJetstreamSubscriptionErrorsTotal(_ context.Context, err error) {
+	jetstreamSubscriptionErrorsTotal.WithLabelValues(err.Error()).Inc()
 }
 
 func (c *Collector) IncBlueskyPostCreated(_ context.Context, languageCount, imageCount int) {
