@@ -35,6 +35,7 @@ func (c *Collector) Init(_ context.Context) error {
 		jetstreamSubscriptionErrorsTotal,
 		blueskyPostCreatedTotal,
 		blueskyPostCreatedInLanguageTotal,
+		rawBucketsTotal,
 	)
 
 	mux := http.NewServeMux()
@@ -95,4 +96,8 @@ func (c *Collector) IncBlueskyPostCreated(_ context.Context, languageCount, imag
 
 func (c *Collector) IncBlueskyPostCreatedInLanguage(_ context.Context, language string) {
 	blueskyPostCreatedInLanguageTotal.WithLabelValues(language).Inc()
+}
+
+func (c *Collector) SetRawBucketsTotal(_ context.Context, content string, count float64) {
+	rawBucketsTotal.WithLabelValues(content).Set(count)
 }

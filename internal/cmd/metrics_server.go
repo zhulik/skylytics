@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"log/slog"
+	"sync"
+	"time"
 
 	"skylytics/internal/cmd/flags"
 	"skylytics/internal/config"
@@ -34,6 +36,36 @@ type metricsServer struct {
 }
 
 func (s *metricsServer) Run(ctx context.Context) error {
-	<-ctx.Done()
-	return nil
+	ticker := time.NewTicker(5 * time.Minute)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-ticker.C:
+			s.reportRawBucketCounts(ctx)
+		}
+	}
+}
+
+func (s *metricsServer) reportRawBucketCounts(ctx context.Context) {
+	var wg sync.WaitGroup
+
+	wg.Go(func() {
+		s.reportRawBucketCount(ctx, "likes:*", "like")
+	})
+	wg.Go(func() {
+		s.reportRawBucketCount(ctx, "reposts:*", "repost")
+	})
+	wg.Wait()
+}
+
+func (s *metricsServer) reportRawBucketCount(ctx context.Context, pattern, content string) {
+	count, err := s.Redis.CountKeys(ctx, pattern)
+	if err != nil {
+		s.Logger.Error("failed to count raw buckets", "content", content, "error", err)
+		return
+	}
+	s.Metrics.SetRawBucketsTotal(ctx, content, float64(count))
 }

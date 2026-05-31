@@ -36,4 +36,12 @@ var (
 		},
 		[]string{"language"},
 	)
+
+	rawBucketsTotal = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "skylytics_raw_buckets_total",
+			Help: "Total number of raw leaderboard buckets in Redis",
+		},
+		[]string{"content"},
+	)
 )

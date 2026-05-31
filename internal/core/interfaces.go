@@ -13,6 +13,7 @@ type MetricsCollector interface {
 	IncJetstreamSubscriptionErrorsTotal(ctx context.Context, err error)
 	IncBlueskyPostCreated(ctx context.Context, languageCount, imageCount int)
 	IncBlueskyPostCreatedInLanguage(ctx context.Context, language string)
+	SetRawBucketsTotal(ctx context.Context, content string, count float64)
 }
 
 type EventAnalyzer interface {
@@ -25,4 +26,5 @@ type Redis interface {
 
 	ZIncrBy(ctx context.Context, key string, increment float64, member string) *libredis.FloatCmd
 	Expire(ctx context.Context, key string, expiration time.Duration) *libredis.BoolCmd
+	CountKeys(ctx context.Context, pattern string) (int64, error)
 }
