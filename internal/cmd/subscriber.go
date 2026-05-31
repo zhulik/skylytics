@@ -49,9 +49,16 @@ type subscriber struct {
 
 func (s *subscriber) Run(ctx context.Context) error {
 	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		defer ticker.Stop()
+
 		for {
-			time.Sleep(5 * time.Second)
-			s.Logger.Info("processed events", "count", s.processedEvents.Load())
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				s.Logger.Info("processed events", "count", s.processedEvents.Load())
+			}
 		}
 	}()
 
