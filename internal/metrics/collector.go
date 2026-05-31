@@ -23,30 +23,12 @@ type Collector struct {
 	server *http.Server
 }
 
-func (c *Collector) IncJetstreamProcessedEventsTotal(_ context.Context, kind, operation, collection string) {
-	jetstreamProcessedEventsTotal.WithLabelValues(kind, operation, collection).Inc()
-}
-
-func (c *Collector) IncJetstreamSubscriptionErrorsTotal(_ context.Context) {
-	jetstreamSubscriptionErrorsTotal.Inc()
-}
-
-func (c *Collector) IncBlueskyPostCreated(_ context.Context, languageCount, imageCount int) {
-	blueskyPostCreatedTotal.WithLabelValues(
-		strconv.Itoa(languageCount),
-		strconv.Itoa(imageCount),
-	).Inc()
-}
-
-func (c *Collector) IncBlueskyPostCreatedInLanguage(_ context.Context, language string) {
-	blueskyPostCreatedInLanguageTotal.WithLabelValues(language).Inc()
-}
-
 func (c *Collector) Init(_ context.Context) error {
 	c.reg = prometheus.NewRegistry()
 	c.reg.MustRegister(
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+
 		jetstreamProcessedEventsTotal,
 		jetstreamSubscriptionErrorsTotal,
 		blueskyPostCreatedTotal,
@@ -67,7 +49,7 @@ func (c *Collector) Init(_ context.Context) error {
 	return nil
 }
 
-func (c *Collector) RunConfig(_ context.Context) *pal.RunConfig {
+func (c *Collector) RunConfig() *pal.RunConfig {
 	return &pal.RunConfig{
 		Wait: false,
 	}
@@ -92,4 +74,23 @@ func (c *Collector) Run(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (c *Collector) IncJetstreamProcessedEventsTotal(_ context.Context, kind, operation, collection string) {
+	jetstreamProcessedEventsTotal.WithLabelValues(kind, operation, collection).Inc()
+}
+
+func (c *Collector) IncJetstreamSubscriptionErrorsTotal(_ context.Context) {
+	jetstreamSubscriptionErrorsTotal.Inc()
+}
+
+func (c *Collector) IncBlueskyPostCreated(_ context.Context, languageCount, imageCount int) {
+	blueskyPostCreatedTotal.WithLabelValues(
+		strconv.Itoa(languageCount),
+		strconv.Itoa(imageCount),
+	).Inc()
+}
+
+func (c *Collector) IncBlueskyPostCreatedInLanguage(_ context.Context, language string) {
+	blueskyPostCreatedInLanguageTotal.WithLabelValues(language).Inc()
 }

@@ -33,6 +33,7 @@ var cmd = &cli.Command{
 	},
 	Commands: []*cli.Command{
 		subscriberCmd,
+		metricsServerCmd,
 	},
 }
 
