@@ -103,6 +103,6 @@ func (c *Collector) SetRawBucketsTotal(_ context.Context, content string, count 
 	rawBucketsTotal.WithLabelValues(content).Set(count)
 }
 
-func (c *Collector) IncPostInteracted(_ context.Context, interation string) {
-	postInteractedTotal.WithLabelValues(interation).Inc()
+func (c *Collector) IncPostInteracted(_ context.Context, interaction string) {
+	postInteractedTotal.WithLabelValues(interaction).Inc()
 }

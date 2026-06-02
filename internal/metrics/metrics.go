@@ -50,6 +50,6 @@ var (
 			Name: "skylytics_post_interacted",
 			Help: "Total number of post interactions (likes, reposts, quotes, replies)",
 		},
-		[]string{"interation"},
+		[]string{"interaction"},
 	)
 )
