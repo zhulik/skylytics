@@ -19,6 +19,7 @@ const (
 	interactionLike   = "like"
 	interactionRepost = "repost"
 	interactionQuote  = "quote"
+	interactionReply  = "reply"
 )
 
 type EventAnalyzer struct {
@@ -89,6 +90,10 @@ func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 			}
 			a.Metrics.IncPostInteracted(ctx, interactionQuote)
 		}
+	}
+
+	if post.Reply != nil {
+		a.Metrics.IncPostInteracted(ctx, interactionReply)
 	}
 
 	a.Metrics.IncBlueskyPostCreated(ctx, len(post.Langs), imagesCount)

@@ -48,7 +48,7 @@ var (
 	postInteractedTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "skylytics_post_interacted",
-			Help: "Total number of post interactions (likes, reposts, quotes)",
+			Help: "Total number of post interactions (likes, reposts, quotes, replies)",
 		},
 		[]string{"interation"},
 	)
