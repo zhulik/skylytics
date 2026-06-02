@@ -93,6 +93,10 @@ func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 	}
 
 	if post.Reply != nil {
+		err := a.LeaderboardRawBucketSaver.SaveReply(ctx, post.CreatedAt, post.Reply)
+		if err != nil {
+			a.Logger.Error("error saving reply", "error", err)
+		}
 		a.Metrics.IncPostInteracted(ctx, interactionReply)
 	}
 

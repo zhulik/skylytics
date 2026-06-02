@@ -49,6 +49,9 @@ func (s *metricsServer) Run(ctx context.Context) error {
 	wg.Go(func() {
 		s.runRawBucketCountLoop(ctx, "quotes:*", "quote")
 	})
+	wg.Go(func() {
+		s.runRawBucketCountLoop(ctx, "replies:*", "reply")
+	})
 	wg.Wait()
 
 	return nil

@@ -38,6 +38,18 @@ func (s *LeaderboardRawBucketSaver) SaveQuote(ctx context.Context, createdAt str
 	return s.ZincrExpire(ctx, quotesKey(t), embed.Record.Uri)
 }
 
+func (s *LeaderboardRawBucketSaver) SaveReply(ctx context.Context, createdAt string, reply *apibsky.FeedPost_ReplyRef) error {
+	t, err := time.Parse(time.RFC3339, createdAt)
+	if err != nil {
+		return err
+	}
+	err = s.ZincrExpire(ctx, repliesKey(t), reply.Parent.Uri)
+	if err != nil {
+		return err
+	}
+	return s.ZincrExpire(ctx, repliesKey(t), reply.Root.Uri)
+}
+
 func (s *LeaderboardRawBucketSaver) ZincrExpire(ctx context.Context, key, postID string) error {
 	err := s.Redis.ZIncrBy(ctx, key, 1, postID).Err()
 	if err != nil {
@@ -60,4 +72,8 @@ func repostsKey(t time.Time) string {
 
 func quotesKey(t time.Time) string {
 	return "quotes:" + fiveMinuteBucket(t)
+}
+
+func repliesKey(t time.Time) string {
+	return "replies:" + fiveMinuteBucket(t)
 }
