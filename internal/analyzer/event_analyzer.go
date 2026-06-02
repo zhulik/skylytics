@@ -65,8 +65,24 @@ func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 
 	var imagesCount int
 
-	if post.Embed != nil && post.Embed.EmbedImages != nil {
-		imagesCount = len(post.Embed.EmbedImages.Images)
+	if embed := post.Embed; embed != nil {
+		if embedImages := embed.EmbedImages; embedImages != nil {
+			imagesCount = len(embedImages.Images)
+		}
+
+		if embedRecord := embed.EmbedRecord; embedRecord != nil {
+			err := a.LeaderboardRawBucketSaver.SaveQuote(ctx, post.CreatedAt, embedRecord)
+			if err != nil {
+				a.Logger.Error("error saving quote", "error", err)
+			}
+		}
+
+		if embedRecordWithMedia := embed.EmbedRecordWithMedia; embedRecordWithMedia != nil {
+			err := a.LeaderboardRawBucketSaver.SaveQuote(ctx, post.CreatedAt, embedRecordWithMedia.Record)
+			if err != nil {
+				a.Logger.Error("error saving quote", "error", err)
+			}
+		}
 	}
 
 	a.Metrics.IncBlueskyPostCreated(ctx, len(post.Langs), imagesCount)
