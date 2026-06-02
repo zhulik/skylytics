@@ -36,6 +36,7 @@ func (c *Collector) Init(_ context.Context) error {
 		blueskyPostCreatedTotal,
 		blueskyPostCreatedInLanguageTotal,
 		rawBucketsTotal,
+		postInteractedTotal,
 	)
 
 	mux := http.NewServeMux()
@@ -100,4 +101,8 @@ func (c *Collector) IncBlueskyPostCreatedInLanguage(_ context.Context, language 
 
 func (c *Collector) SetRawBucketsTotal(_ context.Context, content string, count float64) {
 	rawBucketsTotal.WithLabelValues(content).Set(count)
+}
+
+func (c *Collector) IncPostInteracted(_ context.Context, interation string) {
+	postInteractedTotal.WithLabelValues(interation).Inc()
 }

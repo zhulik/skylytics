@@ -15,6 +15,10 @@ const (
 	postCollection   = "app.bsky.feed.post"
 	likeCollection   = "app.bsky.feed.like"
 	repostCollection = "app.bsky.feed.repost"
+
+	interactionLike   = "like"
+	interactionRepost = "repost"
+	interactionQuote  = "quote"
 )
 
 type EventAnalyzer struct {
@@ -75,6 +79,7 @@ func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 			if err != nil {
 				a.Logger.Error("error saving quote", "error", err)
 			}
+			a.Metrics.IncPostInteracted(ctx, interactionQuote)
 		}
 
 		if embedRecordWithMedia := embed.EmbedRecordWithMedia; embedRecordWithMedia != nil {
@@ -82,6 +87,7 @@ func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 			if err != nil {
 				a.Logger.Error("error saving quote", "error", err)
 			}
+			a.Metrics.IncPostInteracted(ctx, interactionQuote)
 		}
 	}
 
@@ -101,6 +107,7 @@ func (a *EventAnalyzer) analyzeLikeCreated(ctx context.Context, record []byte) {
 	if err != nil {
 		a.Logger.Error("error saving like", "error", err)
 	}
+	a.Metrics.IncPostInteracted(ctx, interactionLike)
 }
 
 func (a *EventAnalyzer) analyzeRepostCreated(ctx context.Context, record []byte) {
@@ -112,4 +119,5 @@ func (a *EventAnalyzer) analyzeRepostCreated(ctx context.Context, record []byte)
 	if err != nil {
 		a.Logger.Error("error saving repost", "error", err)
 	}
+	a.Metrics.IncPostInteracted(ctx, interactionRepost)
 }

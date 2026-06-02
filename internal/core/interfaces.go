@@ -14,6 +14,7 @@ type MetricsCollector interface {
 	IncBlueskyPostCreated(ctx context.Context, languageCount, imageCount int)
 	IncBlueskyPostCreatedInLanguage(ctx context.Context, language string)
 	SetRawBucketsTotal(ctx context.Context, content string, count float64)
+	IncPostInteracted(ctx context.Context, interation string)
 }
 
 type EventAnalyzer interface {
