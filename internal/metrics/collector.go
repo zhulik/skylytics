@@ -96,7 +96,7 @@ func (c *Collector) IncBlueskyPostsTotal(_ context.Context, languageCount, image
 }
 
 func (c *Collector) IncBlueskyPostsByLanguageTotal(_ context.Context, language string) {
-	blueskyPostsByLanguageTotal.WithLabelValues(language).Inc()
+	blueskyPostsByLanguageTotal.WithLabelValues(NormalizeLanguage(language)).Inc()
 }
 
 func (c *Collector) SetLeaderboardRawBucketKeysTotal(_ context.Context, content string, count float64) {
