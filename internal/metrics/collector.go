@@ -33,10 +33,10 @@ func (c *Collector) Init(_ context.Context) error {
 
 		jetstreamProcessedEventsTotal,
 		jetstreamSubscriptionErrorsTotal,
-		blueskyPostCreatedTotal,
-		blueskyPostCreatedInLanguageTotal,
-		rawBucketsTotal,
-		postInteractedTotal,
+		blueskyPostsTotal,
+		blueskyPostsByLanguageTotal,
+		leaderboardRawBucketKeysTotal,
+		postInteractionsTotal,
 	)
 
 	mux := http.NewServeMux()
@@ -88,21 +88,21 @@ func (c *Collector) IncJetstreamSubscriptionErrorsTotal(_ context.Context, err e
 	jetstreamSubscriptionErrorsTotal.WithLabelValues(err.Error()).Inc()
 }
 
-func (c *Collector) IncBlueskyPostCreated(_ context.Context, languageCount, imageCount int) {
-	blueskyPostCreatedTotal.WithLabelValues(
+func (c *Collector) IncBlueskyPostsTotal(_ context.Context, languageCount, imageCount int) {
+	blueskyPostsTotal.WithLabelValues(
 		strconv.Itoa(languageCount),
 		strconv.Itoa(imageCount),
 	).Inc()
 }
 
-func (c *Collector) IncBlueskyPostCreatedInLanguage(_ context.Context, language string) {
-	blueskyPostCreatedInLanguageTotal.WithLabelValues(language).Inc()
+func (c *Collector) IncBlueskyPostsByLanguageTotal(_ context.Context, language string) {
+	blueskyPostsByLanguageTotal.WithLabelValues(language).Inc()
 }
 
-func (c *Collector) SetRawBucketsTotal(_ context.Context, content string, count float64) {
-	rawBucketsTotal.WithLabelValues(content).Set(count)
+func (c *Collector) SetLeaderboardRawBucketKeysTotal(_ context.Context, content string, count float64) {
+	leaderboardRawBucketKeysTotal.WithLabelValues(content).Set(count)
 }
 
-func (c *Collector) IncPostInteracted(_ context.Context, interaction string) {
-	postInteractedTotal.WithLabelValues(interaction).Inc()
+func (c *Collector) IncPostInteractionsTotal(_ context.Context, interaction string) {
+	postInteractionsTotal.WithLabelValues(interaction).Inc()
 }

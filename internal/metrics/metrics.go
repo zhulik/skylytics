@@ -21,33 +21,33 @@ var (
 		[]string{"error"},
 	)
 
-	blueskyPostCreatedTotal = prometheus.NewCounterVec(
+	blueskyPostsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "skylytics_bluesky_post_created",
+			Name: "skylytics_bluesky_posts_total",
 			Help: "Total number of Bluesky posts created",
 		},
 		[]string{"language_count", "image_count"},
 	)
 
-	blueskyPostCreatedInLanguageTotal = prometheus.NewCounterVec(
+	blueskyPostsByLanguageTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "skylytics_bluesky_post_created_in_language_total",
+			Name: "skylytics_bluesky_posts_by_language_total",
 			Help: "Total number of Bluesky posts created, counted once per language tag on the post",
 		},
 		[]string{"language"},
 	)
 
-	rawBucketsTotal = prometheus.NewGaugeVec(
+	leaderboardRawBucketKeysTotal = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
-			Name: "skylytics_raw_buckets_total",
+			Name: "skylytics_leaderboard_raw_bucket_keys",
 			Help: "Total number of raw leaderboard buckets in Redis",
 		},
 		[]string{"content"},
 	)
 
-	postInteractedTotal = prometheus.NewCounterVec(
+	postInteractionsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "skylytics_post_interacted",
+			Name: "skylytics_post_interactions_total",
 			Help: "Total number of post interactions (likes, reposts, quotes, replies)",
 		},
 		[]string{"interaction"},

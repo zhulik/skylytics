@@ -78,7 +78,7 @@ func (s *metricsServer) reportRawBucketCount(ctx context.Context, pattern, conte
 		return
 	}
 
-	s.Metrics.SetRawBucketsTotal(ctx, content, float64(count))
+	s.Metrics.SetLeaderboardRawBucketKeysTotal(ctx, content, float64(count))
 	s.Logger.Info("counted raw buckets", "content", content, "count", count)
 }
 

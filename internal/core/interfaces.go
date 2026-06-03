@@ -11,10 +11,10 @@ import (
 type MetricsCollector interface {
 	IncJetstreamProcessedEventsTotal(ctx context.Context, kind, operation, collection string)
 	IncJetstreamSubscriptionErrorsTotal(ctx context.Context, err error)
-	IncBlueskyPostCreated(ctx context.Context, languageCount, imageCount int)
-	IncBlueskyPostCreatedInLanguage(ctx context.Context, language string)
-	SetRawBucketsTotal(ctx context.Context, content string, count float64)
-	IncPostInteracted(ctx context.Context, interaction string)
+	IncBlueskyPostsTotal(ctx context.Context, languageCount, imageCount int)
+	IncBlueskyPostsByLanguageTotal(ctx context.Context, language string)
+	SetLeaderboardRawBucketKeysTotal(ctx context.Context, content string, count float64)
+	IncPostInteractionsTotal(ctx context.Context, interaction string)
 }
 
 type EventAnalyzer interface {

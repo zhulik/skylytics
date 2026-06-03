@@ -80,7 +80,7 @@ func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 			if err != nil {
 				a.Logger.Error("error saving quote", "error", err)
 			}
-			a.Metrics.IncPostInteracted(ctx, interactionQuote)
+			a.Metrics.IncPostInteractionsTotal(ctx, interactionQuote)
 		}
 
 		if embedRecordWithMedia := embed.EmbedRecordWithMedia; embedRecordWithMedia != nil {
@@ -88,7 +88,7 @@ func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 			if err != nil {
 				a.Logger.Error("error saving quote", "error", err)
 			}
-			a.Metrics.IncPostInteracted(ctx, interactionQuote)
+			a.Metrics.IncPostInteractionsTotal(ctx, interactionQuote)
 		}
 	}
 
@@ -97,13 +97,13 @@ func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 		if err != nil {
 			a.Logger.Error("error saving reply", "error", err)
 		}
-		a.Metrics.IncPostInteracted(ctx, interactionReply)
+		a.Metrics.IncPostInteractionsTotal(ctx, interactionReply)
 	}
 
-	a.Metrics.IncBlueskyPostCreated(ctx, len(post.Langs), imagesCount)
+	a.Metrics.IncBlueskyPostsTotal(ctx, len(post.Langs), imagesCount)
 
 	for _, lang := range post.Langs {
-		a.Metrics.IncBlueskyPostCreatedInLanguage(ctx, lang)
+		a.Metrics.IncBlueskyPostsByLanguageTotal(ctx, lang)
 	}
 }
 
@@ -116,7 +116,7 @@ func (a *EventAnalyzer) analyzeLikeCreated(ctx context.Context, record []byte) {
 	if err != nil {
 		a.Logger.Error("error saving like", "error", err)
 	}
-	a.Metrics.IncPostInteracted(ctx, interactionLike)
+	a.Metrics.IncPostInteractionsTotal(ctx, interactionLike)
 }
 
 func (a *EventAnalyzer) analyzeRepostCreated(ctx context.Context, record []byte) {
@@ -128,5 +128,5 @@ func (a *EventAnalyzer) analyzeRepostCreated(ctx context.Context, record []byte)
 	if err != nil {
 		a.Logger.Error("error saving repost", "error", err)
 	}
-	a.Metrics.IncPostInteracted(ctx, interactionRepost)
+	a.Metrics.IncPostInteractionsTotal(ctx, interactionRepost)
 }
