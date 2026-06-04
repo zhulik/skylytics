@@ -72,14 +72,42 @@ func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, pattern, cont
 }
 
 func (s *metricsServer) reportRawBucketCount(ctx context.Context, pattern, content string) {
-	count, err := s.Redis.CountKeys(ctx, pattern)
+	keys, members, err := leaderboardRawBucketStats(ctx, s.Redis, pattern)
 	if err != nil {
 		s.Logger.Error("failed to count raw buckets", "content", content, "error", err)
 		return
 	}
 
-	s.Metrics.SetLeaderboardRawBucketKeysTotal(ctx, content, float64(count))
-	s.Logger.Info("counted raw buckets", "content", content, "count", count)
+	s.Metrics.SetLeaderboardRawBucketKeysTotal(ctx, content, float64(keys))
+	s.Metrics.SetLeaderboardRawBucketMembersTotal(ctx, content, float64(members))
+	s.Logger.Info("counted raw buckets", "content", content, "keys", keys, "members", members)
+}
+
+func leaderboardRawBucketStats(ctx context.Context, r core.Redis, pattern string) (keys, members int64, err error) {
+	var cursor uint64
+
+	for {
+		bucketKeys, nextCursor, err := r.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			return 0, 0, err
+		}
+
+		keys += int64(len(bucketKeys))
+		for _, key := range bucketKeys {
+			card, err := r.ZCard(ctx, key).Result()
+			if err != nil {
+				return 0, 0, err
+			}
+			members += card
+		}
+
+		cursor = nextCursor
+		if cursor == 0 {
+			break
+		}
+	}
+
+	return keys, members, nil
 }
 
 func randomPause(minPause, maxPause time.Duration) time.Duration {

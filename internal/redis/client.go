@@ -34,23 +34,3 @@ func (c *Client) HealthCheck(ctx context.Context) error {
 func (c *Client) Shutdown(_ context.Context) error {
 	return c.Close()
 }
-
-func (c *Client) CountKeys(ctx context.Context, pattern string) (int64, error) {
-	var count int64
-	var cursor uint64
-
-	for {
-		keys, nextCursor, err := c.Client.Scan(ctx, cursor, pattern, 100).Result()
-		if err != nil {
-			return 0, err
-		}
-
-		count += int64(len(keys))
-		cursor = nextCursor
-		if cursor == 0 {
-			break
-		}
-	}
-
-	return count, nil
-}

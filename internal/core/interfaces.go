@@ -14,6 +14,7 @@ type MetricsCollector interface {
 	IncBlueskyPostsTotal(ctx context.Context, languageCount, imageCount int)
 	IncBlueskyPostsByLanguageTotal(ctx context.Context, language string)
 	SetLeaderboardRawBucketKeysTotal(ctx context.Context, content string, count float64)
+	SetLeaderboardRawBucketMembersTotal(ctx context.Context, content string, count float64)
 	IncPostInteractionsTotal(ctx context.Context, interaction string)
 }
 
@@ -27,5 +28,7 @@ type Redis interface {
 
 	ZIncrBy(ctx context.Context, key string, increment float64, member string) *libredis.FloatCmd
 	Expire(ctx context.Context, key string, expiration time.Duration) *libredis.BoolCmd
-	CountKeys(ctx context.Context, pattern string) (int64, error)
+
+	Scan(ctx context.Context, cursor uint64, match string, count int64) *libredis.ScanCmd
+	ZCard(ctx context.Context, key string) *libredis.IntCmd
 }

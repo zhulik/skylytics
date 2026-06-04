@@ -45,6 +45,14 @@ var (
 		[]string{"content"},
 	)
 
+	leaderboardRawBucketMembersTotal = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "skylytics_leaderboard_raw_bucket_members",
+			Help: "Total distinct post URIs stored across all raw leaderboard buckets (sum of ZCARD per bucket)",
+		},
+		[]string{"content"},
+	)
+
 	postInteractionsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "skylytics_post_interactions_total",
