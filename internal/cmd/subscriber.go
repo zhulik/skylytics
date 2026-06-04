@@ -97,6 +97,7 @@ func (s *subscriber) run(ctx context.Context) error {
 		if err != nil {
 			return err
 		}
+		s.Metrics.ObserveJetstreamEventLag(ctx, time.Since(time.UnixMicro(event.TimeUS)))
 
 		err = s.EventAnalyzer.Analyze(ctx, event)
 		if err != nil {

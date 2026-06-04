@@ -13,6 +13,14 @@ var (
 		[]string{"kind", "operation", "collection"},
 	)
 
+	jetstreamEventLagSeconds = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "skylytics_jetstream_event_lag_seconds",
+			Help:    "Lag between JetStream event time_us and when the event is processed",
+			Buckets: []float64{0.5, 1, 2, 5, 10, 30, 60, 120, 300, 600, 1800},
+		},
+	)
+
 	jetstreamSubscriptionErrorsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "skylytics_jetstream_subscription_errors_total",
