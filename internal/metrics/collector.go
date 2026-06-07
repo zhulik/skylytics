@@ -38,6 +38,7 @@ func (c *Collector) Init(_ context.Context) error {
 		blueskyPostsByLanguageTotal,
 		leaderboardRawBucketKeysTotal,
 		leaderboardRawBucketMembersTotal,
+		leaderboardRawBucketTopScore,
 		postInteractionsTotal,
 	)
 
@@ -114,6 +115,10 @@ func (c *Collector) SetLeaderboardRawBucketKeysTotal(_ context.Context, content 
 
 func (c *Collector) SetLeaderboardRawBucketMembersTotal(_ context.Context, content string, count float64) {
 	leaderboardRawBucketMembersTotal.WithLabelValues(content).Set(count)
+}
+
+func (c *Collector) SetLeaderboardRawBucketTopScore(_ context.Context, content string, score float64) {
+	leaderboardRawBucketTopScore.WithLabelValues(content).Set(score)
 }
 
 func (c *Collector) IncPostInteractionsTotal(_ context.Context, interaction string) {

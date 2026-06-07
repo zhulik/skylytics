@@ -41,23 +41,23 @@ func (s *metricsServer) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
 
 	wg.Go(func() {
-		s.runRawBucketCountLoop(ctx, "likes:*", "like")
+		s.runRawBucketCountLoop(ctx, "like")
 	})
 	wg.Go(func() {
-		s.runRawBucketCountLoop(ctx, "reposts:*", "repost")
+		s.runRawBucketCountLoop(ctx, "repost")
 	})
 	wg.Go(func() {
-		s.runRawBucketCountLoop(ctx, "quotes:*", "quote")
+		s.runRawBucketCountLoop(ctx, "quote")
 	})
 	wg.Go(func() {
-		s.runRawBucketCountLoop(ctx, "replies:*", "reply")
+		s.runRawBucketCountLoop(ctx, "reply")
 	})
 	wg.Wait()
 
 	return nil
 }
 
-func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, pattern, content string) {
+func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, content string) {
 	for {
 		timer := time.NewTimer(randomPause(3*time.Minute, 7*time.Minute))
 		select {
@@ -67,34 +67,67 @@ func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, pattern, cont
 		case <-timer.C:
 		}
 
-		s.reportRawBucketCount(ctx, pattern, content)
+		s.reportRawBucketCount(ctx, content)
 	}
 }
 
-func (s *metricsServer) reportRawBucketCount(ctx context.Context, pattern, content string) {
-	keys, members, err := leaderboardRawBucketStats(ctx, s.Redis, pattern)
+func rawBucketKeyPrefix(content string) string {
+	if content == "reply" {
+		return "replies:"
+	}
+	return content + "s:"
+}
+
+func (s *metricsServer) reportRawBucketCount(ctx context.Context, content string) {
+	prefix := rawBucketKeyPrefix(content)
+	pattern := prefix + "*"
+
+	keys, members, err := s.leaderboardRawBucketStats(ctx, pattern)
 	if err != nil {
 		s.Logger.Error("failed to count raw buckets", "content", content, "error", err)
 		return
 	}
 
+	topScore, err := s.leaderboardPenultimateTopScore(ctx, prefix)
+	if err != nil {
+		s.Logger.Error("failed to read penultimate bucket top score", "content", content, "error", err)
+		return
+	}
+
 	s.Metrics.SetLeaderboardRawBucketKeysTotal(ctx, content, float64(keys))
 	s.Metrics.SetLeaderboardRawBucketMembersTotal(ctx, content, float64(members))
-	s.Logger.Info("counted raw buckets", "content", content, "keys", keys, "members", members)
+	s.Metrics.SetLeaderboardRawBucketTopScore(ctx, content, topScore)
+	s.Logger.Info("counted raw buckets", "content", content, "keys", keys, "members", members, "top_score", topScore)
 }
 
-func leaderboardRawBucketStats(ctx context.Context, r core.Redis, pattern string) (keys, members int64, err error) {
+func penultimateRawBucketKey(prefix string) string {
+	t := time.Now().UTC().Truncate(5 * time.Minute).Add(-5 * time.Minute)
+	return prefix + t.Format("2006-01-02T15:04")
+}
+
+func (s *metricsServer) leaderboardPenultimateTopScore(ctx context.Context, prefix string) (float64, error) {
+	top, err := s.Redis.ZRevRangeWithScores(ctx, penultimateRawBucketKey(prefix), 0, 0).Result()
+	if err != nil {
+		return 0, err
+	}
+	if len(top) == 0 {
+		return 0, nil
+	}
+	return top[0].Score, nil
+}
+
+func (s *metricsServer) leaderboardRawBucketStats(ctx context.Context, pattern string) (keys, members int64, err error) {
 	var cursor uint64
 
 	for {
-		bucketKeys, nextCursor, err := r.Scan(ctx, cursor, pattern, 100).Result()
+		bucketKeys, nextCursor, err := s.Redis.Scan(ctx, cursor, pattern, 100).Result()
 		if err != nil {
 			return 0, 0, err
 		}
 
 		keys += int64(len(bucketKeys))
 		for _, key := range bucketKeys {
-			card, err := r.ZCard(ctx, key).Result()
+			card, err := s.Redis.ZCard(ctx, key).Result()
 			if err != nil {
 				return 0, 0, err
 			}

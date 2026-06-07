@@ -61,6 +61,14 @@ var (
 		[]string{"content"},
 	)
 
+	leaderboardRawBucketTopScore = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "skylytics_leaderboard_raw_bucket_top_score",
+			Help: "Highest single-post interaction count in the penultimate 5-minute raw leaderboard bucket",
+		},
+		[]string{"content"},
+	)
+
 	postInteractionsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "skylytics_post_interactions_total",

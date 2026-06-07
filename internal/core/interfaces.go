@@ -16,6 +16,7 @@ type MetricsCollector interface {
 	IncBlueskyPostsByLanguageTotal(ctx context.Context, language string)
 	SetLeaderboardRawBucketKeysTotal(ctx context.Context, content string, count float64)
 	SetLeaderboardRawBucketMembersTotal(ctx context.Context, content string, count float64)
+	SetLeaderboardRawBucketTopScore(ctx context.Context, content string, score float64)
 	IncPostInteractionsTotal(ctx context.Context, interaction string)
 }
 
@@ -32,4 +33,5 @@ type Redis interface {
 
 	Scan(ctx context.Context, cursor uint64, match string, count int64) *libredis.ScanCmd
 	ZCard(ctx context.Context, key string) *libredis.IntCmd
+	ZRevRangeWithScores(ctx context.Context, key string, start, stop int64) *libredis.ZSliceCmd
 }
