@@ -8,6 +8,7 @@ require (
 	github.com/golang-cz/devslog v0.0.13
 	github.com/k0kubun/pp v3.0.1+incompatible
 	github.com/mattn/go-isatty v0.0.20
+	github.com/orsinium-labs/enum v1.5.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/redis/go-redis/v9 v9.3.0
 	github.com/samber/lo v1.52.0

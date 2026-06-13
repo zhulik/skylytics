@@ -2,15 +2,14 @@ package cmd
 
 import (
 	"context"
-	"crypto/rand"
 	"log/slog"
-	"math/big"
 	"sync"
 	"time"
 
 	"skylytics/internal/cmd/flags"
 	"skylytics/internal/config"
 	"skylytics/internal/core"
+	"skylytics/internal/leaderboard"
 
 	"github.com/urfave/cli/v3"
 	"github.com/zhulik/pal"
@@ -40,24 +39,17 @@ type metricsServer struct {
 func (s *metricsServer) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
 
-	wg.Go(func() {
-		s.runRawBucketCountLoop(ctx, "like")
-	})
-	wg.Go(func() {
-		s.runRawBucketCountLoop(ctx, "repost")
-	})
-	wg.Go(func() {
-		s.runRawBucketCountLoop(ctx, "quote")
-	})
-	wg.Go(func() {
-		s.runRawBucketCountLoop(ctx, "reply")
-	})
+	for _, interaction := range leaderboard.AllInteractions.Members() {
+		wg.Go(func() {
+			s.runRawBucketCountLoop(ctx, interaction)
+		})
+	}
 	wg.Wait()
 
 	return nil
 }
 
-func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, content string) {
+func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, interaction leaderboard.Interaction) {
 	for {
 		timer := time.NewTimer(randomPause(3*time.Minute, 7*time.Minute))
 		select {
@@ -67,19 +59,13 @@ func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, content strin
 		case <-timer.C:
 		}
 
-		s.reportRawBucketCount(ctx, content)
+		s.reportRawBucketCount(ctx, interaction)
 	}
 }
 
-func rawBucketKeyPrefix(content string) string {
-	if content == "reply" {
-		return "replies:"
-	}
-	return content + "s:"
-}
-
-func (s *metricsServer) reportRawBucketCount(ctx context.Context, content string) {
-	prefix := rawBucketKeyPrefix(content)
+func (s *metricsServer) reportRawBucketCount(ctx context.Context, interaction leaderboard.Interaction) {
+	content := interaction.Value
+	prefix := leaderboard.RawKeyPrefix(interaction)
 	pattern := prefix + "*"
 
 	keys, members, err := s.leaderboardRawBucketStats(ctx, pattern)
@@ -141,13 +127,4 @@ func (s *metricsServer) leaderboardRawBucketStats(ctx context.Context, pattern s
 	}
 
 	return keys, members, nil
-}
-
-func randomPause(minPause, maxPause time.Duration) time.Duration {
-	span := big.NewInt(int64(maxPause - minPause + 1))
-	n, err := rand.Int(rand.Reader, span)
-	if err != nil {
-		return minPause
-	}
-	return minPause + time.Duration(n.Int64())
 }

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"skylytics/internal/core"
+	"skylytics/internal/leaderboard"
 
 	apibsky "github.com/bluesky-social/indigo/api/bsky"
 	"github.com/bluesky-social/jetstream/pkg/models"
@@ -15,11 +16,6 @@ const (
 	postCollection   = "app.bsky.feed.post"
 	likeCollection   = "app.bsky.feed.like"
 	repostCollection = "app.bsky.feed.repost"
-
-	interactionLike   = "like"
-	interactionRepost = "repost"
-	interactionQuote  = "quote"
-	interactionReply  = "reply"
 )
 
 type EventAnalyzer struct {
@@ -80,7 +76,7 @@ func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 			if err != nil {
 				a.Logger.Error("error saving quote", "error", err)
 			}
-			a.Metrics.IncPostInteractionsTotal(ctx, interactionQuote)
+			a.Metrics.IncPostInteractionsTotal(ctx, leaderboard.Quote.Value)
 		}
 
 		if embedRecordWithMedia := embed.EmbedRecordWithMedia; embedRecordWithMedia != nil {
@@ -88,7 +84,7 @@ func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 			if err != nil {
 				a.Logger.Error("error saving quote", "error", err)
 			}
-			a.Metrics.IncPostInteractionsTotal(ctx, interactionQuote)
+			a.Metrics.IncPostInteractionsTotal(ctx, leaderboard.Quote.Value)
 		}
 	}
 
@@ -97,7 +93,7 @@ func (a *EventAnalyzer) analyzePostCreated(ctx context.Context, record []byte) {
 		if err != nil {
 			a.Logger.Error("error saving reply", "error", err)
 		}
-		a.Metrics.IncPostInteractionsTotal(ctx, interactionReply)
+		a.Metrics.IncPostInteractionsTotal(ctx, leaderboard.Reply.Value)
 	}
 
 	a.Metrics.IncBlueskyPostsTotal(ctx, len(post.Langs), imagesCount)
@@ -116,7 +112,7 @@ func (a *EventAnalyzer) analyzeLikeCreated(ctx context.Context, record []byte) {
 	if err != nil {
 		a.Logger.Error("error saving like", "error", err)
 	}
-	a.Metrics.IncPostInteractionsTotal(ctx, interactionLike)
+	a.Metrics.IncPostInteractionsTotal(ctx, leaderboard.Like.Value)
 }
 
 func (a *EventAnalyzer) analyzeRepostCreated(ctx context.Context, record []byte) {
@@ -128,5 +124,5 @@ func (a *EventAnalyzer) analyzeRepostCreated(ctx context.Context, record []byte)
 	if err != nil {
 		a.Logger.Error("error saving repost", "error", err)
 	}
-	a.Metrics.IncPostInteractionsTotal(ctx, interactionRepost)
+	a.Metrics.IncPostInteractionsTotal(ctx, leaderboard.Repost.Value)
 }

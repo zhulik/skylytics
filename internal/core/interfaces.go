@@ -34,4 +34,5 @@ type Redis interface {
 	Scan(ctx context.Context, cursor uint64, match string, count int64) *libredis.ScanCmd
 	ZCard(ctx context.Context, key string) *libredis.IntCmd
 	ZRevRangeWithScores(ctx context.Context, key string, start, stop int64) *libredis.ZSliceCmd
+	ZUnionStore(ctx context.Context, dest string, store *libredis.ZStore) *libredis.IntCmd
 }

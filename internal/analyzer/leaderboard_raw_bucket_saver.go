@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"skylytics/internal/core"
+	"skylytics/internal/leaderboard"
 	"time"
 
 	apibsky "github.com/bluesky-social/indigo/api/bsky"
@@ -19,7 +20,7 @@ func (s *LeaderboardRawBucketSaver) SaveLike(ctx context.Context, like *apibsky.
 	if err != nil {
 		return err
 	}
-	return s.ZincrExpire(ctx, likesKey(createdAt), like.Subject.Uri)
+	return s.ZincrExpire(ctx, leaderboard.RawKey(leaderboard.Like, createdAt), like.Subject.Uri)
 }
 
 func (s *LeaderboardRawBucketSaver) SaveRepost(ctx context.Context, repost *apibsky.FeedRepost) error {
@@ -27,7 +28,7 @@ func (s *LeaderboardRawBucketSaver) SaveRepost(ctx context.Context, repost *apib
 	if err != nil {
 		return err
 	}
-	return s.ZincrExpire(ctx, repostsKey(createdAt), repost.Subject.Uri)
+	return s.ZincrExpire(ctx, leaderboard.RawKey(leaderboard.Repost, createdAt), repost.Subject.Uri)
 }
 
 func (s *LeaderboardRawBucketSaver) SaveQuote(ctx context.Context, createdAt string, embed *apibsky.EmbedRecord) error {
@@ -35,7 +36,7 @@ func (s *LeaderboardRawBucketSaver) SaveQuote(ctx context.Context, createdAt str
 	if err != nil {
 		return err
 	}
-	return s.ZincrExpire(ctx, quotesKey(t), embed.Record.Uri)
+	return s.ZincrExpire(ctx, leaderboard.RawKey(leaderboard.Quote, t), embed.Record.Uri)
 }
 
 func (s *LeaderboardRawBucketSaver) SaveReply(ctx context.Context, createdAt string, reply *apibsky.FeedPost_ReplyRef) error {
@@ -43,11 +44,12 @@ func (s *LeaderboardRawBucketSaver) SaveReply(ctx context.Context, createdAt str
 	if err != nil {
 		return err
 	}
-	err = s.ZincrExpire(ctx, repliesKey(t), reply.Parent.Uri)
+	key := leaderboard.RawKey(leaderboard.Reply, t)
+	err = s.ZincrExpire(ctx, key, reply.Parent.Uri)
 	if err != nil {
 		return err
 	}
-	return s.ZincrExpire(ctx, repliesKey(t), reply.Root.Uri)
+	return s.ZincrExpire(ctx, key, reply.Root.Uri)
 }
 
 func (s *LeaderboardRawBucketSaver) ZincrExpire(ctx context.Context, key, postID string) error {
@@ -56,24 +58,4 @@ func (s *LeaderboardRawBucketSaver) ZincrExpire(ctx context.Context, key, postID
 		return err
 	}
 	return s.Redis.Expire(ctx, key, 48*time.Hour).Err()
-}
-
-func fiveMinuteBucket(t time.Time) string {
-	return t.UTC().Truncate(5 * time.Minute).Format("2006-01-02T15:04")
-}
-
-func likesKey(t time.Time) string {
-	return "likes:" + fiveMinuteBucket(t)
-}
-
-func repostsKey(t time.Time) string {
-	return "reposts:" + fiveMinuteBucket(t)
-}
-
-func quotesKey(t time.Time) string {
-	return "quotes:" + fiveMinuteBucket(t)
-}
-
-func repliesKey(t time.Time) string {
-	return "replies:" + fiveMinuteBucket(t)
 }
