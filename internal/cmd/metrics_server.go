@@ -10,6 +10,7 @@ import (
 	"skylytics/internal/config"
 	"skylytics/internal/core"
 	"skylytics/internal/leaderboard"
+	"skylytics/pkg/randomtick"
 
 	"github.com/urfave/cli/v3"
 	"github.com/zhulik/pal"
@@ -50,17 +51,9 @@ func (s *metricsServer) Run(ctx context.Context) error {
 }
 
 func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, interaction leaderboard.Interaction) {
-	for {
-		timer := time.NewTimer(randomPause(3*time.Minute, 7*time.Minute))
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return
-		case <-timer.C:
-		}
-
+	randomtick.Loop(ctx, 3*time.Minute, 7*time.Minute, func(ctx context.Context) {
 		s.reportRawBucketCount(ctx, interaction)
-	}
+	})
 }
 
 func (s *metricsServer) reportRawBucketCount(ctx context.Context, interaction leaderboard.Interaction) {

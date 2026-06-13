@@ -9,6 +9,7 @@ import (
 	"skylytics/internal/cmd/flags"
 	"skylytics/internal/config"
 	"skylytics/internal/leaderboard"
+	"skylytics/pkg/randomtick"
 
 	"github.com/urfave/cli/v3"
 	"github.com/zhulik/pal"
@@ -35,19 +36,12 @@ type aggregatorRunner struct {
 }
 
 func (r *aggregatorRunner) Run(ctx context.Context) error {
-	for {
-		timer := time.NewTimer(randomPause(8*time.Minute, 12*time.Minute))
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return nil
-		case <-timer.C:
-		}
-
+	randomtick.Loop(ctx, 8*time.Minute, 12*time.Minute, func(ctx context.Context) {
 		for _, interaction := range leaderboard.AllInteractions.Members() {
 			if err := r.Summariser.SummariseHourly(ctx, interaction); err != nil {
 				r.Logger.Error("hourly summarise failed", "interaction", interaction, "error", err)
 			}
 		}
-	}
+	})
+	return nil
 }
