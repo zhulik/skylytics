@@ -9,6 +9,6 @@ import (
 func Provide() pal.ServiceDef {
 	return pal.ProvideList(
 		pal.Provide[core.EventAnalyzer](&EventAnalyzer{}),
-		pal.Provide(&LeaderboardRawBucketSaver{}),
+		pal.Provide(&LeaderboardBucketSaver{}),
 	)
 }

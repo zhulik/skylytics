@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"skylytics/internal/core"
 	"strconv"
 	"time"
 
@@ -121,6 +122,6 @@ func (c *Collector) SetLeaderboardRawBucketTopScore(_ context.Context, content s
 	leaderboardRawBucketTopScore.WithLabelValues(content).Set(score)
 }
 
-func (c *Collector) IncPostInteractionsTotal(_ context.Context, interaction string) {
-	postInteractionsTotal.WithLabelValues(interaction).Inc()
+func (c *Collector) IncPostInteractionsTotal(_ context.Context, interaction core.Interaction) {
+	postInteractionsTotal.WithLabelValues(interaction.Value).Inc()
 }

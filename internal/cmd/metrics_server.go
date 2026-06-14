@@ -40,7 +40,7 @@ type metricsServer struct {
 func (s *metricsServer) Run(ctx context.Context) error {
 	var wg sync.WaitGroup
 
-	for _, interaction := range leaderboard.AllInteractions.Members() {
+	for _, interaction := range core.AllInteractions.Members() {
 		wg.Go(func() {
 			s.runRawBucketCountLoop(ctx, interaction)
 		})
@@ -50,15 +50,15 @@ func (s *metricsServer) Run(ctx context.Context) error {
 	return nil
 }
 
-func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, interaction leaderboard.Interaction) {
+func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, interaction core.Interaction) {
 	randomtick.Loop(ctx, 3*time.Minute, 7*time.Minute, func(ctx context.Context) {
 		s.reportRawBucketCount(ctx, interaction)
 	})
 }
 
-func (s *metricsServer) reportRawBucketCount(ctx context.Context, interaction leaderboard.Interaction) {
+func (s *metricsServer) reportRawBucketCount(ctx context.Context, interaction core.Interaction) {
 	content := interaction.Value
-	prefix := leaderboard.RawKeyPrefix(interaction)
+	prefix := leaderboard.InteractionKeyPrefix(interaction)
 	pattern := prefix + "*"
 
 	keys, members, err := s.leaderboardRawBucketStats(ctx, pattern)

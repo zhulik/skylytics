@@ -17,7 +17,7 @@ type MetricsCollector interface {
 	SetLeaderboardRawBucketKeysTotal(ctx context.Context, content string, count float64)
 	SetLeaderboardRawBucketMembersTotal(ctx context.Context, content string, count float64)
 	SetLeaderboardRawBucketTopScore(ctx context.Context, content string, score float64)
-	IncPostInteractionsTotal(ctx context.Context, interaction string)
+	IncPostInteractionsTotal(ctx context.Context, interaction Interaction)
 }
 
 type EventAnalyzer interface {
