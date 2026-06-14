@@ -34,6 +34,7 @@ func (c *Collector) Init(_ context.Context) error {
 
 		jetstreamProcessedEventsTotal,
 		jetstreamEventLagSeconds,
+		eventProcessingDurationSeconds,
 		jetstreamSubscriptionErrorsTotal,
 		blueskyPostsTotal,
 		blueskyPostsByLanguageTotal,
@@ -93,6 +94,13 @@ func (c *Collector) ObserveJetstreamEventLag(_ context.Context, lag time.Duratio
 		lag = 0
 	}
 	jetstreamEventLagSeconds.Observe(lag.Seconds())
+}
+
+func (c *Collector) ObserveEventProcessingDuration(_ context.Context, duration time.Duration) {
+	if duration < 0 {
+		duration = 0
+	}
+	eventProcessingDurationSeconds.Observe(duration.Seconds())
 }
 
 func (c *Collector) IncJetstreamSubscriptionErrorsTotal(_ context.Context, err error) {

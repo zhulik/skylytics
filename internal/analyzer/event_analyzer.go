@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"time"
 
 	"skylytics/internal/core"
 
@@ -25,6 +26,8 @@ type EventAnalyzer struct {
 }
 
 func (a *EventAnalyzer) Analyze(ctx context.Context, event *models.Event) error {
+	start := time.Now()
+
 	kind := event.Kind
 	operation := ""
 	collection := ""
@@ -42,6 +45,7 @@ func (a *EventAnalyzer) Analyze(ctx context.Context, event *models.Event) error 
 	}
 
 	a.Metrics.IncJetstreamProcessedEventsTotal(ctx, kind, operation, collection)
+	a.Metrics.ObserveEventProcessingDuration(ctx, time.Since(start))
 
 	return nil
 }

@@ -11,6 +11,7 @@ import (
 type MetricsCollector interface {
 	IncJetstreamProcessedEventsTotal(ctx context.Context, kind, operation, collection string)
 	ObserveJetstreamEventLag(ctx context.Context, lag time.Duration)
+	ObserveEventProcessingDuration(ctx context.Context, duration time.Duration)
 	IncJetstreamSubscriptionErrorsTotal(ctx context.Context, err error)
 	IncBlueskyPostsTotal(ctx context.Context, languageCount, imageCount int)
 	IncBlueskyPostsByLanguageTotal(ctx context.Context, language string)

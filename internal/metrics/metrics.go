@@ -21,6 +21,14 @@ var (
 		},
 	)
 
+	eventProcessingDurationSeconds = prometheus.NewHistogram(
+		prometheus.HistogramOpts{
+			Name:    "skylytics_event_processing_duration_seconds",
+			Help:    "Time spent processing a single JetStream event in the analyzer",
+			Buckets: []float64{0.001, 0.0025, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5},
+		},
+	)
+
 	jetstreamSubscriptionErrorsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "skylytics_jetstream_subscription_errors_total",
