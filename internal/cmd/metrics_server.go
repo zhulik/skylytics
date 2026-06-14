@@ -58,16 +58,14 @@ func (s *metricsServer) runRawBucketCountLoop(ctx context.Context, interaction c
 
 func (s *metricsServer) reportRawBucketCount(ctx context.Context, interaction core.Interaction) {
 	content := interaction.Value
-	prefix := leaderboard.InteractionKeyPrefix(interaction)
-	pattern := prefix + "*"
 
-	keys, members, err := s.leaderboardRawBucketStats(ctx, pattern)
+	keys, members, err := s.leaderboardRawBucketStats(ctx, interaction)
 	if err != nil {
 		s.Logger.Error("failed to count raw buckets", "content", content, "error", err)
 		return
 	}
 
-	topScore, err := s.leaderboardPenultimateTopScore(ctx, prefix)
+	topScore, err := s.leaderboardPenultimateTopScore(ctx, interaction)
 	if err != nil {
 		s.Logger.Error("failed to read penultimate bucket top score", "content", content, "error", err)
 		return
@@ -79,13 +77,8 @@ func (s *metricsServer) reportRawBucketCount(ctx context.Context, interaction co
 	s.Logger.Info("counted raw buckets", "content", content, "keys", keys, "members", members, "top_score", topScore)
 }
 
-func penultimateRawBucketKey(prefix string) string {
-	t := time.Now().UTC().Truncate(5 * time.Minute).Add(-5 * time.Minute)
-	return prefix + t.Format("2006-01-02T15:04")
-}
-
-func (s *metricsServer) leaderboardPenultimateTopScore(ctx context.Context, prefix string) (float64, error) {
-	top, err := s.Redis.ZRevRangeWithScores(ctx, penultimateRawBucketKey(prefix), 0, 0).Result()
+func (s *metricsServer) leaderboardPenultimateTopScore(ctx context.Context, interaction core.Interaction) (float64, error) {
+	top, err := s.Redis.ZRevRangeWithScores(ctx, leaderboard.PenultimateFiveMinuteKey(interaction, time.Now()), 0, 0).Result()
 	if err != nil {
 		return 0, err
 	}
@@ -95,7 +88,10 @@ func (s *metricsServer) leaderboardPenultimateTopScore(ctx context.Context, pref
 	return top[0].Score, nil
 }
 
-func (s *metricsServer) leaderboardRawBucketStats(ctx context.Context, pattern string) (keys, members int64, err error) {
+func (s *metricsServer) leaderboardRawBucketStats(ctx context.Context, interaction core.Interaction) (keys, members int64, err error) {
+	prefix := leaderboard.InteractionKeyPrefix(interaction)
+	pattern := prefix + "*"
+
 	var cursor uint64
 
 	for {

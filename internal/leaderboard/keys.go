@@ -33,7 +33,7 @@ func dayBucket(t time.Time) string {
 	return t.UTC().Truncate(24 * time.Hour).Format("2006-01-02")
 }
 
-func FineMinuteKey(interaction core.Interaction, t time.Time) string {
+func FiveMinuteKey(interaction core.Interaction, t time.Time) string {
 	return InteractionKeyPrefix(interaction) + fiveMinuteBucket(t)
 }
 
@@ -43,4 +43,11 @@ func HourlyKey(interaction core.Interaction, hour time.Time) string {
 
 func DailyKey(interaction core.Interaction, day time.Time) string {
 	return InteractionKeyPrefix(interaction) + dayBucket(day)
+}
+
+func PenultimateFiveMinuteKey(interaction core.Interaction, t time.Time) string {
+	return InteractionKeyPrefix(interaction) +
+		fiveMinuteBucket(
+			t.UTC().Truncate(5*time.Minute).Add(-5*time.Minute),
+		)
 }

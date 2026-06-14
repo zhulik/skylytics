@@ -54,7 +54,7 @@ func (s *LeaderboardBucketSaver) zincrReplyCounters(ctx context.Context, timesta
 func (s *LeaderboardBucketSaver) zincrAllBuckets(ctx context.Context, interaction core.Interaction, t time.Time, postID string) error {
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		return s.zincrExpire(ctx, leaderboard.FineMinuteKey(interaction, t), postID, 48*time.Hour)
+		return s.zincrExpire(ctx, leaderboard.FiveMinuteKey(interaction, t), postID, 48*time.Hour)
 	})
 	g.Go(func() error {
 		return s.zincrExpire(ctx, leaderboard.HourlyKey(interaction, t), postID, 14*24*time.Hour)

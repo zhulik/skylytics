@@ -15,9 +15,11 @@ type MetricsCollector interface {
 	IncJetstreamSubscriptionErrorsTotal(ctx context.Context, err error)
 	IncBlueskyPostsTotal(ctx context.Context, languageCount, imageCount int)
 	IncBlueskyPostsByLanguageTotal(ctx context.Context, language string)
+
 	SetLeaderboardRawBucketKeysTotal(ctx context.Context, content string, count float64)
 	SetLeaderboardRawBucketMembersTotal(ctx context.Context, content string, count float64)
 	SetLeaderboardRawBucketTopScore(ctx context.Context, content string, score float64)
+
 	IncPostInteractionsTotal(ctx context.Context, interaction Interaction)
 }
 
