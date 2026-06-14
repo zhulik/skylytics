@@ -29,10 +29,18 @@ func hourBucket(t time.Time) string {
 	return t.UTC().Truncate(time.Hour).Format("2006-01-02T15")
 }
 
+func dayBucket(t time.Time) string {
+	return t.UTC().Truncate(24 * time.Hour).Format("2006-01-02")
+}
+
 func FineMinuteKey(interaction core.Interaction, t time.Time) string {
 	return InteractionKeyPrefix(interaction) + fiveMinuteBucket(t)
 }
 
 func HourlyKey(interaction core.Interaction, hour time.Time) string {
 	return InteractionKeyPrefix(interaction) + hourBucket(hour)
+}
+
+func DailyKey(interaction core.Interaction, day time.Time) string {
+	return InteractionKeyPrefix(interaction) + dayBucket(day)
 }

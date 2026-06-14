@@ -8,6 +8,7 @@ import (
 	"time"
 
 	apibsky "github.com/bluesky-social/indigo/api/bsky"
+	"golang.org/x/sync/errgroup"
 )
 
 type LeaderboardBucketSaver struct {
@@ -36,7 +37,7 @@ func (s *LeaderboardBucketSaver) zincrInteractionCounters(ctx context.Context, i
 	if err != nil {
 		return err
 	}
-	return s.zincrExpire(ctx, leaderboard.FineMinuteKey(interaction, t), postID, 48*time.Hour)
+	return s.zincrAllBuckets(ctx, interaction, t, postID)
 }
 
 func (s *LeaderboardBucketSaver) zincrReplyCounters(ctx context.Context, timestamp, parentID, rootID string) error {
@@ -44,12 +45,24 @@ func (s *LeaderboardBucketSaver) zincrReplyCounters(ctx context.Context, timesta
 	if err != nil {
 		return err
 	}
-	key := leaderboard.FineMinuteKey(core.Reply, t)
-	err = s.zincrExpire(ctx, key, parentID, 48*time.Hour)
-	if err != nil {
-		return err
-	}
-	return s.zincrExpire(ctx, key, rootID, 48*time.Hour)
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error { return s.zincrAllBuckets(ctx, core.Reply, t, parentID) })
+	g.Go(func() error { return s.zincrAllBuckets(ctx, core.Reply, t, rootID) })
+	return g.Wait()
+}
+
+func (s *LeaderboardBucketSaver) zincrAllBuckets(ctx context.Context, interaction core.Interaction, t time.Time, postID string) error {
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		return s.zincrExpire(ctx, leaderboard.FineMinuteKey(interaction, t), postID, 48*time.Hour)
+	})
+	g.Go(func() error {
+		return s.zincrExpire(ctx, leaderboard.HourlyKey(interaction, t), postID, 14*24*time.Hour)
+	})
+	g.Go(func() error {
+		return s.zincrExpire(ctx, leaderboard.DailyKey(interaction, t), postID, 60*24*time.Hour)
+	})
+	return g.Wait()
 }
 
 func (s *LeaderboardBucketSaver) zincrExpire(ctx context.Context, key, postID string, duration time.Duration) error {

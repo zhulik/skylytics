@@ -15,6 +15,7 @@ require (
 	github.com/samber/mo v1.16.0
 	github.com/urfave/cli/v3 v3.6.1
 	github.com/zhulik/pal v0.11.2
+	golang.org/x/sync v0.20.0
 	resty.dev/v3 v3.0.0-beta.2
 )
 
@@ -231,7 +232,6 @@ require (
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.54.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
-	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
 	golang.org/x/telemetry v0.0.0-20260409153401-be6f6cb8b1fa // indirect
 	golang.org/x/term v0.43.0 // indirect
